@@ -20,6 +20,10 @@ It encodes portable JSON Schemas for the core governance objects needed to suppo
 - `promotion-ledger-event.schema.json`
 - `concierge-claim-lifecycle.schema.json`
 - `concierge-setup-guidance.schema.json`
+- `telegram-voice-transcript.schema.json`
+- `telegram-voice-reply.schema.json`
+- `telegram-voice-continuity.schema.json`
+- `telegram-voice-turn.schema.json`
 
 ## Included examples
 - `examples/truth-surface.example.json`
@@ -34,6 +38,9 @@ It encodes portable JSON Schemas for the core governance objects needed to suppo
 - `examples/concierge-claim-lifecycle.activation-ready.example.json`
 - `examples/concierge-setup-guidance.awaiting-device-setup.example.json`
 - `examples/concierge-setup-guidance.blocked-support-followup.example.json`
+- `examples/telegram-voice-turn.blocked.example.json`
+- `examples/telegram-voice-turn.activation-ready.example.json`
+- `examples/telegram-voice-turn.continuity-carryover.example.json`
 
 ## Design rules
 - Governance-critical fields are required.
@@ -41,6 +48,7 @@ It encodes portable JSON Schemas for the core governance objects needed to suppo
 - Schemas default to `additionalProperties: false`.
 - The package is neutral and should remain portable across future runtimes.
 - Concierge onboarding examples under `schemas/examples/` are the authoritative support-safe fixtures for claimed-awaiting-setup, blocked/manual-checkpoint, activation-ready, and plain-language setup-guidance states.
+- Telegram voice-loop examples under `schemas/examples/` are the authoritative support-safe fixtures for blocked, activation-ready, and continuity-carryover voice turns; they expose summaries only and must not be extended with raw transcript or private-memory detail.
 
 ## What this package does not do
 This package does not yet implement:

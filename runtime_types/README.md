@@ -17,6 +17,7 @@ It mirrors the validated runtime contract using:
 - `promotion_audit.py` — compact formatter for promotion audit summaries
 - `runtime_step.py` — composed one-step runtime seam with runtime-owned artifact output
 - `runtime_operations.py` — operational readiness and mismatch-localization helpers for one runtime step
+- `telegram_voice_loop.py` — deterministic Telegram voice-turn derivation gated by concierge lifecycle truth
 - `__init__.py` — public exports
 
 ## Relationship to `schemas/`
@@ -33,6 +34,11 @@ It mirrors the validated runtime contract using:
 - `TruthSurface`
 - `RuntimeStepArtifacts`
 - `RuntimeReadinessSummary`
+- `TelegramInboundVoiceNoteRecord`
+- `TelegramVoiceTranscriptRecord`
+- `TelegramVoiceReplyRecord`
+- `TelegramVoiceContinuityRecord`
+- `TelegramVoiceTurnRecord`
 - shared schema validation helpers
 - thin parser/bridge functions
 - a first-pass precedence resolver
@@ -191,6 +197,24 @@ Use this script first when a future agent needs to understand whether a concierg
 
 This is the authoritative S01 restore point for concierge onboarding truth. It intentionally reuses the schema-backed runtime helper instead of maintaining a separate CLI-only output model.
 
+## Telegram voice restore point
+A dedicated Telegram voice-loop inspection restore point now exists at `tools/inspect_telegram_voice_loop.py`.
+
+It derives representative blocked, activation-ready, and continuity-carryover Telegram voice turns through `derive_telegram_voice_turn(...)` and prints a stable, line-oriented summary for:
+- `voice_turn_status`
+- `activation_gate_status`
+- `blocked_reason`
+- support-safe transcript and intent summaries
+- voiced-reply readiness/status
+- continuity/session state and carryover summary
+
+Run:
+- `python tools/inspect_telegram_voice_loop.py`
+
+Use this script first when a future agent needs to inspect whether a Telegram voice turn is blocked on onboarding, ready for voiced concierge follow-up, or carrying forward support-safe continuity across turns.
+
+This is the authoritative S02 restore point for the Telegram voice-loop seam. It intentionally reuses the schema-backed derivation helper instead of maintaining a separate CLI-only formatter model, and it proves only the contract and support-safe inspection surface — not live Telegram Bot API transport wiring.
+
 ## Formal test restore points
 Stdlib test layers now exist at:
 - `tests/test_runtime_types.py`
@@ -222,3 +246,4 @@ Use them with:
 - `python tools/validate_schemas.py`
 
 If schema validation fails, check example-to-schema mapping first, then compare fixture shape against the parser boundary.
+ compare fixture shape against the parser boundary.

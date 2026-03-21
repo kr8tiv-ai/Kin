@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import subprocess
+import sys
 import unittest
+from pathlib import Path
 
 from runtime_types import derive_concierge_lifecycle
 from runtime_types.telegram_voice_loop import derive_telegram_voice_turn
@@ -18,6 +21,8 @@ def inbound_voice_note_payload() -> dict:
 
 
 class TelegramVoiceLoopDerivationTests(unittest.TestCase):
+    maxDiff = None
+
     def test_blocked_lifecycle_derives_blocked_voice_turn_without_voiced_reply(self) -> None:
         lifecycle = derive_concierge_lifecycle(
             claim_id="claim-concierge-blocked",
@@ -137,6 +142,73 @@ class TelegramVoiceLoopDerivationTests(unittest.TestCase):
         self.assertEqual(result["continuity"]["memory_scope"], "support_safe_carryover")
         self.assertNotIn("raw", result["continuity"]["carryover_summary"].lower())
         self.assertEqual(result["reply"]["reply_status"], "voiced")
+
+    def test_cli_restore_point_prints_stable_support_safe_summary(self) -> None:
+        script_path = Path(__file__).resolve().parent.parent / "tools" / "inspect_telegram_voice_loop.py"
+
+        completed = subprocess.run(
+            [sys.executable, str(script_path)],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+
+        self.assertEqual(completed.returncode, 0, msg=completed.stderr)
+        self.assertEqual(
+            completed.stdout,
+            "\n".join(
+                [
+                    "SCENARIO blocked",
+                    "  voice_turn_id: tg-turn-blocked-001",
+                    "  voice_turn_status: blocked",
+                    "  activation_gate_status: blocked",
+                    "  blocked_reason: identity_verification_pending",
+                    "  transcript_summary: Owner asked whether setup can continue today.",
+                    "  intent_summary: Check why activation is still blocked.",
+                    "  reply_status: not_sent",
+                    "  reply_summary: No activation reply is sent because onboarding is still blocked pending identity verification pending.",
+                    "  continuity_status: new_session",
+                    "  memory_scope: none",
+                    "  session_reference: tg-session-blocked",
+                    "  turns_in_session: 1",
+                    "  carryover_summary: No prior voice context is carried because this is the first blocked turn in the session.",
+                    "  support_safe_status_summary: Voice note received, but activation stays blocked until identity verification pending.",
+                    "SCENARIO activation_ready",
+                    "  voice_turn_id: tg-turn-ready-001",
+                    "  voice_turn_status: activation_ready",
+                    "  activation_gate_status: ready",
+                    "  blocked_reason: none",
+                    "  transcript_summary: Owner asked to confirm activation scheduling after support cleared the checklist.",
+                    "  intent_summary: Schedule activation handoff.",
+                    "  reply_status: voiced",
+                    "  reply_summary: Confirms activation is ready and asks the owner to reply with a preferred handoff time.",
+                    "  continuity_status: same_session",
+                    "  memory_scope: session_only",
+                    "  session_reference: tg-session-ready",
+                    "  turns_in_session: 2",
+                    "  carryover_summary: Continues the same support-cleared activation scheduling thread.",
+                    "  support_safe_status_summary: Activation is ready and the owner received a voiced next-step reply.",
+                    "SCENARIO continuity_carryover",
+                    "  voice_turn_id: tg-turn-carryover-004",
+                    "  voice_turn_status: activation_ready",
+                    "  activation_gate_status: ready",
+                    "  blocked_reason: none",
+                    "  transcript_summary: Owner followed up on the previously discussed activation handoff window.",
+                    "  intent_summary: Continue activation scheduling context.",
+                    "  reply_status: voiced",
+                    "  reply_summary: Restates the activation window options and confirms support can continue from the prior thread.",
+                    "  continuity_status: carryover",
+                    "  memory_scope: support_safe_carryover",
+                    "  session_reference: tg-session-carryover",
+                    "  turns_in_session: 4",
+                    "  carryover_summary: Carries forward the prior activation timing discussion without replaying transcript history.",
+                    "  support_safe_status_summary: Activation remains ready and the voiced reply carries forward the prior support-safe context.",
+                    "",
+                ]
+            ),
+        )
+        self.assertNotIn("raw transcript", completed.stdout.lower())
+        self.assertNotIn("private memory", completed.stdout.lower())
 
 
 if __name__ == "__main__":
