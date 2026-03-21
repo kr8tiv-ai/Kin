@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DesignTeachingSummary",
+  "description": "Support-safe S05 teaching summary describing bounded lesson output, anti-slop rationale, and next-step guidance without raw critique or conversation dumps.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "teaching_status": {
+      "type": "string",
+      "enum": ["available", "blocked", "suppressed"]
+    },
+    "lesson_summary": { "type": "string" },
+    "design_choice_explanation": { "type": "string" },
+    "anti_slop_rationale": { "type": "string" },
+    "next_step_guidance": { "type": "string" }
+  },
+  "required": [
+    "teaching_status",
+    "lesson_summary",
+    "design_choice_explanation",
+    "anti_slop_rationale",
+    "next_step_guidance"
+  ]
+}

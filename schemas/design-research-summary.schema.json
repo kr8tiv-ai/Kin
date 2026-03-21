@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DesignResearchSummary",
+  "description": "Support-safe S05 research summary describing bounded provenance, freshness, disclosure, and synthesized signal summaries without raw scraped or reference payloads.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "research_status": {
+      "type": "string",
+      "enum": ["local_only", "hybrid_support", "blocked", "suppressed"]
+    },
+    "provenance_mode": {
+      "type": "string",
+      "enum": ["local", "hybrid"]
+    },
+    "freshness_label": {
+      "type": "string",
+      "enum": ["not_applicable", "current", "stale", "unknown"]
+    },
+    "disclosure_level": {
+      "type": "string",
+      "enum": ["none", "brief", "explicit"]
+    },
+    "disclosure_text": { "type": "string" },
+    "signal_summary": { "type": "string" },
+    "provenance_summary": { "type": "string" }
+  },
+  "required": [
+    "research_status",
+    "provenance_mode",
+    "freshness_label",
+    "disclosure_level",
+    "disclosure_text",
+    "signal_summary",
+    "provenance_summary"
+  ]
+}

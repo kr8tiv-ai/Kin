@@ -20,6 +20,9 @@ from runtime_types.parsers import (
     load_cipher_voice_expression,
     load_concierge_claim_lifecycle,
     load_concierge_setup_guidance,
+    load_design_research_summary,
+    load_design_teaching_research_record,
+    load_design_teaching_summary,
     load_runtime_step_artifacts,
     load_telegram_voice_continuity,
     load_telegram_voice_reply,
@@ -209,6 +212,107 @@ def website_specialist_harness_payload() -> dict:
         "support_safe_outcome_summary": "Local website-specialist execution completed with continuity intact and no external fallback.",
         "activation_handoff_status": "activation_ready",
     }
+
+
+def design_teaching_summary_payload() -> dict:
+    return {
+        "teaching_status": "available",
+        "lesson_summary": "Explains why stronger hierarchy and tighter section pacing would make the page feel more intentional.",
+        "design_choice_explanation": "Connect the visual treatment to a clearer concept so the page reads designed instead of assembled.",
+        "anti_slop_rationale": "Avoid generic hero-feature boilerplate and trend cargo culting by grounding advice in hierarchy, pacing, and purpose.",
+        "next_step_guidance": "Revise the hero and first supporting section before introducing any extra decorative flourishes.",
+    }
+
+
+def design_research_summary_payload() -> dict:
+    return {
+        "research_status": "local_only",
+        "provenance_mode": "local",
+        "freshness_label": "not_applicable",
+        "disclosure_level": "none",
+        "disclosure_text": "No current-reference research was needed for this teaching pass.",
+        "signal_summary": "Uses only local design-rubric and bounded synthesis signals already available in the runtime.",
+        "provenance_summary": "No external or hybrid reference gathering occurred for this record.",
+    }
+
+
+def design_teaching_research_record_payload() -> dict:
+    return {
+        "record_id": "design-teaching-research-001",
+        "schema_family": "s05_design_teaching_research",
+        "harness": website_specialist_harness_payload(),
+        "teaching": design_teaching_summary_payload(),
+        "research": design_research_summary_payload(),
+        "support_safe_summary": "Cipher can explain the design direction using local teaching signals without claiming live research occurred.",
+    }
+
+
+class DesignTeachingResearchParserTests(unittest.TestCase):
+    def test_load_design_teaching_summary_accepts_valid_payload(self) -> None:
+        result = load_design_teaching_summary(design_teaching_summary_payload())
+
+        self.assertEqual(result["teaching_status"], "available")
+        self.assertIn("hierarchy", result["lesson_summary"].lower())
+
+    def test_load_design_research_summary_accepts_valid_payload(self) -> None:
+        result = load_design_research_summary(design_research_summary_payload())
+
+        self.assertEqual(result["research_status"], "local_only")
+        self.assertEqual(result["provenance_mode"], "local")
+
+    def test_load_design_teaching_research_record_accepts_valid_payload(self) -> None:
+        result = load_design_teaching_research_record(design_teaching_research_record_payload())
+
+        self.assertEqual(result["schema_family"], "s05_design_teaching_research")
+        self.assertEqual(result["harness"]["execution"]["route"]["mode"], "local")
+
+    def test_load_design_teaching_summary_rejects_unsafe_extra_field(self) -> None:
+        payload = design_teaching_summary_payload()
+        payload["raw_critique_dump"] = "full critique transcript"
+
+        with self.assertRaises(ValueError):
+            load_design_teaching_summary(payload)
+
+    def test_load_design_research_summary_rejects_raw_reference_dump(self) -> None:
+        payload = design_research_summary_payload()
+        payload["raw_reference_dump"] = ["https://example.com/a", "https://example.com/b"]
+
+        with self.assertRaises(ValueError):
+            load_design_research_summary(payload)
+
+    def test_load_design_teaching_research_record_rejects_missing_disclosure_field(self) -> None:
+        payload = design_teaching_research_record_payload()
+        del payload["research"]["disclosure_text"]
+
+        with self.assertRaises(ValueError):
+            load_design_teaching_research_record(payload)
+
+    def test_load_design_teaching_research_record_accepts_local_teaching_example_fixture(self) -> None:
+        example_path = ROOT / "schemas" / "examples" / "design-teaching-research-record.local-teaching.example.json"
+        payload = json.loads(example_path.read_text(encoding="utf-8"))
+
+        result = load_design_teaching_research_record(payload)
+
+        self.assertEqual(result["teaching"]["teaching_status"], "available")
+        self.assertEqual(result["research"]["research_status"], "local_only")
+
+    def test_load_design_teaching_research_record_accepts_hybrid_research_example_fixture(self) -> None:
+        example_path = ROOT / "schemas" / "examples" / "design-teaching-research-record.hybrid-research.example.json"
+        payload = json.loads(example_path.read_text(encoding="utf-8"))
+
+        result = load_design_teaching_research_record(payload)
+
+        self.assertEqual(result["research"]["research_status"], "hybrid_support")
+        self.assertEqual(result["research"]["disclosure_level"], "explicit")
+
+    def test_load_design_teaching_research_record_accepts_blocked_example_fixture(self) -> None:
+        example_path = ROOT / "schemas" / "examples" / "design-teaching-research-record.blocked.example.json"
+        payload = json.loads(example_path.read_text(encoding="utf-8"))
+
+        result = load_design_teaching_research_record(payload)
+
+        self.assertEqual(result["teaching"]["teaching_status"], "suppressed")
+        self.assertEqual(result["research"]["research_status"], "blocked")
 
 
 class FeedbackSelectionTests(unittest.TestCase):

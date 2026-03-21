@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DesignTeachingResearchRecord",
+  "description": "Composed S05 support-safe design-teaching and research record layered on top of canonical S04 website-specialist harness truth.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "record_id": { "type": "string" },
+    "schema_family": {
+      "type": "string",
+      "enum": ["s05_design_teaching_research"]
+    },
+    "harness": { "$ref": "./website-specialist-harness-record.schema.json" },
+    "teaching": { "$ref": "./design-teaching-summary.schema.json" },
+    "research": { "$ref": "./design-research-summary.schema.json" },
+    "support_safe_summary": { "type": "string" }
+  },
+  "required": [
+    "record_id",
+    "schema_family",
+    "harness",
+    "teaching",
+    "research",
+    "support_safe_summary"
+  ]
+}

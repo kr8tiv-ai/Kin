@@ -1,0 +1,72 @@
+{
+  "record_id": "design-teaching-research-local-teaching-001",
+  "schema_family": "s05_design_teaching_research",
+  "harness": {
+    "harness_id": "ws-harness-local-success-001",
+    "request": {
+      "request_id": "ws-request-local-success-001",
+      "request_source": "telegram_voice_turn",
+      "request_status": "activation_ready",
+      "support_safe_request_summary": "Owner asked Cipher to continue with a website update once activation was confirmed.",
+      "desired_outcome_summary": "Handle the website-specialist step locally while preserving route honesty and bounded continuity markers.",
+      "activation_ready": true,
+      "activation_ref": "claim-concierge-001",
+      "voice_turn_ref": "tg-turn-ready-001",
+      "continuity_ref": "cipher-continuity-carryover-001",
+      "requested_capability": "website_update"
+    },
+    "execution": {
+      "execution_id": "ws-execution-local-success-001",
+      "specialist_status": "completed",
+      "task_phase": "fulfilled",
+      "route": {
+        "event_id": "route-local-success-001",
+        "provider": "local-runtime",
+        "model": "llama-local",
+        "mode": "local",
+        "route_reason": "Local website specialist completed the request without external help.",
+        "fallback_used": false,
+        "fallback_refused": false,
+        "learned_effect_allowed": true
+      },
+      "disclosure_level": "brief",
+      "disclosure_text": "This website request stayed on the local specialist path.",
+      "support_safe_status_summary": "Website-specialist work completed locally with bounded Cipher continuity markers preserved.",
+      "continuity_carryover_refs": [
+        "tg-session-042",
+        "cipher-continuity-carryover-001"
+      ],
+      "persona_markers": [
+        "cipher_bloodline",
+        "mission_control_governed",
+        "support_safe",
+        "calm_precision"
+      ],
+      "spoken_manner_markers": [
+        "warmth",
+        "measured_pacing",
+        "carryover_callback"
+      ],
+      "fallback_refused": false
+    },
+    "support_safe_outcome_summary": "Cipher completed the website-specialist step locally and preserved support-safe continuity truth.",
+    "activation_handoff_status": "handoff_complete"
+  },
+  "teaching": {
+    "teaching_status": "available",
+    "lesson_summary": "Explains that stronger hierarchy and tighter pacing make the page feel intentional rather than template-assembled.",
+    "design_choice_explanation": "The recommendation links typography, spacing, and section sequencing back to one clearer concept for the website.",
+    "anti_slop_rationale": "It redirects away from generic hero-feature boilerplate and trend cargo culting toward purposeful structure and contrast.",
+    "next_step_guidance": "Revise the hero and first supporting section before layering in any extra visual effects."
+  },
+  "research": {
+    "research_status": "local_only",
+    "provenance_mode": "local",
+    "freshness_label": "not_applicable",
+    "disclosure_level": "none",
+    "disclosure_text": "No current-reference research was needed for this teaching pass.",
+    "signal_summary": "Uses only local design-rubric and bounded synthesis signals already available in the runtime.",
+    "provenance_summary": "No external or hybrid reference gathering occurred for this record."
+  },
+  "support_safe_summary": "Cipher can explain the design direction using local teaching signals without claiming live browsing or current-reference research occurred."
+}

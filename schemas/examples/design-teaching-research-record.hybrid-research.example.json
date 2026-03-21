@@ -1,0 +1,73 @@
+{
+  "record_id": "design-teaching-research-hybrid-research-001",
+  "schema_family": "s05_design_teaching_research",
+  "harness": {
+    "harness_id": "ws-harness-hybrid-escalation-001",
+    "request": {
+      "request_id": "ws-request-hybrid-escalation-001",
+      "request_source": "telegram_voice_turn",
+      "request_status": "needs_route_decision",
+      "support_safe_request_summary": "Owner requested a website diagnostic review that may need hybrid help to complete safely.",
+      "desired_outcome_summary": "Escalate the specialist route honestly if local-only coverage is insufficient while keeping bounded continuity markers.",
+      "activation_ready": true,
+      "activation_ref": "claim-concierge-001",
+      "voice_turn_ref": "tg-turn-ready-001",
+      "continuity_ref": "cipher-continuity-activation-ready-001",
+      "requested_capability": "diagnostic_review"
+    },
+    "execution": {
+      "execution_id": "ws-execution-hybrid-escalation-001",
+      "specialist_status": "escalated",
+      "task_phase": "routing",
+      "route": {
+        "event_id": "route-hybrid-escalation-001",
+        "provider": "hybrid-runtime",
+        "model": "mixtral-support",
+        "mode": "hybrid",
+        "route_reason": "Local specialist required bounded hybrid help for the diagnostic review.",
+        "fallback_used": true,
+        "fallback_refused": false,
+        "learned_effect_allowed": false
+      },
+      "disclosure_level": "explicit",
+      "disclosure_text": "This website request used bounded hybrid help because the local specialist needed additional support for the diagnostic review.",
+      "support_safe_status_summary": "Website-specialist work escalated through a hybrid route and disclosed that choice explicitly.",
+      "continuity_carryover_refs": [
+        "tg-turn-ready-001",
+        "cipher-continuity-activation-ready-001"
+      ],
+      "persona_markers": [
+        "cipher_bloodline",
+        "mission_control_governed",
+        "support_safe",
+        "activation_ready",
+        "owner_guidance"
+      ],
+      "spoken_manner_markers": [
+        "warmth",
+        "measured_pacing",
+        "confident_guidance"
+      ],
+      "fallback_refused": false
+    },
+    "support_safe_outcome_summary": "Cipher preserved activation-ready continuity markers while honestly disclosing a hybrid website-specialist escalation.",
+    "activation_handoff_status": "activation_ready"
+  },
+  "teaching": {
+    "teaching_status": "available",
+    "lesson_summary": "Translates current-reference findings into bounded guidance about what feels stale, overdone, or appropriately current for the website.",
+    "design_choice_explanation": "The recommendation explains which structural and pacing signals matter for the product instead of telling Cipher to imitate any outside source.",
+    "anti_slop_rationale": "It uses current references to sharpen judgment while explicitly avoiding trend worship, mimicry, and generic startup-page sludge.",
+    "next_step_guidance": "Keep the concept and hierarchy, then selectively update only the sections whose treatment reads stale."
+  },
+  "research": {
+    "research_status": "hybrid_support",
+    "provenance_mode": "hybrid",
+    "freshness_label": "current",
+    "disclosure_level": "explicit",
+    "disclosure_text": "Bounded hybrid research support informed the freshness notes for this design pass.",
+    "signal_summary": "Current-reference synthesis highlighted which visual cues still feel contemporary and which ones now read as overused.",
+    "provenance_summary": "Signals were translated into implementation-facing guidance from bounded hybrid support rather than preserved as raw reference dumps."
+  },
+  "support_safe_summary": "Cipher can teach the design choices and disclose that bounded hybrid research informed freshness guidance without pretending a live browser session exists."
+}

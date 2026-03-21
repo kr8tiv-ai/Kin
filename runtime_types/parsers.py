@@ -9,6 +9,9 @@ from .contracts import (
     CipherVoiceExpressionRecord,
     ConciergeClaimLifecycleRecord,
     ConciergeSetupGuidanceRecord,
+    DesignResearchSummary,
+    DesignTeachingResearchRecord,
+    DesignTeachingSummary,
     FeedbackLedgerEntry,
     PreferenceRecord,
     PromotionDecisionRecord,
@@ -157,4 +160,25 @@ def load_website_specialist_harness_record(data: object) -> WebsiteSpecialistHar
     return cast(
         WebsiteSpecialistHarnessRecord,
         _load("website-specialist-harness-record.schema.json", data, "WebsiteSpecialistHarnessRecord"),
+    )
+
+
+def load_design_teaching_summary(data: object) -> DesignTeachingSummary:
+    return cast(
+        DesignTeachingSummary,
+        _load("design-teaching-summary.schema.json", data, "DesignTeachingSummary"),
+    )
+
+
+def load_design_research_summary(data: object) -> DesignResearchSummary:
+    return cast(
+        DesignResearchSummary,
+        _load("design-research-summary.schema.json", data, "DesignResearchSummary"),
+    )
+
+
+def load_design_teaching_research_record(data: object) -> DesignTeachingResearchRecord:
+    return cast(
+        DesignTeachingResearchRecord,
+        _load("design-teaching-research-record.schema.json", data, "DesignTeachingResearchRecord"),
     )

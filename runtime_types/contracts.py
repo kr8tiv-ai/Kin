@@ -100,6 +100,11 @@ WebsiteRequestedCapability: TypeAlias = Literal[
 WebsiteSpecialistStatus: TypeAlias = Literal["pending", "in_progress", "completed", "escalated", "refused_fallback"]
 WebsiteTaskPhase: TypeAlias = Literal["intake", "routing", "handoff", "fulfilled", "blocked"]
 WebsiteActivationHandoffStatus: TypeAlias = Literal["activation_ready", "blocked", "handoff_complete"]
+DesignTeachingStatus: TypeAlias = Literal["available", "blocked", "suppressed"]
+DesignResearchStatus: TypeAlias = Literal["local_only", "hybrid_support", "blocked", "suppressed"]
+ResearchProvenanceMode: TypeAlias = Literal["local", "hybrid"]
+ResearchFreshnessLabel: TypeAlias = Literal["not_applicable", "current", "stale", "unknown"]
+S05SchemaFamily: TypeAlias = Literal["s05_design_teaching_research"]
 
 
 class FeedbackLedgerEntry(TypedDict):
@@ -400,3 +405,30 @@ class WebsiteSpecialistHarnessRecord(TypedDict):
     execution: WebsiteSpecialistExecutionRecord
     support_safe_outcome_summary: str
     activation_handoff_status: WebsiteActivationHandoffStatus
+
+
+class DesignTeachingSummary(TypedDict):
+    teaching_status: DesignTeachingStatus
+    lesson_summary: str
+    design_choice_explanation: str
+    anti_slop_rationale: str
+    next_step_guidance: str
+
+
+class DesignResearchSummary(TypedDict):
+    research_status: DesignResearchStatus
+    provenance_mode: ResearchProvenanceMode
+    freshness_label: ResearchFreshnessLabel
+    disclosure_level: DisclosureLevel
+    disclosure_text: str
+    signal_summary: str
+    provenance_summary: str
+
+
+class DesignTeachingResearchRecord(TypedDict):
+    record_id: str
+    schema_family: S05SchemaFamily
+    harness: WebsiteSpecialistHarnessRecord
+    teaching: DesignTeachingSummary
+    research: DesignResearchSummary
+    support_safe_summary: str
