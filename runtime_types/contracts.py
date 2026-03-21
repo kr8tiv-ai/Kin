@@ -63,6 +63,32 @@ TelegramReplyDeliveryChannel: TypeAlias = Literal["telegram_voice_note"]
 TelegramVoiceStyle: TypeAlias = Literal["concierge_warm", "concierge_brisk"]
 TelegramContinuityStatus: TypeAlias = Literal["new_session", "same_session", "carryover"]
 TelegramMemoryScope: TypeAlias = Literal["none", "session_only", "support_safe_carryover"]
+CipherContinuityStatus: TypeAlias = Literal["activation_ready", "carryover", "drift_guard"]
+CipherContinuitySource: TypeAlias = Literal["truth_surface_only", "telegram_voice_turn", "cross_surface_carryover"]
+CipherIdentitySafetyStatus: TypeAlias = Literal["identity_safe", "guarded", "drifting_generic"]
+CipherPolicyGuardReason: TypeAlias = Literal[
+    "none",
+    "policy_style_restriction",
+    "identity_marker_conflict",
+    "voice_seam_guard",
+    "drift_detected",
+]
+CipherPersonaMarker: TypeAlias = Literal[
+    "cipher_bloodline",
+    "mission_control_governed",
+    "support_safe",
+    "activation_ready",
+    "owner_guidance",
+    "calm_precision",
+]
+CipherSpokenMannerMarker: TypeAlias = Literal[
+    "warmth",
+    "briskness",
+    "measured_pacing",
+    "confident_guidance",
+    "guarded_boundaries",
+    "carryover_callback",
+]
 
 
 class FeedbackLedgerEntry(TypedDict):
@@ -292,3 +318,39 @@ class TelegramVoiceTurnRecord(TypedDict):
     transcript: TelegramVoiceTranscriptRecord
     reply: TelegramVoiceReplyRecord
     continuity: TelegramVoiceContinuityRecord
+
+
+class CipherPersonaAnchorRecord(TypedDict):
+    anchor_id: str
+    archetype: Literal["cipher"]
+    truth_source: Literal["truth_surface.persona_anchor"]
+    mission_control_mode: Literal["governed"]
+    default_tone: Literal["calm_precision", "warm_guidance", "brisk_guidance"]
+    persona_markers: list[CipherPersonaMarker]
+    policy_focus: list[str]
+    continuity_notes: str
+
+
+class CipherVoiceExpressionRecord(TypedDict):
+    expression_id: str
+    source: Literal["telegram_voice_reply", "cross_surface_inference"]
+    voice_style: TelegramVoiceStyle
+    spoken_manner_markers: list[CipherSpokenMannerMarker]
+    pacing_label: Literal["measured", "steady", "brisk"]
+    energy_label: Literal["calm", "focused", "elevated"]
+    action_prompt_present: bool
+    support_safe_summary: str
+
+
+class CipherContinuityRecord(TypedDict):
+    continuity_id: str
+    continuity_status: CipherContinuityStatus
+    continuity_source: CipherContinuitySource
+    identity_safety_status: CipherIdentitySafetyStatus
+    drift_guard_triggered: bool
+    active_persona_anchor: CipherPersonaAnchorRecord
+    active_voice_expression: CipherVoiceExpressionRecord
+    continuity_marker_summary: str
+    carryover_source_ref: str | None
+    guardrail_reasons: list[CipherPolicyGuardReason]
+    policy_summary: str

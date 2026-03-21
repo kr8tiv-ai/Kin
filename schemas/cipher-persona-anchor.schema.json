@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CipherPersonaAnchor",
+  "description": "Support-safe, Mission Control-compatible Cipher persona anchor derived from TruthSurface.persona_anchor.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "anchor_id": { "type": "string" },
+    "archetype": { "type": "string", "enum": ["cipher"] },
+    "truth_source": { "type": "string", "enum": ["truth_surface.persona_anchor"] },
+    "mission_control_mode": { "type": "string", "enum": ["governed"] },
+    "default_tone": { "type": "string", "enum": ["calm_precision", "warm_guidance", "brisk_guidance"] },
+    "persona_markers": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "cipher_bloodline",
+          "mission_control_governed",
+          "support_safe",
+          "activation_ready",
+          "owner_guidance",
+          "calm_precision"
+        ]
+      }
+    },
+    "policy_focus": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "continuity_notes": { "type": "string" }
+  },
+  "required": [
+    "anchor_id",
+    "archetype",
+    "truth_source",
+    "mission_control_mode",
+    "default_tone",
+    "persona_markers",
+    "policy_focus",
+    "continuity_notes"
+  ]
+}

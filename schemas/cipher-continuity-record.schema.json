@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CipherContinuityRecord",
+  "description": "Top-level support-safe continuity assessment describing whether Cipher identity is activation-ready, carried over, or drift-guarded across surfaces.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "continuity_id": { "type": "string" },
+    "continuity_status": { "type": "string", "enum": ["activation_ready", "carryover", "drift_guard"] },
+    "continuity_source": { "type": "string", "enum": ["truth_surface_only", "telegram_voice_turn", "cross_surface_carryover"] },
+    "identity_safety_status": { "type": "string", "enum": ["identity_safe", "guarded", "drifting_generic"] },
+    "drift_guard_triggered": { "type": "boolean" },
+    "active_persona_anchor": { "$ref": "./cipher-persona-anchor.schema.json" },
+    "active_voice_expression": { "$ref": "./cipher-voice-expression.schema.json" },
+    "continuity_marker_summary": { "type": "string" },
+    "carryover_source_ref": { "type": ["string", "null"] },
+    "guardrail_reasons": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "none",
+          "policy_style_restriction",
+          "identity_marker_conflict",
+          "voice_seam_guard",
+          "drift_detected"
+        ]
+      }
+    },
+    "policy_summary": { "type": "string" }
+  },
+  "required": [
+    "continuity_id",
+    "continuity_status",
+    "continuity_source",
+    "identity_safety_status",
+    "drift_guard_triggered",
+    "active_persona_anchor",
+    "active_voice_expression",
+    "continuity_marker_summary",
+    "carryover_source_ref",
+    "guardrail_reasons",
+    "policy_summary"
+  ]
+}

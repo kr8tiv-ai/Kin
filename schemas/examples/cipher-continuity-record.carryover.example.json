@@ -1,0 +1,46 @@
+{
+  "continuity_id": "cipher-continuity-carryover-001",
+  "continuity_status": "carryover",
+  "continuity_source": "cross_surface_carryover",
+  "identity_safety_status": "identity_safe",
+  "drift_guard_triggered": false,
+  "active_persona_anchor": {
+    "anchor_id": "cipher-anchor-001",
+    "archetype": "cipher",
+    "truth_source": "truth_surface.persona_anchor",
+    "mission_control_mode": "governed",
+    "default_tone": "calm_precision",
+    "persona_markers": [
+      "cipher_bloodline",
+      "mission_control_governed",
+      "support_safe",
+      "owner_guidance",
+      "calm_precision"
+    ],
+    "policy_focus": [
+      "support_safe_status_only",
+      "carryover_allowed",
+      "bounded_identity_markers"
+    ],
+    "continuity_notes": "Cipher carryover remains governed and references only support-safe continuity markers."
+  },
+  "active_voice_expression": {
+    "expression_id": "cipher-expression-carryover-001",
+    "source": "cross_surface_inference",
+    "voice_style": "concierge_warm",
+    "spoken_manner_markers": [
+      "warmth",
+      "measured_pacing",
+      "carryover_callback",
+      "confident_guidance"
+    ],
+    "pacing_label": "steady",
+    "energy_label": "calm",
+    "action_prompt_present": false,
+    "support_safe_summary": "Steady carryover posture that recalls the prior support-safe thread without exposing transcript detail."
+  },
+  "continuity_marker_summary": "Cipher identity carries across surfaces with calm guidance and an explicit bounded callback to prior context.",
+  "carryover_source_ref": "tg-session-042",
+  "guardrail_reasons": ["none"],
+  "policy_summary": "Active policy allows support-safe carryover summaries while keeping transcript and memory detail redacted."
+}

@@ -1,0 +1,45 @@
+{
+  "continuity_id": "cipher-continuity-activation-ready-001",
+  "continuity_status": "activation_ready",
+  "continuity_source": "telegram_voice_turn",
+  "identity_safety_status": "identity_safe",
+  "drift_guard_triggered": false,
+  "active_persona_anchor": {
+    "anchor_id": "cipher-anchor-001",
+    "archetype": "cipher",
+    "truth_source": "truth_surface.persona_anchor",
+    "mission_control_mode": "governed",
+    "default_tone": "warm_guidance",
+    "persona_markers": [
+      "cipher_bloodline",
+      "mission_control_governed",
+      "support_safe",
+      "activation_ready",
+      "owner_guidance"
+    ],
+    "policy_focus": [
+      "support_safe_status_only",
+      "activation_guidance",
+      "policy_reason_visibility"
+    ],
+    "continuity_notes": "Cipher is active with Mission Control-governed persona truth and activation-ready guidance."
+  },
+  "active_voice_expression": {
+    "expression_id": "cipher-expression-activation-ready-001",
+    "source": "telegram_voice_reply",
+    "voice_style": "concierge_warm",
+    "spoken_manner_markers": [
+      "warmth",
+      "measured_pacing",
+      "confident_guidance"
+    ],
+    "pacing_label": "measured",
+    "energy_label": "focused",
+    "action_prompt_present": true,
+    "support_safe_summary": "Warm, measured activation guidance with a clear next step."
+  },
+  "continuity_marker_summary": "Cipher persona markers and spoken manner both align with activation-ready support guidance.",
+  "carryover_source_ref": "tg-turn-activation-ready-001",
+  "guardrail_reasons": ["none"],
+  "policy_summary": "Active policy permits support-safe activation guidance and bounded voice continuity markers."
+}

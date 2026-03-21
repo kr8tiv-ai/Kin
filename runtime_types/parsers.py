@@ -4,6 +4,9 @@ from typing import Any, cast
 
 from .contracts import (
     BehaviorSignalEntry,
+    CipherContinuityRecord,
+    CipherPersonaAnchorRecord,
+    CipherVoiceExpressionRecord,
     ConciergeClaimLifecycleRecord,
     ConciergeSetupGuidanceRecord,
     FeedbackLedgerEntry,
@@ -109,4 +112,25 @@ def load_telegram_voice_turn(data: object) -> TelegramVoiceTurnRecord:
     return cast(
         TelegramVoiceTurnRecord,
         _load("telegram-voice-turn.schema.json", data, "TelegramVoiceTurnRecord"),
+    )
+
+
+def load_cipher_persona_anchor(data: object) -> CipherPersonaAnchorRecord:
+    return cast(
+        CipherPersonaAnchorRecord,
+        _load("cipher-persona-anchor.schema.json", data, "CipherPersonaAnchorRecord"),
+    )
+
+
+def load_cipher_voice_expression(data: object) -> CipherVoiceExpressionRecord:
+    return cast(
+        CipherVoiceExpressionRecord,
+        _load("cipher-voice-expression.schema.json", data, "CipherVoiceExpressionRecord"),
+    )
+
+
+def load_cipher_continuity_record(data: object) -> CipherContinuityRecord:
+    return cast(
+        CipherContinuityRecord,
+        _load("cipher-continuity-record.schema.json", data, "CipherContinuityRecord"),
     )

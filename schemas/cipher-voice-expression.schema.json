@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CipherVoiceExpression",
+  "description": "Bounded spoken-expression markers for Cipher continuity, separate from the canonical Telegram voice turn seam.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "expression_id": { "type": "string" },
+    "source": { "type": "string", "enum": ["telegram_voice_reply", "cross_surface_inference"] },
+    "voice_style": { "type": "string", "enum": ["concierge_warm", "concierge_brisk"] },
+    "spoken_manner_markers": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "warmth",
+          "briskness",
+          "measured_pacing",
+          "confident_guidance",
+          "guarded_boundaries",
+          "carryover_callback"
+        ]
+      }
+    },
+    "pacing_label": { "type": "string", "enum": ["measured", "steady", "brisk"] },
+    "energy_label": { "type": "string", "enum": ["calm", "focused", "elevated"] },
+    "action_prompt_present": { "type": "boolean" },
+    "support_safe_summary": { "type": "string" }
+  },
+  "required": [
+    "expression_id",
+    "source",
+    "voice_style",
+    "spoken_manner_markers",
+    "pacing_label",
+    "energy_label",
+    "action_prompt_present",
+    "support_safe_summary"
+  ]
+}

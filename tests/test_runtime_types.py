@@ -14,6 +14,9 @@ from runtime_types.feedback_selection import select_relevant_feedback
 from runtime_types.telegram_voice_loop import derive_telegram_voice_turn
 from runtime_types.parsers import (
     load_behavior_signal_entry,
+    load_cipher_continuity_record,
+    load_cipher_persona_anchor,
+    load_cipher_voice_expression,
     load_concierge_claim_lifecycle,
     load_concierge_setup_guidance,
     load_runtime_step_artifacts,
@@ -361,6 +364,100 @@ class ParserBoundaryTests(unittest.TestCase):
 
         self.assertEqual(result["voice_turn_status"], "blocked")
         self.assertEqual(result["activation_gate_status"], "blocked")
+
+    def test_load_cipher_persona_anchor_accepts_activation_fixture_fragment(self) -> None:
+        example_path = ROOT / "schemas" / "examples" / "cipher-continuity-record.activation-ready.example.json"
+        payload = json.loads(example_path.read_text(encoding="utf-8"))
+
+        result = load_cipher_persona_anchor(payload["active_persona_anchor"])
+
+        self.assertEqual(result["archetype"], "cipher")
+        self.assertIn("mission_control_governed", result["persona_markers"])
+
+    def test_load_cipher_voice_expression_accepts_carryover_fixture_fragment(self) -> None:
+        example_path = ROOT / "schemas" / "examples" / "cipher-continuity-record.carryover.example.json"
+        payload = json.loads(example_path.read_text(encoding="utf-8"))
+
+        result = load_cipher_voice_expression(payload["active_voice_expression"])
+
+        self.assertEqual(result["source"], "cross_surface_inference")
+        self.assertIn("carryover_callback", result["spoken_manner_markers"])
+
+    def test_load_cipher_continuity_record_accepts_activation_ready_fixture(self) -> None:
+        example_path = ROOT / "schemas" / "examples" / "cipher-continuity-record.activation-ready.example.json"
+        payload = json.loads(example_path.read_text(encoding="utf-8"))
+
+        result = load_cipher_continuity_record(payload)
+
+        self.assertEqual(result["continuity_status"], "activation_ready")
+        self.assertEqual(result["identity_safety_status"], "identity_safe")
+        self.assertEqual(result["active_voice_expression"]["voice_style"], "concierge_warm")
+
+    def test_load_cipher_continuity_record_accepts_carryover_fixture(self) -> None:
+        example_path = ROOT / "schemas" / "examples" / "cipher-continuity-record.carryover.example.json"
+        payload = json.loads(example_path.read_text(encoding="utf-8"))
+
+        result = load_cipher_continuity_record(payload)
+
+        self.assertEqual(result["continuity_status"], "carryover")
+        self.assertEqual(result["continuity_source"], "cross_surface_carryover")
+        self.assertEqual(result["carryover_source_ref"], "tg-session-042")
+
+    def test_load_cipher_continuity_record_accepts_drift_guard_fixture(self) -> None:
+        example_path = ROOT / "schemas" / "examples" / "cipher-continuity-record.drift-guard.example.json"
+        payload = json.loads(example_path.read_text(encoding="utf-8"))
+
+        result = load_cipher_continuity_record(payload)
+
+        self.assertEqual(result["continuity_status"], "drift_guard")
+        self.assertTrue(result["drift_guard_triggered"])
+        self.assertIn("drift_detected", result["guardrail_reasons"])
+
+    def test_load_cipher_continuity_record_rejects_raw_transcript_leak_field(self) -> None:
+        example_path = ROOT / "schemas" / "examples" / "cipher-continuity-record.activation-ready.example.json"
+        payload = json.loads(example_path.read_text(encoding="utf-8"))
+        payload["active_voice_expression"]["raw_transcript_text"] = "full transcript should never appear here"
+
+        with self.assertRaises(ValueError):
+            load_cipher_continuity_record(payload)
+
+    def test_load_cipher_continuity_record_rejects_private_memory_leak_field(self) -> None:
+        example_path = ROOT / "schemas" / "examples" / "cipher-continuity-record.carryover.example.json"
+        payload = json.loads(example_path.read_text(encoding="utf-8"))
+        payload["private_memory_payload"] = {"secret": "hidden detail"}
+
+        with self.assertRaises(ValueError):
+            load_cipher_continuity_record(payload)
+
+    def test_load_cipher_voice_expression_rejects_invalid_marker(self) -> None:
+        payload = {
+            "expression_id": "bad-expression-001",
+            "source": "telegram_voice_reply",
+            "voice_style": "concierge_warm",
+            "spoken_manner_markers": ["warmth", "improv_riffing"],
+            "pacing_label": "measured",
+            "energy_label": "calm",
+            "action_prompt_present": False,
+            "support_safe_summary": "Invalid marker payload.",
+        }
+
+        with self.assertRaises(ValueError):
+            load_cipher_voice_expression(payload)
+
+    def test_load_cipher_persona_anchor_rejects_invalid_archetype(self) -> None:
+        payload = {
+            "anchor_id": "bad-anchor-001",
+            "archetype": "assistant",
+            "truth_source": "truth_surface.persona_anchor",
+            "mission_control_mode": "governed",
+            "default_tone": "calm_precision",
+            "persona_markers": ["cipher_bloodline", "support_safe"],
+            "policy_focus": ["support_safe_status_only"],
+            "continuity_notes": "Invalid archetype payload.",
+        }
+
+        with self.assertRaises(ValueError):
+            load_cipher_persona_anchor(payload)
 
     def test_validate_examples_accepts_repo_schema_and_examples(self) -> None:
         errors, schema_count, example_count = validate_examples()

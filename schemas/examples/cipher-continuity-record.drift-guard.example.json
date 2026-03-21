@@ -1,0 +1,43 @@
+{
+  "continuity_id": "cipher-continuity-drift-guard-001",
+  "continuity_status": "drift_guard",
+  "continuity_source": "truth_surface_only",
+  "identity_safety_status": "guarded",
+  "drift_guard_triggered": true,
+  "active_persona_anchor": {
+    "anchor_id": "cipher-anchor-001",
+    "archetype": "cipher",
+    "truth_source": "truth_surface.persona_anchor",
+    "mission_control_mode": "governed",
+    "default_tone": "brisk_guidance",
+    "persona_markers": [
+      "cipher_bloodline",
+      "mission_control_governed",
+      "support_safe"
+    ],
+    "policy_focus": [
+      "identity_guard_required",
+      "style_restriction_enforced",
+      "support_safe_status_only"
+    ],
+    "continuity_notes": "Cipher persona remains pinned, but policy guards suppress generic drift and over-broad style carryover."
+  },
+  "active_voice_expression": {
+    "expression_id": "cipher-expression-drift-guard-001",
+    "source": "cross_surface_inference",
+    "voice_style": "concierge_brisk",
+    "spoken_manner_markers": [
+      "briskness",
+      "guarded_boundaries",
+      "measured_pacing"
+    ],
+    "pacing_label": "brisk",
+    "energy_label": "focused",
+    "action_prompt_present": false,
+    "support_safe_summary": "Guarded delivery keeps boundaries explicit because persona continuity was at risk of generic drift."
+  },
+  "continuity_marker_summary": "Cipher continuity is preserved via explicit guardrails instead of permissive carryover.",
+  "carryover_source_ref": null,
+  "guardrail_reasons": ["policy_style_restriction", "drift_detected"],
+  "policy_summary": "Active policy blocked broader style transfer and required identity-safe guard posture."
+}
