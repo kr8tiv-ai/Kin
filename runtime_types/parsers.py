@@ -19,6 +19,9 @@ from .contracts import (
     TelegramVoiceTranscriptRecord,
     TelegramVoiceTurnRecord,
     TruthSurface,
+    WebsiteSpecialistExecutionRecord,
+    WebsiteSpecialistHarnessRecord,
+    WebsiteSpecialistRequestRecord,
 )
 from .schema_validation import validate_against_schema_name
 
@@ -133,4 +136,25 @@ def load_cipher_continuity_record(data: object) -> CipherContinuityRecord:
     return cast(
         CipherContinuityRecord,
         _load("cipher-continuity-record.schema.json", data, "CipherContinuityRecord"),
+    )
+
+
+def load_website_specialist_request(data: object) -> WebsiteSpecialistRequestRecord:
+    return cast(
+        WebsiteSpecialistRequestRecord,
+        _load("website-specialist-request.schema.json", data, "WebsiteSpecialistRequestRecord"),
+    )
+
+
+def load_website_specialist_execution(data: object) -> WebsiteSpecialistExecutionRecord:
+    return cast(
+        WebsiteSpecialistExecutionRecord,
+        _load("website-specialist-execution.schema.json", data, "WebsiteSpecialistExecutionRecord"),
+    )
+
+
+def load_website_specialist_harness_record(data: object) -> WebsiteSpecialistHarnessRecord:
+    return cast(
+        WebsiteSpecialistHarnessRecord,
+        _load("website-specialist-harness-record.schema.json", data, "WebsiteSpecialistHarnessRecord"),
     )

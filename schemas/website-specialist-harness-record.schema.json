@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WebsiteSpecialistHarnessRecord",
+  "description": "Top-level S04 support-safe website-specialist harness record combining request intake, execution route truth, bounded continuity markers, and activation handoff status.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "harness_id": { "type": "string" },
+    "request": { "$ref": "./website-specialist-request.schema.json" },
+    "execution": { "$ref": "./website-specialist-execution.schema.json" },
+    "support_safe_outcome_summary": { "type": "string" },
+    "activation_handoff_status": {
+      "type": "string",
+      "enum": ["activation_ready", "blocked", "handoff_complete"]
+    }
+  },
+  "required": [
+    "harness_id",
+    "request",
+    "execution",
+    "support_safe_outcome_summary",
+    "activation_handoff_status"
+  ]
+}

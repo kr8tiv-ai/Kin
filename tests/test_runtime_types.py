@@ -25,6 +25,9 @@ from runtime_types.parsers import (
     load_telegram_voice_transcript,
     load_telegram_voice_turn,
     load_truth_surface,
+    load_website_specialist_execution,
+    load_website_specialist_harness_record,
+    load_website_specialist_request,
 )
 from runtime_types.precedence import resolve_precedence
 from runtime_types.promotion import evaluate_feedback_promotion
@@ -155,6 +158,54 @@ def telegram_voice_turn_payload() -> dict:
         "transcript": telegram_voice_transcript_payload(),
         "reply": telegram_voice_reply_payload(),
         "continuity": telegram_voice_continuity_payload(),
+    }
+def website_specialist_request_payload() -> dict:
+    return {
+        "request_id": "ws-request-001",
+        "request_source": "telegram_voice_turn",
+        "request_status": "activation_ready",
+        "support_safe_request_summary": "Owner wants Cipher to help with a website update after activation was confirmed.",
+        "desired_outcome_summary": "Prepare the next website-specialist step while preserving Cipher continuity and route honesty.",
+        "activation_ready": True,
+        "activation_ref": "claim-concierge-001",
+        "voice_turn_ref": "tg-turn-042",
+        "continuity_ref": "cipher-continuity-carryover-001",
+        "requested_capability": "website_update",
+    }
+
+
+def website_specialist_execution_payload() -> dict:
+    return {
+        "execution_id": "ws-execution-001",
+        "specialist_status": "completed",
+        "task_phase": "fulfilled",
+        "route": {
+            "event_id": "route-website-001",
+            "provider": "local-runtime",
+            "model": "llama-local",
+            "mode": "local",
+            "route_reason": "Local website specialist satisfied the request without escalation.",
+            "fallback_used": False,
+            "fallback_refused": False,
+            "learned_effect_allowed": True,
+        },
+        "disclosure_level": "brief",
+        "disclosure_text": "This website step stayed on the local specialist path.",
+        "support_safe_status_summary": "Website-specialist work completed locally with bounded continuity markers.",
+        "continuity_carryover_refs": ["tg-session-042", "cipher-continuity-carryover-001"],
+        "persona_markers": ["cipher_bloodline", "support_safe", "calm_precision"],
+        "spoken_manner_markers": ["warmth", "measured_pacing", "carryover_callback"],
+        "fallback_refused": False,
+    }
+
+
+def website_specialist_harness_payload() -> dict:
+    return {
+        "harness_id": "ws-harness-001",
+        "request": website_specialist_request_payload(),
+        "execution": website_specialist_execution_payload(),
+        "support_safe_outcome_summary": "Local website-specialist execution completed with continuity intact and no external fallback.",
+        "activation_handoff_status": "activation_ready",
     }
 
 
@@ -458,6 +509,64 @@ class ParserBoundaryTests(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             load_cipher_persona_anchor(payload)
+
+    def test_load_website_specialist_request_accepts_valid_payload(self) -> None:
+        result = load_website_specialist_request(website_specialist_request_payload())
+
+        self.assertEqual(result["request_status"], "activation_ready")
+        self.assertEqual(result["requested_capability"], "website_update")
+
+    def test_load_website_specialist_execution_accepts_valid_payload(self) -> None:
+        result = load_website_specialist_execution(website_specialist_execution_payload())
+
+        self.assertEqual(result["specialist_status"], "completed")
+        self.assertEqual(result["route"]["mode"], "local")
+        self.assertFalse(result["fallback_refused"])
+
+    def test_load_website_specialist_harness_record_accepts_valid_payload(self) -> None:
+        result = load_website_specialist_harness_record(website_specialist_harness_payload())
+
+        self.assertEqual(result["request"]["request_source"], "telegram_voice_turn")
+        self.assertEqual(result["execution"]["task_phase"], "fulfilled")
+
+    def test_load_website_specialist_request_rejects_private_memory_leak_field(self) -> None:
+        payload = website_specialist_request_payload()
+        payload["private_memory_payload"] = {"secret": "keep out of support-safe records"}
+
+        with self.assertRaises(ValueError):
+            load_website_specialist_request(payload)
+
+    def test_load_website_specialist_execution_rejects_raw_transcript_leak_field(self) -> None:
+        payload = website_specialist_execution_payload()
+        payload["raw_transcript_text"] = "verbatim owner transcript"
+
+        with self.assertRaises(ValueError):
+            load_website_specialist_execution(payload)
+
+    def test_load_website_specialist_harness_record_rejects_extra_top_level_field(self) -> None:
+        payload = website_specialist_harness_payload()
+        payload["raw_memory_dump"] = "should never validate"
+
+        with self.assertRaises(ValueError):
+            load_website_specialist_harness_record(payload)
+
+    def test_load_website_specialist_harness_record_accepts_local_success_example_fixture(self) -> None:
+        example_path = ROOT / "schemas" / "examples" / "website-specialist-harness-record.local-success.example.json"
+        payload = json.loads(example_path.read_text(encoding="utf-8"))
+
+        result = load_website_specialist_harness_record(payload)
+
+        self.assertEqual(result["execution"]["route"]["mode"], "local")
+        self.assertEqual(result["execution"]["disclosure_level"], "brief")
+
+    def test_load_website_specialist_harness_record_accepts_hybrid_escalation_example_fixture(self) -> None:
+        example_path = ROOT / "schemas" / "examples" / "website-specialist-harness-record.hybrid-escalation.example.json"
+        payload = json.loads(example_path.read_text(encoding="utf-8"))
+
+        result = load_website_specialist_harness_record(payload)
+
+        self.assertEqual(result["execution"]["route"]["mode"], "hybrid")
+        self.assertEqual(result["execution"]["disclosure_level"], "explicit")
 
     def test_validate_examples_accepts_repo_schema_and_examples(self) -> None:
         errors, schema_count, example_count = validate_examples()

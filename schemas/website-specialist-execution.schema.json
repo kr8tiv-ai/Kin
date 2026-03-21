@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WebsiteSpecialistExecutionRecord",
+  "description": "Support-safe execution and provenance record for website-specialist work with explicit route truth, disclosure, continuity carryover, and fallback-refused state.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "execution_id": { "type": "string" },
+    "specialist_status": {
+      "type": "string",
+      "enum": ["pending", "in_progress", "completed", "escalated", "refused_fallback"]
+    },
+    "task_phase": {
+      "type": "string",
+      "enum": ["intake", "routing", "handoff", "fulfilled", "blocked"]
+    },
+    "route": { "$ref": "./routing-provenance-event.schema.json" },
+    "disclosure_level": { "type": "string", "enum": ["none", "brief", "explicit"] },
+    "disclosure_text": { "type": "string" },
+    "support_safe_status_summary": { "type": "string" },
+    "continuity_carryover_refs": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "persona_markers": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "cipher_bloodline",
+          "mission_control_governed",
+          "support_safe",
+          "activation_ready",
+          "owner_guidance",
+          "calm_precision"
+        ]
+      }
+    },
+    "spoken_manner_markers": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "warmth",
+          "briskness",
+          "measured_pacing",
+          "confident_guidance",
+          "guarded_boundaries",
+          "carryover_callback"
+        ]
+      }
+    },
+    "fallback_refused": { "type": "boolean" }
+  },
+  "required": [
+    "execution_id",
+    "specialist_status",
+    "task_phase",
+    "route",
+    "disclosure_level",
+    "disclosure_text",
+    "support_safe_status_summary",
+    "continuity_carryover_refs",
+    "persona_markers",
+    "spoken_manner_markers",
+    "fallback_refused"
+  ]
+}

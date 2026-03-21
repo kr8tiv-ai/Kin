@@ -1,0 +1,52 @@
+{
+  "harness_id": "ws-harness-hybrid-escalation-001",
+  "request": {
+    "request_id": "ws-request-hybrid-escalation-001",
+    "request_source": "telegram_voice_turn",
+    "request_status": "needs_route_decision",
+    "support_safe_request_summary": "Owner requested a website diagnostic review that may need hybrid help to complete safely.",
+    "desired_outcome_summary": "Escalate the specialist route honestly if local-only coverage is insufficient while keeping bounded continuity markers.",
+    "activation_ready": true,
+    "activation_ref": "claim-concierge-001",
+    "voice_turn_ref": "tg-turn-ready-001",
+    "continuity_ref": "cipher-continuity-activation-ready-001",
+    "requested_capability": "diagnostic_review"
+  },
+  "execution": {
+    "execution_id": "ws-execution-hybrid-escalation-001",
+    "specialist_status": "escalated",
+    "task_phase": "routing",
+    "route": {
+      "event_id": "route-hybrid-escalation-001",
+      "provider": "hybrid-runtime",
+      "model": "mixtral-support",
+      "mode": "hybrid",
+      "route_reason": "Local specialist required bounded hybrid help for the diagnostic review.",
+      "fallback_used": true,
+      "fallback_refused": false,
+      "learned_effect_allowed": false
+    },
+    "disclosure_level": "explicit",
+    "disclosure_text": "This website request used bounded hybrid help because the local specialist needed additional support for the diagnostic review.",
+    "support_safe_status_summary": "Website-specialist work escalated through a hybrid route and disclosed that choice explicitly.",
+    "continuity_carryover_refs": [
+      "tg-turn-ready-001",
+      "cipher-continuity-activation-ready-001"
+    ],
+    "persona_markers": [
+      "cipher_bloodline",
+      "mission_control_governed",
+      "support_safe",
+      "activation_ready",
+      "owner_guidance"
+    ],
+    "spoken_manner_markers": [
+      "warmth",
+      "measured_pacing",
+      "confident_guidance"
+    ],
+    "fallback_refused": false
+  },
+  "support_safe_outcome_summary": "Cipher preserved activation-ready continuity markers while honestly disclosing a hybrid website-specialist escalation.",
+  "activation_handoff_status": "activation_ready"
+}

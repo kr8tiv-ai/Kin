@@ -1,0 +1,51 @@
+{
+  "harness_id": "ws-harness-local-success-001",
+  "request": {
+    "request_id": "ws-request-local-success-001",
+    "request_source": "telegram_voice_turn",
+    "request_status": "activation_ready",
+    "support_safe_request_summary": "Owner asked Cipher to continue with a website update once activation was confirmed.",
+    "desired_outcome_summary": "Handle the website-specialist step locally while preserving route honesty and bounded continuity markers.",
+    "activation_ready": true,
+    "activation_ref": "claim-concierge-001",
+    "voice_turn_ref": "tg-turn-ready-001",
+    "continuity_ref": "cipher-continuity-carryover-001",
+    "requested_capability": "website_update"
+  },
+  "execution": {
+    "execution_id": "ws-execution-local-success-001",
+    "specialist_status": "completed",
+    "task_phase": "fulfilled",
+    "route": {
+      "event_id": "route-local-success-001",
+      "provider": "local-runtime",
+      "model": "llama-local",
+      "mode": "local",
+      "route_reason": "Local website specialist completed the request without external help.",
+      "fallback_used": false,
+      "fallback_refused": false,
+      "learned_effect_allowed": true
+    },
+    "disclosure_level": "brief",
+    "disclosure_text": "This website request stayed on the local specialist path.",
+    "support_safe_status_summary": "Website-specialist work completed locally with bounded Cipher continuity markers preserved.",
+    "continuity_carryover_refs": [
+      "tg-session-042",
+      "cipher-continuity-carryover-001"
+    ],
+    "persona_markers": [
+      "cipher_bloodline",
+      "mission_control_governed",
+      "support_safe",
+      "calm_precision"
+    ],
+    "spoken_manner_markers": [
+      "warmth",
+      "measured_pacing",
+      "carryover_callback"
+    ],
+    "fallback_refused": false
+  },
+  "support_safe_outcome_summary": "Cipher completed the website-specialist step locally and preserved support-safe continuity truth.",
+  "activation_handoff_status": "handoff_complete"
+}

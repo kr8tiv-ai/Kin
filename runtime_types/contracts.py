@@ -89,6 +89,17 @@ CipherSpokenMannerMarker: TypeAlias = Literal[
     "guarded_boundaries",
     "carryover_callback",
 ]
+WebsiteRequestSource: TypeAlias = Literal["telegram_voice_turn", "operator_restore", "system_handoff"]
+WebsiteRequestStatus: TypeAlias = Literal["activation_ready", "blocked", "needs_route_decision"]
+WebsiteRequestedCapability: TypeAlias = Literal[
+    "website_update",
+    "landing_page",
+    "diagnostic_review",
+    "content_refresh",
+]
+WebsiteSpecialistStatus: TypeAlias = Literal["pending", "in_progress", "completed", "escalated", "refused_fallback"]
+WebsiteTaskPhase: TypeAlias = Literal["intake", "routing", "handoff", "fulfilled", "blocked"]
+WebsiteActivationHandoffStatus: TypeAlias = Literal["activation_ready", "blocked", "handoff_complete"]
 
 
 class FeedbackLedgerEntry(TypedDict):
@@ -354,3 +365,38 @@ class CipherContinuityRecord(TypedDict):
     carryover_source_ref: str | None
     guardrail_reasons: list[CipherPolicyGuardReason]
     policy_summary: str
+
+
+class WebsiteSpecialistRequestRecord(TypedDict):
+    request_id: str
+    request_source: WebsiteRequestSource
+    request_status: WebsiteRequestStatus
+    support_safe_request_summary: str
+    desired_outcome_summary: str
+    activation_ready: bool
+    activation_ref: str
+    voice_turn_ref: str | None
+    continuity_ref: str | None
+    requested_capability: WebsiteRequestedCapability
+
+
+class WebsiteSpecialistExecutionRecord(TypedDict):
+    execution_id: str
+    specialist_status: WebsiteSpecialistStatus
+    task_phase: WebsiteTaskPhase
+    route: RoutingProvenanceEvent
+    disclosure_level: DisclosureLevel
+    disclosure_text: str
+    support_safe_status_summary: str
+    continuity_carryover_refs: list[str]
+    persona_markers: list[CipherPersonaMarker]
+    spoken_manner_markers: list[CipherSpokenMannerMarker]
+    fallback_refused: bool
+
+
+class WebsiteSpecialistHarnessRecord(TypedDict):
+    harness_id: str
+    request: WebsiteSpecialistRequestRecord
+    execution: WebsiteSpecialistExecutionRecord
+    support_safe_outcome_summary: str
+    activation_handoff_status: WebsiteActivationHandoffStatus
