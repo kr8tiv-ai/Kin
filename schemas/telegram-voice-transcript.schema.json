@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TelegramVoiceTranscript",
+  "description": "Support-safe transcript and intent summary for a Telegram voice turn without raw transcript leakage.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "transcript_status": {
+      "type": "string",
+      "enum": ["available", "redacted", "not_available"]
+    },
+    "transcript_language": {
+      "type": "string"
+    },
+    "transcript_summary": {
+      "type": "string"
+    },
+    "intent_summary": {
+      "type": "string"
+    },
+    "confidence_label": {
+      "type": "string",
+      "enum": ["high", "medium", "low"]
+    },
+    "redaction_level": {
+      "type": "string",
+      "enum": ["support_safe_summary_only"]
+    }
+  },
+  "required": [
+    "transcript_status",
+    "transcript_language",
+    "transcript_summary",
+    "intent_summary",
+    "confidence_label",
+    "redaction_level"
+  ]
+}

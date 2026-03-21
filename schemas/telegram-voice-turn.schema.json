@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TelegramVoiceTurn",
+  "description": "Canonical schema-backed Telegram voice-turn record with support-safe transcript, reply, and continuity summaries.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "voice_turn_id": {
+      "type": "string"
+    },
+    "platform": {
+      "type": "string",
+      "enum": ["telegram"]
+    },
+    "chat_id": {
+      "type": "string"
+    },
+    "user_id": {
+      "type": "string"
+    },
+    "voice_message_id": {
+      "type": "string"
+    },
+    "voice_turn_status": {
+      "type": "string",
+      "enum": ["blocked", "activation_ready"]
+    },
+    "activation_gate_status": {
+      "type": "string",
+      "enum": ["blocked", "ready"]
+    },
+    "blocked_reason": {
+      "type": ["string", "null"],
+      "enum": [
+        "identity_verification_pending",
+        "device_setup_incomplete",
+        "owner_confirmation_pending",
+        "support_followup_required",
+        null
+      ]
+    },
+    "support_safe_status_summary": {
+      "type": "string"
+    },
+    "inbound_voice_note": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "telegram_file_id": {
+          "type": "string"
+        },
+        "telegram_file_unique_id": {
+          "type": "string"
+        },
+        "audio_duration_seconds": {
+          "type": "integer"
+        },
+        "mime_type": {
+          "type": "string"
+        },
+        "message_timestamp": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string",
+          "enum": ["telegram_voice_note"]
+        }
+      },
+      "required": [
+        "telegram_file_id",
+        "telegram_file_unique_id",
+        "audio_duration_seconds",
+        "mime_type",
+        "message_timestamp",
+        "source"
+      ]
+    },
+    "transcript": {
+      "$ref": "./telegram-voice-transcript.schema.json"
+    },
+    "reply": {
+      "$ref": "./telegram-voice-reply.schema.json"
+    },
+    "continuity": {
+      "$ref": "./telegram-voice-continuity.schema.json"
+    }
+  },
+  "required": [
+    "voice_turn_id",
+    "platform",
+    "chat_id",
+    "user_id",
+    "voice_message_id",
+    "voice_turn_status",
+    "activation_gate_status",
+    "blocked_reason",
+    "support_safe_status_summary",
+    "inbound_voice_note",
+    "transcript",
+    "reply",
+    "continuity"
+  ]
+}

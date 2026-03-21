@@ -1,0 +1,43 @@
+{
+  "voice_turn_id": "tg-turn-carryover-003",
+  "platform": "telegram",
+  "chat_id": "tg-chat-4001",
+  "user_id": "tg-user-4001",
+  "voice_message_id": "tg-voice-msg-carryover-003",
+  "voice_turn_status": "activation_ready",
+  "activation_gate_status": "ready",
+  "blocked_reason": null,
+  "support_safe_status_summary": "Activation remains ready and the voiced reply carries forward the prior support-safe context.",
+  "inbound_voice_note": {
+    "telegram_file_id": "tg-file-carryover-003",
+    "telegram_file_unique_id": "tg-file-unique-carryover-003",
+    "audio_duration_seconds": 23,
+    "mime_type": "audio/ogg",
+    "message_timestamp": "2026-03-21T12:35:00Z",
+    "source": "telegram_voice_note"
+  },
+  "transcript": {
+    "transcript_status": "available",
+    "transcript_language": "en",
+    "transcript_summary": "Owner asks whether the same activation session can continue after yesterday's confirmed handoff.",
+    "intent_summary": "Continue the activation-ready conversation with support-safe carryover context.",
+    "confidence_label": "medium",
+    "redaction_level": "support_safe_summary_only"
+  },
+  "reply": {
+    "reply_status": "voiced",
+    "delivery_channel": "telegram_voice_note",
+    "voice_style": "concierge_brisk",
+    "reply_summary": "Confirms the session carryover and summarizes the next activation handoff step without replaying raw transcript.",
+    "audio_duration_seconds": 16,
+    "contains_action_prompt": false
+  },
+  "continuity": {
+    "continuity_status": "carryover",
+    "session_reference": "tg-session-carryover-001",
+    "turns_in_session": 4,
+    "carryover_summary": "Carries forward the previous activation-ready checkpoint and support-safe session context.",
+    "prior_turn_reference": "tg-turn-carryover-002",
+    "memory_scope": "support_safe_carryover"
+  }
+}

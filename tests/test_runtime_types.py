@@ -16,6 +16,10 @@ from runtime_types.parsers import (
     load_concierge_claim_lifecycle,
     load_concierge_setup_guidance,
     load_runtime_step_artifacts,
+    load_telegram_voice_continuity,
+    load_telegram_voice_reply,
+    load_telegram_voice_transcript,
+    load_telegram_voice_turn,
     load_truth_surface,
 )
 from runtime_types.precedence import resolve_precedence
@@ -89,6 +93,64 @@ def concierge_setup_guidance_payload() -> dict:
         "blocking_reason": "identity_verification_pending",
         "manual_checkpoint": "await_support_followup",
         "support_safe_notes": "Do not continue setup until support confirms the checkpoint is cleared.",
+    }
+
+
+def telegram_voice_transcript_payload() -> dict:
+    return {
+        "transcript_status": "available",
+        "transcript_language": "en",
+        "transcript_summary": "Owner asked whether activation can start after today's support check-in.",
+        "intent_summary": "Confirm activation readiness and next support step.",
+        "confidence_label": "high",
+        "redaction_level": "support_safe_summary_only",
+    }
+
+
+def telegram_voice_reply_payload() -> dict:
+    return {
+        "reply_status": "voiced",
+        "delivery_channel": "telegram_voice_note",
+        "voice_style": "concierge_warm",
+        "reply_summary": "Explains that activation can proceed once support confirms the final checkpoint.",
+        "audio_duration_seconds": 18,
+        "contains_action_prompt": True,
+    }
+
+
+def telegram_voice_continuity_payload() -> dict:
+    return {
+        "continuity_status": "same_session",
+        "session_reference": "tg-session-042",
+        "turns_in_session": 3,
+        "carryover_summary": "Continues the same activation thread from the owner's earlier voice note.",
+        "prior_turn_reference": "tg-turn-041",
+        "memory_scope": "session_only",
+    }
+
+
+def telegram_voice_turn_payload() -> dict:
+    return {
+        "voice_turn_id": "tg-turn-042",
+        "platform": "telegram",
+        "chat_id": "tg-chat-1001",
+        "user_id": "tg-user-88",
+        "voice_message_id": "tg-voice-msg-42",
+        "voice_turn_status": "activation_ready",
+        "activation_gate_status": "ready",
+        "blocked_reason": None,
+        "support_safe_status_summary": "Activation is ready and the owner received a voiced next-step reply.",
+        "inbound_voice_note": {
+            "telegram_file_id": "file_abc123",
+            "telegram_file_unique_id": "unique_abc123",
+            "audio_duration_seconds": 21,
+            "mime_type": "audio/ogg",
+            "message_timestamp": "2026-03-21T12:00:00Z",
+            "source": "telegram_voice_note",
+        },
+        "transcript": telegram_voice_transcript_payload(),
+        "reply": telegram_voice_reply_payload(),
+        "continuity": telegram_voice_continuity_payload(),
     }
 
 
@@ -236,6 +298,68 @@ class ParserBoundaryTests(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             load_concierge_claim_lifecycle(payload)
+
+    def test_load_telegram_voice_transcript_accepts_valid_payload(self) -> None:
+        result = load_telegram_voice_transcript(telegram_voice_transcript_payload())
+
+        self.assertEqual(result["transcript_status"], "available")
+        self.assertEqual(result["confidence_label"], "high")
+
+    def test_load_telegram_voice_reply_accepts_valid_payload(self) -> None:
+        result = load_telegram_voice_reply(telegram_voice_reply_payload())
+
+        self.assertEqual(result["reply_status"], "voiced")
+        self.assertTrue(result["contains_action_prompt"])
+
+    def test_load_telegram_voice_continuity_accepts_valid_payload(self) -> None:
+        result = load_telegram_voice_continuity(telegram_voice_continuity_payload())
+
+        self.assertEqual(result["continuity_status"], "same_session")
+        self.assertEqual(result["memory_scope"], "session_only")
+
+    def test_load_telegram_voice_turn_accepts_valid_payload(self) -> None:
+        result = load_telegram_voice_turn(telegram_voice_turn_payload())
+
+        self.assertEqual(result["voice_turn_status"], "activation_ready")
+        self.assertEqual(result["activation_gate_status"], "ready")
+        self.assertEqual(result["reply"]["reply_status"], "voiced")
+
+    def test_load_telegram_voice_turn_rejects_invalid_gate_status(self) -> None:
+        payload = telegram_voice_turn_payload()
+        payload["activation_gate_status"] = "maybe"
+
+        with self.assertRaises(ValueError):
+            load_telegram_voice_turn(payload)
+
+    def test_load_telegram_voice_turn_rejects_raw_transcript_leak_field(self) -> None:
+        payload = telegram_voice_turn_payload()
+        payload["transcript"]["raw_transcript_text"] = "full verbatim transcript"
+
+        with self.assertRaises(ValueError):
+            load_telegram_voice_turn(payload)
+
+    def test_load_telegram_voice_reply_rejects_missing_required_field(self) -> None:
+        payload = telegram_voice_reply_payload()
+        del payload["reply_summary"]
+
+        with self.assertRaises(ValueError):
+            load_telegram_voice_reply(payload)
+
+    def test_load_telegram_voice_continuity_rejects_invalid_status(self) -> None:
+        payload = telegram_voice_continuity_payload()
+        payload["continuity_status"] = "unknown"
+
+        with self.assertRaises(ValueError):
+            load_telegram_voice_continuity(payload)
+
+    def test_load_telegram_voice_turn_accepts_blocked_repo_example_fixture(self) -> None:
+        example_path = ROOT / "schemas" / "examples" / "telegram-voice-turn.blocked.example.json"
+        payload = json.loads(example_path.read_text(encoding="utf-8"))
+
+        result = load_telegram_voice_turn(payload)
+
+        self.assertEqual(result["voice_turn_status"], "blocked")
+        self.assertEqual(result["activation_gate_status"], "blocked")
 
     def test_validate_examples_accepts_repo_schema_and_examples(self) -> None:
         errors, schema_count, example_count = validate_examples()

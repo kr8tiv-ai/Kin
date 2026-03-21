@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TelegramVoiceReply",
+  "description": "Support-safe metadata for the voiced Telegram reply produced for a voice turn.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "reply_status": {
+      "type": "string",
+      "enum": ["not_sent", "voiced"]
+    },
+    "delivery_channel": {
+      "type": "string",
+      "enum": ["telegram_voice_note"]
+    },
+    "voice_style": {
+      "type": "string",
+      "enum": ["concierge_warm", "concierge_brisk"]
+    },
+    "reply_summary": {
+      "type": "string"
+    },
+    "audio_duration_seconds": {
+      "type": "integer"
+    },
+    "contains_action_prompt": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "reply_status",
+    "delivery_channel",
+    "voice_style",
+    "reply_summary",
+    "audio_duration_seconds",
+    "contains_action_prompt"
+  ]
+}

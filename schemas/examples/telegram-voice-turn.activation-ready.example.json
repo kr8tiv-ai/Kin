@@ -1,0 +1,43 @@
+{
+  "voice_turn_id": "tg-turn-ready-001",
+  "platform": "telegram",
+  "chat_id": "tg-chat-3001",
+  "user_id": "tg-user-3001",
+  "voice_message_id": "tg-voice-msg-ready-001",
+  "voice_turn_status": "activation_ready",
+  "activation_gate_status": "ready",
+  "blocked_reason": null,
+  "support_safe_status_summary": "Activation is ready and the owner received a voiced next-step reply.",
+  "inbound_voice_note": {
+    "telegram_file_id": "tg-file-ready-001",
+    "telegram_file_unique_id": "tg-file-unique-ready-001",
+    "audio_duration_seconds": 19,
+    "mime_type": "audio/ogg",
+    "message_timestamp": "2026-03-21T12:20:00Z",
+    "source": "telegram_voice_note"
+  },
+  "transcript": {
+    "transcript_status": "available",
+    "transcript_language": "en",
+    "transcript_summary": "Owner asks whether support can schedule the activation handoff today.",
+    "intent_summary": "Confirm activation-ready status and next support handoff step.",
+    "confidence_label": "high",
+    "redaction_level": "support_safe_summary_only"
+  },
+  "reply": {
+    "reply_status": "voiced",
+    "delivery_channel": "telegram_voice_note",
+    "voice_style": "concierge_warm",
+    "reply_summary": "Confirms readiness and asks the owner to reply to support to schedule activation.",
+    "audio_duration_seconds": 17,
+    "contains_action_prompt": true
+  },
+  "continuity": {
+    "continuity_status": "same_session",
+    "session_reference": "tg-session-ready-001",
+    "turns_in_session": 2,
+    "carryover_summary": "Continues the same activation thread after support confirmed the final checkpoint.",
+    "prior_turn_reference": "tg-turn-ready-000",
+    "memory_scope": "session_only"
+  }
+}

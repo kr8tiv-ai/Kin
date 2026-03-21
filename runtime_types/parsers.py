@@ -11,6 +11,10 @@ from .contracts import (
     PromotionDecisionRecord,
     RoutingProvenanceEvent,
     RuntimeStepArtifacts,
+    TelegramVoiceContinuityRecord,
+    TelegramVoiceReplyRecord,
+    TelegramVoiceTranscriptRecord,
+    TelegramVoiceTurnRecord,
     TruthSurface,
 )
 from .schema_validation import validate_against_schema_name
@@ -77,4 +81,32 @@ def load_concierge_setup_guidance(data: object) -> ConciergeSetupGuidanceRecord:
     return cast(
         ConciergeSetupGuidanceRecord,
         _load("concierge-setup-guidance.schema.json", data, "ConciergeSetupGuidanceRecord"),
+    )
+
+
+def load_telegram_voice_transcript(data: object) -> TelegramVoiceTranscriptRecord:
+    return cast(
+        TelegramVoiceTranscriptRecord,
+        _load("telegram-voice-transcript.schema.json", data, "TelegramVoiceTranscriptRecord"),
+    )
+
+
+def load_telegram_voice_reply(data: object) -> TelegramVoiceReplyRecord:
+    return cast(
+        TelegramVoiceReplyRecord,
+        _load("telegram-voice-reply.schema.json", data, "TelegramVoiceReplyRecord"),
+    )
+
+
+def load_telegram_voice_continuity(data: object) -> TelegramVoiceContinuityRecord:
+    return cast(
+        TelegramVoiceContinuityRecord,
+        _load("telegram-voice-continuity.schema.json", data, "TelegramVoiceContinuityRecord"),
+    )
+
+
+def load_telegram_voice_turn(data: object) -> TelegramVoiceTurnRecord:
+    return cast(
+        TelegramVoiceTurnRecord,
+        _load("telegram-voice-turn.schema.json", data, "TelegramVoiceTurnRecord"),
     )

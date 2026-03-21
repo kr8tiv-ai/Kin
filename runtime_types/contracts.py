@@ -53,6 +53,16 @@ ConciergeManualCheckpoint: TypeAlias = Literal[
     "await_owner_confirmation",
 ]
 ConciergeGuidanceStatus: TypeAlias = Literal["needs_user_action", "blocked", "ready"]
+TelegramVoiceTurnStatus: TypeAlias = Literal["blocked", "activation_ready"]
+TelegramActivationGateStatus: TypeAlias = Literal["blocked", "ready"]
+TelegramTranscriptStatus: TypeAlias = Literal["available", "redacted", "not_available"]
+TelegramTranscriptConfidence: TypeAlias = Literal["high", "medium", "low"]
+TelegramTranscriptRedactionLevel: TypeAlias = Literal["support_safe_summary_only"]
+TelegramReplyStatus: TypeAlias = Literal["not_sent", "voiced"]
+TelegramReplyDeliveryChannel: TypeAlias = Literal["telegram_voice_note"]
+TelegramVoiceStyle: TypeAlias = Literal["concierge_warm", "concierge_brisk"]
+TelegramContinuityStatus: TypeAlias = Literal["new_session", "same_session", "carryover"]
+TelegramMemoryScope: TypeAlias = Literal["none", "session_only", "support_safe_carryover"]
 
 
 class FeedbackLedgerEntry(TypedDict):
@@ -230,3 +240,55 @@ class ConciergeClaimLifecycleRecord(TypedDict):
     activation_ready: bool
     next_user_step: str
     setup_guidance: ConciergeSetupGuidanceRecord
+
+
+class TelegramInboundVoiceNoteRecord(TypedDict):
+    telegram_file_id: str
+    telegram_file_unique_id: str
+    audio_duration_seconds: int
+    mime_type: str
+    message_timestamp: str
+    source: TelegramReplyDeliveryChannel
+
+
+class TelegramVoiceTranscriptRecord(TypedDict):
+    transcript_status: TelegramTranscriptStatus
+    transcript_language: str
+    transcript_summary: str
+    intent_summary: str
+    confidence_label: TelegramTranscriptConfidence
+    redaction_level: TelegramTranscriptRedactionLevel
+
+
+class TelegramVoiceReplyRecord(TypedDict):
+    reply_status: TelegramReplyStatus
+    delivery_channel: TelegramReplyDeliveryChannel
+    voice_style: TelegramVoiceStyle
+    reply_summary: str
+    audio_duration_seconds: int
+    contains_action_prompt: bool
+
+
+class TelegramVoiceContinuityRecord(TypedDict):
+    continuity_status: TelegramContinuityStatus
+    session_reference: str
+    turns_in_session: int
+    carryover_summary: str
+    prior_turn_reference: str | None
+    memory_scope: TelegramMemoryScope
+
+
+class TelegramVoiceTurnRecord(TypedDict):
+    voice_turn_id: str
+    platform: Literal["telegram"]
+    chat_id: str
+    user_id: str
+    voice_message_id: str
+    voice_turn_status: TelegramVoiceTurnStatus
+    activation_gate_status: TelegramActivationGateStatus
+    blocked_reason: ConciergeBlockingReason | None
+    support_safe_status_summary: str
+    inbound_voice_note: TelegramInboundVoiceNoteRecord
+    transcript: TelegramVoiceTranscriptRecord
+    reply: TelegramVoiceReplyRecord
+    continuity: TelegramVoiceContinuityRecord

@@ -1,0 +1,43 @@
+{
+  "voice_turn_id": "tg-turn-blocked-001",
+  "platform": "telegram",
+  "chat_id": "tg-chat-2001",
+  "user_id": "tg-user-2001",
+  "voice_message_id": "tg-voice-msg-blocked-001",
+  "voice_turn_status": "blocked",
+  "activation_gate_status": "blocked",
+  "blocked_reason": "device_setup_incomplete",
+  "support_safe_status_summary": "Voice note received, but activation stays blocked until device setup is confirmed.",
+  "inbound_voice_note": {
+    "telegram_file_id": "tg-file-blocked-001",
+    "telegram_file_unique_id": "tg-file-unique-blocked-001",
+    "audio_duration_seconds": 14,
+    "mime_type": "audio/ogg",
+    "message_timestamp": "2026-03-21T12:10:00Z",
+    "source": "telegram_voice_note"
+  },
+  "transcript": {
+    "transcript_status": "available",
+    "transcript_language": "en",
+    "transcript_summary": "Owner asks whether activation can start before device setup is complete.",
+    "intent_summary": "Check blocked activation status and next required onboarding step.",
+    "confidence_label": "high",
+    "redaction_level": "support_safe_summary_only"
+  },
+  "reply": {
+    "reply_status": "not_sent",
+    "delivery_channel": "telegram_voice_note",
+    "voice_style": "concierge_warm",
+    "reply_summary": "No activation reply is sent because onboarding is still blocked pending device setup.",
+    "audio_duration_seconds": 0,
+    "contains_action_prompt": true
+  },
+  "continuity": {
+    "continuity_status": "new_session",
+    "session_reference": "tg-session-blocked-001",
+    "turns_in_session": 1,
+    "carryover_summary": "No prior voice context is carried because this is the first blocked turn in the session.",
+    "prior_turn_reference": null,
+    "memory_scope": "none"
+  }
+}
