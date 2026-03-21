@@ -1,6 +1,13 @@
 from .contracts import (
     BehaviorSignalEntry,
     BehaviorSignalType,
+    ConciergeBlockingReason,
+    ConciergeClaimLifecycleRecord,
+    ConciergeClaimStatus,
+    ConciergeGuidanceStatus,
+    ConciergeManualCheckpoint,
+    ConciergeSetupGuidanceRecord,
+    ConciergeSetupStage,
     ConflictStatus,
     DestinationScope,
     DisclosureLevel,
@@ -40,8 +47,13 @@ from .contracts import (
 )
 from .disclosure import DisclosureLevel, DisclosureResult, format_provenance_disclosure
 from .feedback_selection import select_relevant_feedback
+from .concierge_claims import derive_concierge_lifecycle
 from .genesis_claims import resolve_genesis_claim
-from .parsers import load_runtime_step_artifacts
+from .parsers import (
+    load_concierge_claim_lifecycle,
+    load_concierge_setup_guidance,
+    load_runtime_step_artifacts,
+)
 from .precedence import ResolutionResult, ResolutionSource, resolve_precedence
 from .promotion import PromotionDecision, PromotionEvaluationResult, evaluate_feedback_promotion
 from .promotion_audit import format_promotion_audit
@@ -53,6 +65,13 @@ from .runtime_step import RuntimeStepResult, resolve_runtime_step
 __all__ = [
     "BehaviorSignalEntry",
     "BehaviorSignalType",
+    "ConciergeBlockingReason",
+    "ConciergeClaimLifecycleRecord",
+    "ConciergeClaimStatus",
+    "ConciergeGuidanceStatus",
+    "ConciergeManualCheckpoint",
+    "ConciergeSetupGuidanceRecord",
+    "ConciergeSetupStage",
     "ConflictStatus",
     "DestinationScope",
     "DisclosureLevel",
@@ -98,6 +117,9 @@ __all__ = [
     "evaluate_runtime_readiness",
     "format_provenance_disclosure",
     "format_promotion_audit",
+    "derive_concierge_lifecycle",
+    "load_concierge_claim_lifecycle",
+    "load_concierge_setup_guidance",
     "load_runtime_step_artifacts",
     "normalize_rule_key",
     "resolve_genesis_claim",

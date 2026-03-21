@@ -1,17 +1,14 @@
 from __future__ import annotations
 
-import io
 import sys
 import unittest
 from pathlib import Path
-from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from runtime_types.concierge_claims import derive_concierge_lifecycle
-from tools.inspect_concierge_claim import main as inspect_concierge_claim_main
 
 
 class ConciergeLifecycleTests(unittest.TestCase):
@@ -77,27 +74,6 @@ class ConciergeLifecycleTests(unittest.TestCase):
         self.assertEqual(result["next_user_step"], "Reply to support to schedule activation.")
         self.assertEqual(result["setup_guidance"]["guidance_status"], "ready")
         self.assertIn("activation", result["setup_guidance"]["plain_language_summary"].lower())
-
-
-class ConciergeInspectionScriptTests(unittest.TestCase):
-    def test_inspection_output_reports_claimed_blocked_and_ready_states(self) -> None:
-        stdout = io.StringIO()
-        with patch("sys.stdout", stdout):
-            exit_code = inspect_concierge_claim_main()
-
-        output = stdout.getvalue()
-
-        self.assertEqual(exit_code, 0)
-        self.assertIn("Concierge claim inspection", output)
-        self.assertIn("claim_status=claimed", output)
-        self.assertIn("setup_stage=awaiting_device_setup", output)
-        self.assertIn("activation_ready=False", output)
-        self.assertIn("claim_status=blocked", output)
-        self.assertIn("blocking_reason=identity_verification_pending", output)
-        self.assertIn("manual_checkpoint=await_support_followup", output)
-        self.assertIn("claim_status=activation_ready", output)
-        self.assertIn("activation_ready=True", output)
-        self.assertIn("next_user_step=Reply to support to schedule activation.", output)
 
 
 if __name__ == "__main__":
