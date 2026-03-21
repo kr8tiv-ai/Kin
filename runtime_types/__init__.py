@@ -1,6 +1,15 @@
 from .contracts import (
     BehaviorSignalEntry,
     BehaviorSignalType,
+    CipherContinuityRecord,
+    CipherContinuitySource,
+    CipherContinuityStatus,
+    CipherIdentitySafetyStatus,
+    CipherPersonaAnchorRecord,
+    CipherPersonaMarker,
+    CipherPolicyGuardReason,
+    CipherSpokenMannerMarker,
+    CipherVoiceExpressionRecord,
     ConciergeBlockingReason,
     ConciergeClaimLifecycleRecord,
     ConciergeClaimStatus,
@@ -62,10 +71,14 @@ from .contracts import (
 )
 from .disclosure import DisclosureLevel, DisclosureResult, format_provenance_disclosure
 from .feedback_selection import select_relevant_feedback
+from .cipher_continuity import derive_cipher_continuity
 from .concierge_claims import derive_concierge_lifecycle
 from .genesis_claims import resolve_genesis_claim
 from .telegram_voice_loop import derive_telegram_voice_turn
 from .parsers import (
+    load_cipher_continuity_record,
+    load_cipher_persona_anchor,
+    load_cipher_voice_expression,
     load_concierge_claim_lifecycle,
     load_concierge_setup_guidance,
     load_runtime_step_artifacts,
@@ -85,6 +98,15 @@ from .runtime_step import RuntimeStepResult, resolve_runtime_step
 __all__ = [
     "BehaviorSignalEntry",
     "BehaviorSignalType",
+    "CipherContinuityRecord",
+    "CipherContinuitySource",
+    "CipherContinuityStatus",
+    "CipherIdentitySafetyStatus",
+    "CipherPersonaAnchorRecord",
+    "CipherPersonaMarker",
+    "CipherPolicyGuardReason",
+    "CipherSpokenMannerMarker",
+    "CipherVoiceExpressionRecord",
     "ConciergeBlockingReason",
     "ConciergeClaimLifecycleRecord",
     "ConciergeClaimStatus",
@@ -152,7 +174,11 @@ __all__ = [
     "evaluate_runtime_readiness",
     "format_provenance_disclosure",
     "format_promotion_audit",
+    "derive_cipher_continuity",
     "derive_concierge_lifecycle",
+    "load_cipher_continuity_record",
+    "load_cipher_persona_anchor",
+    "load_cipher_voice_expression",
     "load_concierge_claim_lifecycle",
     "load_concierge_setup_guidance",
     "load_runtime_step_artifacts",
