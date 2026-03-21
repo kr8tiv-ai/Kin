@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BehaviorSignalEntry",
+  "description": "Append-only behavioral evidence about what was adopted, repaired, reverted, or left unused.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "signal_id": {
+      "type": "string",
+      "description": "Stable behavior signal identifier."
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the signal was recorded."
+    },
+    "target": {
+      "type": "string",
+      "enum": ["output", "tone", "design", "workflow", "routing", "teaching", "other"],
+      "description": "What surface the signal applies to."
+    },
+    "signal_type": {
+      "type": "string",
+      "enum": [
+        "suggestion_not_adopted",
+        "user_repair",
+        "repeated_manual_fix",
+        "proposal_reverted",
+        "accepted_without_edit"
+      ],
+      "description": "Observed behavior pattern."
+    },
+    "strength": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "How strong the signal is."
+    },
+    "applied_to": {
+      "type": "string",
+      "description": "Task, artifact, or output identifier."
+    },
+    "source_route": {
+      "type": "string",
+      "enum": ["local", "hybrid", "external"],
+      "description": "Route context where this signal was observed."
+    },
+    "notes": {
+      "type": "string",
+      "description": "Short human-readable explanation of the signal."
+    }
+  },
+  "required": [
+    "signal_id",
+    "timestamp",
+    "target",
+    "signal_type",
+    "strength",
+    "applied_to",
+    "source_route",
+    "notes"
+  ]
+}

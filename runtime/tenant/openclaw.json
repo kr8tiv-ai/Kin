@@ -1,0 +1,37 @@
+{
+  "tenantId": "cipher-solo-demo",
+  "companion": {
+    "name": "Cipher",
+    "title": "Code Kraken",
+    "identityMode": "continuous-friend",
+    "visualCharacterCoherence": true
+  },
+  "channelDefaults": {
+    "telegram": true,
+    "whatsapp": false,
+    "dmPairingRequired": true,
+    "mentionGating": true
+  },
+  "modelPolicy": {
+    "primary": "local-cipher-runtime",
+    "fallbacks": ["gpt-5.4", "gpt-5.4-mini"],
+    "lockRoutes": true,
+    "allowRuntimeOverride": false
+  },
+  "controlPlane": {
+    "packRef": "cipher-code-kraken@1",
+    "telemetryEnabled": true
+  },
+  "memory": {
+    "provider": "supermemory",
+    "transferableStateSeparated": true,
+    "encryptedSecretsExternal": true
+  },
+  "toolContracts": {
+    "notebookQuery": "runtime/tools/notebook-query/schema.json"
+  },
+  "notes": [
+    "This is a minimal runtime-facing JSON surface for Cipher's first product stack.",
+    "Framework-specific fields may need adaptation in later integration slices."
+  ]
+}

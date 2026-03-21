@@ -1,0 +1,11 @@
+{
+  "preference_id": "pref-owner-002",
+  "rule": "Teach more while building instead of only presenting final output.",
+  "scope": "owner",
+  "confidence": 0.85,
+  "evidence_count": 5,
+  "last_confirmed_at": "2026-03-20T18:00:00Z",
+  "conflict_status": "active",
+  "origin_feedback_ids": ["fb-050", "fb-077"],
+  "provenance_level": "hybrid-proven"
+}

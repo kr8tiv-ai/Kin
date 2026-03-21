@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RoutingProvenanceEvent",
+  "description": "Recorded for every material generation, critique, or route change.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "description": "Stable event identifier."
+    },
+    "provider": {
+      "type": "string",
+      "description": "Runtime/provider name."
+    },
+    "model": {
+      "type": "string",
+      "description": "Specific model used."
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["local", "hybrid", "external"],
+      "description": "Execution mode for this event."
+    },
+    "route_reason": {
+      "type": "string",
+      "description": "Why this route was chosen."
+    },
+    "fallback_used": {
+      "type": "boolean",
+      "description": "Whether fallback occurred."
+    },
+    "fallback_refused": {
+      "type": "boolean",
+      "description": "Whether fallback was refused."
+    },
+    "learned_effect_allowed": {
+      "type": "boolean",
+      "description": "Whether this result is allowed to influence future learning."
+    }
+  },
+  "required": [
+    "event_id",
+    "provider",
+    "model",
+    "mode",
+    "route_reason",
+    "fallback_used",
+    "fallback_refused",
+    "learned_effect_allowed"
+  ]
+}

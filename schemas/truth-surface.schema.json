@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TruthSurface",
+  "description": "Conflict-resolved runtime truth surface used before material generation, critique, routing, or action.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "active_spec": {
+      "type": "object",
+      "description": "Current project/task requirements and explicit task intent.",
+      "additionalProperties": true
+    },
+    "active_policy": {
+      "type": "object",
+      "description": "Privacy, safety, tenant, and action restrictions.",
+      "additionalProperties": true
+    },
+    "current_task": {
+      "type": "object",
+      "description": "Current unit, phase, and target outcome.",
+      "additionalProperties": true
+    },
+    "persona_anchor": {
+      "type": "object",
+      "description": "Approved identity/persona surface for continuity.",
+      "additionalProperties": true
+    },
+    "routing_policy": {
+      "type": "object",
+      "description": "Local-first route intent, allowed modes, and escalation triggers.",
+      "additionalProperties": true
+    },
+    "fallback_policy": {
+      "type": "object",
+      "description": "Fallback disclosure, refusal, and approval constraints.",
+      "additionalProperties": true
+    },
+    "critique_policy": {
+      "type": "object",
+      "description": "Evaluation thresholds, allowed critics, and realism constraints.",
+      "additionalProperties": true
+    },
+    "revision_budget": {
+      "type": "object",
+      "description": "Retry ceiling and escalation behavior.",
+      "additionalProperties": true
+    },
+    "active_project_preferences": {
+      "type": "array",
+      "description": "Project-scope learned rules still in force.",
+      "items": {
+        "$ref": "./preference-record.schema.json"
+      }
+    },
+    "active_owner_preferences": {
+      "type": "array",
+      "description": "Owner-scope learned rules still in force.",
+      "items": {
+        "$ref": "./preference-record.schema.json"
+      }
+    },
+    "recent_explicit_feedback": {
+      "type": "array",
+      "description": "Most recent directly relevant corrections and approvals.",
+      "items": {
+        "$ref": "./feedback-ledger-entry.schema.json"
+      }
+    },
+    "recent_behavior_signals": {
+      "type": "array",
+      "description": "Recent behavioral evidence about repair, non-adoption, reversion, or clean acceptance.",
+      "items": {
+        "$ref": "./behavior-signal-entry.schema.json"
+      }
+    },
+    "disclosure_state": {
+      "type": "object",
+      "description": "What the user must be told about routing/provenance.",
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "active_spec",
+    "active_policy",
+    "current_task",
+    "persona_anchor",
+    "routing_policy",
+    "fallback_policy",
+    "critique_policy",
+    "revision_budget",
+    "active_project_preferences",
+    "active_owner_preferences",
+    "recent_explicit_feedback",
+    "recent_behavior_signals",
+    "disclosure_state"
+  ]
+}

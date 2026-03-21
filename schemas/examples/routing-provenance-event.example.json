@@ -1,0 +1,10 @@
+{
+  "event_id": "route-301",
+  "provider": "local-ollama",
+  "model": "agency-coder-q4",
+  "mode": "local",
+  "route_reason": "Routine in-scope design revision under local-first policy.",
+  "fallback_used": false,
+  "fallback_refused": false,
+  "learned_effect_allowed": true
+}

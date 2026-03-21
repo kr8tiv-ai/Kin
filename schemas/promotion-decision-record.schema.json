@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PromotionDecisionRecord",
+  "description": "Captured whenever feedback changes longer-lived behavior.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "decision_id": {
+      "type": "string",
+      "description": "Stable decision identifier."
+    },
+    "promoted_rule": {
+      "type": "string",
+      "description": "New or updated preference rule."
+    },
+    "source_feedback_ids": {
+      "type": "array",
+      "description": "Source feedback identifiers supporting this decision.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "destination_scope": {
+      "type": "string",
+      "enum": ["project", "owner"],
+      "description": "Scope the preference was promoted into."
+    },
+    "evidence_summary": {
+      "type": "string",
+      "description": "Why promotion happened."
+    },
+    "override_conditions": {
+      "type": "string",
+      "description": "What can supersede this rule."
+    },
+    "decision_timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When promotion happened."
+    }
+  },
+  "required": [
+    "decision_id",
+    "promoted_rule",
+    "source_feedback_ids",
+    "destination_scope",
+    "evidence_summary",
+    "override_conditions",
+    "decision_timestamp"
+  ]
+}

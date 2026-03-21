@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "FeedbackLedgerEntry",
+  "description": "Append-only explicit feedback record.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "feedback_id": {
+      "type": "string",
+      "description": "Stable feedback identifier."
+    },
+    "feedback_text": {
+      "type": "string",
+      "description": "Original human-meaningful feedback."
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the feedback was recorded."
+    },
+    "scope_requested": {
+      "type": "string",
+      "enum": ["turn", "project", "owner", "unspecified"],
+      "description": "Requested scope of change."
+    },
+    "target": {
+      "type": "string",
+      "enum": ["output", "tone", "design", "workflow", "routing", "teaching", "other"],
+      "description": "What the feedback applies to."
+    },
+    "polarity": {
+      "type": "string",
+      "enum": ["positive", "negative", "correction"],
+      "description": "Whether the feedback is approval, rejection, or correction."
+    },
+    "source": {
+      "type": "string",
+      "enum": ["user", "reviewer", "system"],
+      "description": "Where the feedback came from."
+    },
+    "applied_to": {
+      "type": "string",
+      "description": "Task, artifact, or output identifier."
+    },
+    "promotion_status": {
+      "type": "string",
+      "enum": ["local-only", "promoted", "rejected", "expired"],
+      "description": "Current promotion state of the feedback."
+    },
+    "provenance": {
+      "type": "string",
+      "enum": ["local-proven", "hybrid-proven", "external-only", "not-yet-proven"],
+      "description": "What route context established this feedback."
+    }
+  },
+  "required": [
+    "feedback_id",
+    "feedback_text",
+    "timestamp",
+    "scope_requested",
+    "target",
+    "polarity",
+    "source",
+    "applied_to",
+    "promotion_status",
+    "provenance"
+  ]
+}

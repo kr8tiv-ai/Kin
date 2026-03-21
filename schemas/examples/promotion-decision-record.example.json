@@ -1,0 +1,9 @@
+{
+  "decision_id": "promote-401",
+  "promoted_rule": "Teach more while building instead of only presenting final output.",
+  "source_feedback_ids": ["fb-050", "fb-077"],
+  "destination_scope": "owner",
+  "evidence_summary": "Preference repeated across multiple tasks and positively reinforced by the user.",
+  "override_conditions": "Superseded by active spec or explicit contradictory owner feedback.",
+  "decision_timestamp": "2026-03-20T18:10:00Z"
+}

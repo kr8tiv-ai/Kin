@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PreferenceRecord",
+  "description": "Normalized learned rule derived from one or more feedback items.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "preference_id": {
+      "type": "string",
+      "description": "Stable preference identifier."
+    },
+    "rule": {
+      "type": "string",
+      "description": "Human-readable normalized preference rule."
+    },
+    "scope": {
+      "type": "string",
+      "enum": ["project", "owner"],
+      "description": "Durable scope of the preference."
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Confidence score based on evidence."
+    },
+    "evidence_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of supporting feedback or success events."
+    },
+    "last_confirmed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Most recent confirmation timestamp."
+    },
+    "conflict_status": {
+      "type": "string",
+      "enum": ["active", "superseded", "contradicted", "paused"],
+      "description": "Current conflict state of the preference."
+    },
+    "origin_feedback_ids": {
+      "type": "array",
+      "description": "Source feedback identifiers.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "provenance_level": {
+      "type": "string",
+      "enum": ["local-proven", "hybrid-proven", "external-only"],
+      "description": "What route context validated the preference."
+    }
+  },
+  "required": [
+    "preference_id",
+    "rule",
+    "scope",
+    "confidence",
+    "evidence_count",
+    "last_confirmed_at",
+    "conflict_status",
+    "origin_feedback_ids",
+    "provenance_level"
+  ]
+}

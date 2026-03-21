@@ -1,0 +1,85 @@
+{
+  "active_spec": {
+    "milestone": "M003-2cpdzh",
+    "slice": "S05",
+    "goal": "Keep local-first primary while allowing governed fallback and scoped learning.",
+    "resolved_rules": {
+      "routing.prefer_local": true
+    }
+  },
+  "active_policy": {
+    "privacy_mode": "local-first",
+    "cross_tenant_learning": false,
+    "fallback_allowed": true
+  },
+  "current_task": {
+    "task_id": "example-task-001",
+    "phase": "generation",
+    "target_outcome": "Produce a revised website direction after explicit feedback."
+  },
+  "persona_anchor": {
+    "companion": "Cipher / Code Kraken",
+    "tone": "playful, sharp, design-obsessed"
+  },
+  "routing_policy": {
+    "default_mode": "local",
+    "high_complexity_allows_hybrid": true
+  },
+  "fallback_policy": {
+    "must_disclose_material_external_help": true,
+    "refuse_on_local_only_tasks": true
+  },
+  "critique_policy": {
+    "max_revision_rounds": 2,
+    "prefer_deterministic_checks": true
+  },
+  "revision_budget": {
+    "remaining": 1,
+    "on_exhaustion": "pause-or-escalate"
+  },
+  "active_project_preferences": [
+    {
+      "preference_id": "pref-project-001",
+      "rule": "Keep the visual direction restrained and less glossy for this project.",
+      "scope": "project",
+      "confidence": 0.9,
+      "evidence_count": 3,
+      "last_confirmed_at": "2026-03-20T18:30:00Z",
+      "conflict_status": "active",
+      "origin_feedback_ids": ["fb-101", "fb-104"],
+      "provenance_level": "local-proven"
+    }
+  ],
+  "active_owner_preferences": [
+    {
+      "preference_id": "pref-owner-002",
+      "rule": "Teach more while building instead of only presenting final output.",
+      "scope": "owner",
+      "confidence": 0.85,
+      "evidence_count": 5,
+      "last_confirmed_at": "2026-03-20T18:00:00Z",
+      "conflict_status": "active",
+      "origin_feedback_ids": ["fb-050", "fb-077"],
+      "provenance_level": "hybrid-proven"
+    }
+  ],
+  "recent_explicit_feedback": [
+    {
+      "feedback_id": "fb-201",
+      "feedback_text": "Less glossy. Simpler hero. Keep it local if you can.",
+      "timestamp": "2026-03-20T18:45:00Z",
+      "scope_requested": "turn",
+      "target": "design",
+      "polarity": "correction",
+      "source": "user",
+      "applied_to": "example-task-001",
+      "promotion_status": "local-only",
+      "provenance": "not-yet-proven"
+    }
+  ],
+  "recent_behavior_signals": [],
+  "disclosure_state": {
+    "must_disclose_current_route": true,
+    "current_route_label": "local"
+  }
+}

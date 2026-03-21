@@ -1,0 +1,12 @@
+{
+  "feedback_id": "fb-201",
+  "feedback_text": "Less glossy. Simpler hero. Keep it local if you can.",
+  "timestamp": "2026-03-20T18:45:00Z",
+  "scope_requested": "turn",
+  "target": "design",
+  "polarity": "correction",
+  "source": "user",
+  "applied_to": "example-task-001",
+  "promotion_status": "local-only",
+  "provenance": "not-yet-proven"
+}
