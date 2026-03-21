@@ -67,7 +67,10 @@ class CipherContinuityCompositionTests(unittest.TestCase):
     def test_inspect_cipher_continuity_cli_stdout_is_stable(self) -> None:
         output = io.StringIO()
         with contextlib.redirect_stdout(output):
-            runpy.run_path(str(ROOT / "tools" / "inspect_cipher_continuity.py"), run_name="__main__")
+            with self.assertRaises(SystemExit) as exit_ctx:
+                runpy.run_path(str(ROOT / "tools" / "inspect_cipher_continuity.py"), run_name="__main__")
+
+        self.assertEqual(exit_ctx.exception.code, 0)
 
         self.assertEqual(
             output.getvalue().strip(),
