@@ -32,6 +32,8 @@ A good starting note for the public shape of the work is:
 - Telegram voice-turn derivation gated by concierge lifecycle truth plus a support-safe inspection restore point
 - Cipher continuity derivation that preserves bounded persona and spoken-manner markers plus a support-safe inspection restore point
 - website-specialist harness derivation that composes concierge activation truth, Telegram continuity, Cipher continuity, and routing provenance into one operator-facing restore point
+- design-teaching and research derivation that composes website-specialist harness with bounded lesson summaries and research provenance
+- taste-adaptation memory boundary derivation that composes S05 truth with preference, feedback, behavior-signal, and precedence helpers
 - provenance disclosure formatting for local, hybrid, external, and fallback-refused paths
 - feedback promotion decisions with behavioral shaping
 - scope-aware explicit feedback selection
@@ -74,6 +76,25 @@ The S05 proof is intentionally support-safe:
 Recommended S05 verification commands:
 - `python -m unittest tests.test_design_teaching_research`
 - `python tools/inspect_design_teaching_research.py`
+- `python tools/validate_schemas.py`
+
+## S06 taste adaptation and memory boundary loop
+S06 adds a dedicated taste-adaptation memory boundary seam that composes canonical S05 design-teaching/research truth with existing preference, feedback, behavior-signal, and precedence helpers:
+- `runtime_types.taste_adaptation_memory_boundary.derive_taste_adaptation_record(...)`
+- `tools/inspect_taste_adaptation_memory_boundary.py`
+- `tests/test_taste_adaptation_memory_boundary.py`
+- `schemas/examples/taste-adaptation-record.*.example.json`
+
+That seam exposes active taste signals, suppressed taste signals with explicit reasons, preserved decisions versus changed decisions, and spec-precedence outcomes on top of canonical S05 records. It enables Cipher to adapt to owner taste and preserved decisions without overriding the active spec, laundering hybrid/external wins into owner memory, or becoming creepy.
+
+The S06 implementation is support-safe and memory-bounded:
+- it summarizes signals and decisions with suppression/provenance/precedence metadata
+- it excludes raw transcripts, raw references, intimate profile memory, or alternate storage models
+- it preserves spec precedence and project intent over learned taste when conflicts exist
+
+Recommended S06 verification commands:
+- `python -m unittest tests.test_taste_adaptation_memory_boundary`
+- `python tools/inspect_taste_adaptation_memory_boundary.py`
 - `python tools/validate_schemas.py`
 
 ## Telegram voice, Cipher continuity, and website-specialist inspection seams
