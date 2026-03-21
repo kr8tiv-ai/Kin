@@ -64,6 +64,7 @@ from .disclosure import DisclosureLevel, DisclosureResult, format_provenance_dis
 from .feedback_selection import select_relevant_feedback
 from .concierge_claims import derive_concierge_lifecycle
 from .genesis_claims import resolve_genesis_claim
+from .telegram_voice_loop import derive_telegram_voice_turn
 from .parsers import (
     load_concierge_claim_lifecycle,
     load_concierge_setup_guidance,

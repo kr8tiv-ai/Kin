@@ -11,6 +11,7 @@ if str(ROOT) not in sys.path:
 
 from runtime_types.disclosure import format_provenance_disclosure
 from runtime_types.feedback_selection import select_relevant_feedback
+from runtime_types.telegram_voice_loop import derive_telegram_voice_turn
 from runtime_types.parsers import (
     load_behavior_signal_entry,
     load_concierge_claim_lifecycle,
