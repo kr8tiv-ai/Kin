@@ -1,0 +1,362 @@
+{
+  "record_id": "integrated-harness-truth-healthy-001",
+  "schema_family": "s08_integrated_harness_truth",
+  "concierge_lifecycle": {
+    "claim_id": "claim-integrated-001",
+    "claimant_label": "demo-owner-integrated",
+    "claim_status": "activation_ready",
+    "setup_stage": "setup_complete",
+    "blocking_reason": null,
+    "manual_checkpoint": null,
+    "activation_ready": true,
+    "next_user_step": "Cipher is ready to help.",
+    "setup_guidance": {
+      "guidance_id": "guide-integrated-001",
+      "guidance_status": "ready",
+      "plain_language_summary": "Setup complete.",
+      "next_user_step": "Send a voice message anytime.",
+      "blocking_reason": null,
+      "manual_checkpoint": null,
+      "support_safe_notes": "Owner onboarded."
+    }
+  },
+  "telegram_voice_turn": {
+    "turn_id": "turn-integrated-001",
+    "voice_turn_status": "activation_ready",
+    "activation_gate": { "status": "ready", "blocked_reason": null },
+    "inbound_voice_note": {
+      "message_id": "msg-integrated-001",
+      "transcript": {
+        "status": "available",
+        "transcript_text": "Help me build a landing page",
+        "confidence": "high",
+        "redaction_level": null,
+        "support_safe_summary": "Owner requested website help."
+      },
+      "intent_surface": {
+        "intent_summary": "Website request",
+        "desired_outcome_summary": "New landing page",
+        "support_safe_summary": "Website work requested."
+      }
+    },
+    "voice_reply": {
+      "reply_status": "voiced",
+      "delivery_channel": "telegram_voice_note",
+      "voice_style": "concierge_warm",
+      "support_safe_summary": "Cipher acknowledged request."
+    },
+    "continuity": {
+      "continuity_status": "same_session",
+      "memory_scope": "session_only",
+      "session_ref": "session-integrated-001"
+    },
+    "support_safe_summary": "Voice turn complete, specialist routing next."
+  },
+  "cipher_continuity": {
+    "continuity_id": "continuity-integrated-001",
+    "continuity_status": "activation_ready",
+    "continuity_source": "telegram_voice_turn",
+    "identity_safety_status": "identity_safe",
+    "drift_guard_triggered": false,
+    "active_persona_anchor": {
+      "anchor_id": "anchor-integrated-001",
+      "persona_markers": ["cipher_bloodline", "mission_control_governed", "support_safe"],
+      "identity_brief": "Cipher companion"
+    },
+    "active_voice_expression": {
+      "expression_id": "expr-integrated-001",
+      "spoken_manner_markers": ["warmth", "confident_guidance"],
+      "voice_brief": "Warm and helpful"
+    },
+    "continuity_marker_summary": "Cipher identity active",
+    "carryover_source_ref": null,
+    "guardrail_reasons": [],
+    "policy_summary": "Identity verified, no drift."
+  },
+  "website_specialist_harness": {
+    "harness_id": "harness-integrated-001",
+    "request": {
+      "request_id": "req-integrated-001",
+      "request_source": "telegram_voice_turn",
+      "request_status": "activation_ready",
+      "support_safe_request_summary": "Landing page request",
+      "desired_outcome_summary": "Modern landing page",
+      "activation_ready": true,
+      "activation_ref": "activation-integrated-001",
+      "voice_turn_ref": "turn-integrated-001",
+      "continuity_ref": null,
+      "requested_capability": "landing_page"
+    },
+    "execution": {
+      "execution_id": "exec-integrated-001",
+      "specialist_status": "completed",
+      "task_phase": "delivered",
+      "route": {
+        "event_id": "route-integrated-001",
+        "route_mode": "local",
+        "provenance_level": "local-proven",
+        "local_model_id": "cipher-specialist-v1",
+        "fallback_model_id": null,
+        "fallback_reason": null,
+        "disclosure_level": "brief",
+        "disclosure_text": "Generated locally by Cipher.",
+        "support_safe_summary": "Local generation."
+      },
+      "disclosure_level": "brief",
+      "disclosure_text": "Generated locally by Cipher.",
+      "support_safe_status_summary": "Delivered locally.",
+      "continuity_carryover_refs": [],
+      "persona_markers": ["cipher_bloodline"],
+      "spoken_manner_markers": ["warmth"],
+      "fallback_refused": false
+    },
+    "support_safe_outcome_summary": "Landing page delivered via local specialist.",
+    "activation_handoff_status": "handed_off"
+  },
+  "design_teaching_research": {
+    "record_id": "dtr-integrated-001",
+    "schema_family": "s05_design_teaching_research",
+    "harness": {
+      "harness_id": "harness-integrated-001",
+      "request": {
+        "request_id": "req-integrated-001",
+        "request_source": "telegram_voice_turn",
+        "request_status": "activation_ready",
+        "support_safe_request_summary": "Landing page",
+        "desired_outcome_summary": "Modern landing page",
+        "activation_ready": true,
+        "activation_ref": "activation-integrated-001",
+        "voice_turn_ref": "turn-integrated-001",
+        "continuity_ref": null,
+        "requested_capability": "landing_page"
+      },
+      "execution": {
+        "execution_id": "exec-integrated-001",
+        "specialist_status": "completed",
+        "task_phase": "delivered",
+        "route": {
+          "event_id": "route-integrated-001",
+          "route_mode": "local",
+          "provenance_level": "local-proven",
+          "local_model_id": "cipher-specialist-v1",
+          "fallback_model_id": null,
+          "fallback_reason": null,
+          "disclosure_level": "brief",
+          "disclosure_text": "Generated locally.",
+          "support_safe_summary": "Local."
+        },
+        "disclosure_level": "brief",
+        "disclosure_text": "Generated locally.",
+        "support_safe_status_summary": "Delivered.",
+        "continuity_carryover_refs": [],
+        "persona_markers": ["cipher_bloodline"],
+        "spoken_manner_markers": ["warmth"],
+        "fallback_refused": false
+      },
+      "support_safe_outcome_summary": "Delivered.",
+      "activation_handoff_status": "handed_off"
+    },
+    "teaching": {
+      "teaching_status": "teaching",
+      "lesson_summary": "Used a hero section with clear value prop.",
+      "design_choice_explanation": "Hero sections convert best for landing pages.",
+      "anti_slop_rationale": "Avoided generic AI template patterns.",
+      "next_step_guidance": "Consider A/B testing the CTA text."
+    },
+    "research": {
+      "research_status": "referenced",
+      "provenance_mode": "current_reference",
+      "freshness_label": "current_week",
+      "disclosure_level": "brief",
+      "disclosure_text": "Referenced current landing page patterns.",
+      "signal_summary": "Found 3 current references.",
+      "provenance_summary": "Web search for 2024 landing page trends."
+    },
+    "support_safe_summary": "Teaching active, research current."
+  },
+  "taste_adaptation": {
+    "record_id": "ta-integrated-001",
+    "schema_family": "s06_taste_adaptation",
+    "design_teaching_research": {
+      "record_id": "dtr-integrated-001",
+      "schema_family": "s05_design_teaching_research",
+      "harness": {
+        "harness_id": "harness-integrated-001",
+        "request": {
+          "request_id": "req-integrated-001",
+          "request_source": "telegram_voice_turn",
+          "request_status": "activation_ready",
+          "support_safe_request_summary": "Landing page",
+          "desired_outcome_summary": "Modern landing page",
+          "activation_ready": true,
+          "activation_ref": "activation-integrated-001",
+          "voice_turn_ref": "turn-integrated-001",
+          "continuity_ref": null,
+          "requested_capability": "landing_page"
+        },
+        "execution": {
+          "execution_id": "exec-integrated-001",
+          "specialist_status": "completed",
+          "task_phase": "delivered",
+          "route": {
+            "event_id": "route-integrated-001",
+            "route_mode": "local",
+            "provenance_level": "local-proven",
+            "local_model_id": "cipher-specialist-v1",
+            "fallback_model_id": null,
+            "fallback_reason": null,
+            "disclosure_level": "brief",
+            "disclosure_text": "Local.",
+            "support_safe_summary": "Local."
+          },
+          "disclosure_level": "brief",
+          "disclosure_text": "Local.",
+          "support_safe_status_summary": "Delivered.",
+          "continuity_carryover_refs": [],
+          "persona_markers": [],
+          "spoken_manner_markers": [],
+          "fallback_refused": false
+        },
+        "support_safe_outcome_summary": "Delivered.",
+        "activation_handoff_status": "handed_off"
+      },
+      "teaching": {
+        "teaching_status": "teaching",
+        "lesson_summary": "Hero section.",
+        "design_choice_explanation": "Best practice.",
+        "anti_slop_rationale": "Avoided templates.",
+        "next_step_guidance": "Test CTA."
+      },
+      "research": {
+        "research_status": "referenced",
+        "provenance_mode": "current_reference",
+        "freshness_label": "current_week",
+        "disclosure_level": "brief",
+        "disclosure_text": "Current patterns.",
+        "signal_summary": "3 references.",
+        "provenance_summary": "Web search."
+      },
+      "support_safe_summary": "Teaching active."
+    },
+    "active_taste_signals": [],
+    "suppressed_taste_signals": [
+      {
+        "signal_id": "signal-suppressed-001",
+        "status": "suppressed",
+        "target": "design",
+        "scope": "project",
+        "source_kind": "behavior_signal",
+        "source_reference": "owner-preference-dark-mode",
+        "provenance_level": "local-proven",
+        "evidence_class": "observed_behavior",
+        "summary": "Owner prefers dark mode",
+        "rationale": "Observed in prior session",
+        "suppression_reason": "active_spec_override",
+        "precedence_reference": "spec-requires-light-theme",
+        "warning_flags": []
+      }
+    ],
+    "preserved_decisions": [
+      {
+        "decision_id": "decision-preserved-001",
+        "decision_status": "preserved",
+        "target": "design",
+        "decision_summary": "Hero section style preserved",
+        "reason": "Owner approved in prior session",
+        "evidence_class": "explicit_feedback",
+        "source_reference": "feedback-001",
+        "provenance_level": "local-proven",
+        "route_mode": "local",
+        "warning_flags": []
+      }
+    ],
+    "changed_decisions": [],
+    "precedence_summaries": [
+      {
+        "precedence_id": "precedence-001",
+        "target": "design",
+        "winner_source": "active_spec",
+        "winner_summary": "Light theme required by spec",
+        "suppressed_signal_id": "signal-suppressed-001",
+        "suppression_reason": "active_spec_override",
+        "reason": "Spec requires light theme for accessibility",
+        "project_preference_applied": false,
+        "owner_preference_applied": false,
+        "feedback_applied": false
+      }
+    ],
+    "support_safe_summary": "1 adaptation signal suppressed for spec compliance."
+  },
+  "managed_service_posture": {
+    "record_id": "msp-integrated-001",
+    "schema_family": "s07_managed_service_posture",
+    "concierge_lifecycle": {
+      "claim_id": "claim-integrated-001",
+      "claimant_label": "demo-owner-integrated",
+      "claim_status": "activation_ready",
+      "setup_stage": "setup_complete",
+      "blocking_reason": null,
+      "manual_checkpoint": null,
+      "activation_ready": true,
+      "next_user_step": "Ready to help.",
+      "setup_guidance": {
+        "guidance_id": "guide-integrated-001",
+        "guidance_status": "ready",
+        "plain_language_summary": "Setup complete.",
+        "next_user_step": "Send a voice message.",
+        "blocking_reason": null,
+        "manual_checkpoint": null,
+        "support_safe_notes": "Onboarded."
+      }
+    },
+    "website_specialist_harness": null,
+    "tailscale_access": {
+      "status": "connected",
+      "device_name": "cipher-001",
+      "tailnet_name": "kin-operators",
+      "last_seen_summary": "Just now",
+      "setup_step": "complete",
+      "support_safe_notes": "Connected."
+    },
+    "computer_setup_guidance": {
+      "guidance_id": "csg-integrated-001",
+      "guidance_status": "ready",
+      "plain_language_summary": "Computer connected.",
+      "next_owner_step": "No steps needed.",
+      "estimated_time_summary": "Complete",
+      "support_safe_notes": "Ready."
+    },
+    "backup_state": {
+      "status": "healthy",
+      "last_backup_summary": "Today",
+      "backup_health_summary": "Healthy",
+      "recommended_action": "None",
+      "support_safe_notes": "Healthy."
+    },
+    "intervention_state": {
+      "status": "none",
+      "intervention_type": null,
+      "plain_language_summary": "No issues.",
+      "owner_action_required": false,
+      "estimated_resolution_summary": null,
+      "support_safe_notes": "None needed."
+    },
+    "support_readiness": {
+      "status": "ready",
+      "can_receive_support": true,
+      "support_channel_summary": "Telegram available.",
+      "known_limitations": []
+    },
+    "overall_posture": "healthy",
+    "support_safe_summary": "All systems healthy."
+  },
+  "local_first_honesty": {
+    "onboarding_honest": true,
+    "voice_loop_honest": true,
+    "specialist_local_ratio": 1.0,
+    "teaching_active": true,
+    "adaptation_bounded": true,
+    "managed_service_visible": true
+  },
+  "support_safe_summary": "Onboarding complete. Voice loop active. Specialist mostly local. Teaching active. 1 adaptation signal suppressed. Managed service healthy."
+}

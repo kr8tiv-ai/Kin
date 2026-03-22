@@ -526,3 +526,104 @@ class TasteAdaptationRecord(TypedDict):
     changed_decisions: list[AdaptationDecisionSummary]
     precedence_summaries: list[SpecPrecedenceSummary]
     support_safe_summary: str
+
+
+# S07: Managed Service Posture
+
+TailscaleAccessStatusType: TypeAlias = Literal["connected", "disconnected", "needs_setup", "error"]
+ComputerSetupGuidanceStatus: TypeAlias = Literal["ready", "needs_action", "blocked"]
+BackupStateStatus: TypeAlias = Literal["healthy", "stale", "none", "error"]
+InterventionStateStatus: TypeAlias = Literal["none", "pending", "in_progress", "resolved", "escalated"]
+SupportReadinessStatus: TypeAlias = Literal["ready", "degraded", "unavailable"]
+ManagedServiceOverallPosture: TypeAlias = Literal["healthy", "needs_attention", "recovering"]
+S07SchemaFamily: TypeAlias = Literal["s07_managed_service_posture"]
+
+
+class TailscaleAccessStatus(TypedDict):
+    status: TailscaleAccessStatusType
+    device_name: str | None
+    tailnet_name: str | None
+    last_seen_summary: str | None
+    setup_step: str | None
+    support_safe_notes: str
+
+
+class ComputerSetupGuidance(TypedDict):
+    guidance_id: str
+    guidance_status: ComputerSetupGuidanceStatus
+    plain_language_summary: str
+    next_owner_step: str
+    estimated_time_summary: str | None
+    support_safe_notes: str
+
+
+class BackupState(TypedDict):
+    status: BackupStateStatus
+    last_backup_summary: str
+    backup_health_summary: str | None
+    recommended_action: str | None
+    support_safe_notes: str
+
+
+class InterventionState(TypedDict):
+    status: InterventionStateStatus
+    intervention_type: str | None
+    plain_language_summary: str
+    owner_action_required: bool
+    estimated_resolution_summary: str | None
+    support_safe_notes: str
+
+
+class SupportReadiness(TypedDict):
+    status: SupportReadinessStatus
+    can_receive_support: bool
+    support_channel_summary: str | None
+    known_limitations: list[str]
+
+
+class ManagedServicePostureRecord(TypedDict):
+    record_id: str
+    schema_family: S07SchemaFamily
+    concierge_lifecycle: ConciergeClaimLifecycleRecord
+    website_specialist_harness: WebsiteSpecialistHarnessRecord | None
+    tailscale_access: TailscaleAccessStatus
+    computer_setup_guidance: ComputerSetupGuidance
+    backup_state: BackupState
+    intervention_state: InterventionState
+    support_readiness: SupportReadiness
+    overall_posture: ManagedServiceOverallPosture
+    support_safe_summary: str
+
+
+# S08: Integrated Harness Truth
+
+S08SchemaFamily: TypeAlias = Literal["s08_integrated_harness_truth"]
+
+
+class LocalFirstHonesty(TypedDict):
+    """Computed field showing local-first honesty across the harness."""
+    onboarding_honest: bool
+    voice_loop_honest: bool
+    specialist_local_ratio: float
+    teaching_active: bool
+    adaptation_bounded: bool
+    managed_service_visible: bool
+
+
+class IntegratedHarnessTruthRecord(TypedDict):
+    """Integrated truth surface composing all upstream slices.
+
+    Proves onboarding, voice, specialist routing, teaching, adaptation,
+    and managed-service honesty work together without overclaiming capability.
+    """
+    record_id: str
+    schema_family: S08SchemaFamily
+    concierge_lifecycle: ConciergeClaimLifecycleRecord
+    telegram_voice_turn: TelegramVoiceTurnRecord
+    cipher_continuity: CipherContinuityRecord
+    website_specialist_harness: WebsiteSpecialistHarnessRecord
+    design_teaching_research: DesignTeachingResearchRecord
+    taste_adaptation: TasteAdaptationRecord
+    managed_service_posture: ManagedServicePostureRecord
+    local_first_honesty: LocalFirstHonesty
+    support_safe_summary: str

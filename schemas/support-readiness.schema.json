@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SupportReadiness",
+  "description": "Support readiness status showing whether managed service can receive support and known limitations.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": ["ready", "degraded", "unavailable"]
+    },
+    "can_receive_support": { "type": "boolean" },
+    "support_channel_summary": { "type": "string" },
+    "known_limitations": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "required": ["status", "can_receive_support"]
+}

@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ComputerSetupGuidance",
+  "description": "Non-technical computer-setup guidance for owners who do not understand infrastructure, showing simple next steps without exposing internal system details.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "guidance_id": { "type": "string" },
+    "guidance_status": {
+      "type": "string",
+      "enum": ["ready", "needs_user_action", "blocked"]
+    },
+    "plain_language_summary": { "type": "string" },
+    "next_owner_step": { "type": "string" },
+    "estimated_time_summary": { "type": "string" },
+    "support_safe_notes": { "type": "string" }
+  },
+  "required": ["guidance_id", "guidance_status", "plain_language_summary", "next_owner_step", "support_safe_notes"]
+}

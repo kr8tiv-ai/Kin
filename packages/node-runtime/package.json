@@ -1,0 +1,13 @@
+{
+  "name": "@kr8tiv-ai/node-runtime-truth",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Minimal Node persistence seam for KR8TIV runtime truth contracts.",
+  "scripts": {
+    "test": "node --test"
+  },
+  "dependencies": {
+    "atomically": "^2.0.3"
+  }
+}

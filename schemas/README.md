@@ -123,6 +123,30 @@ Those records are intentionally composed rather than flattened:
 
 Future runtimes should inspect S04 schemas when the question is about route honesty and website-specialist execution truth, and inspect S05 schemas when the question is about design-teaching posture, bounded research provenance, and anti-slop explanation layered on top of that S04 truth.
 
+## S06 taste adaptation and memory boundary seam
+S06 adds a dedicated support-safe contract family on top of the canonical S05 design-teaching-research seam:
+- `taste-signal-summary.schema.json`
+- `adaptation-decision-summary.schema.json`
+- `spec-precedence-summary.schema.json`
+- `taste-adaptation-record.schema.json`
+- `examples/taste-adaptation-record.spec-suppressed.example.json`
+- `examples/taste-adaptation-record.preserved-decisions.example.json`
+- `examples/taste-adaptation-record.hybrid-guarded.example.json`
+
+Those records are intentionally composed rather than standalone:
+- the canonical S05 `design-teaching-research-record` remains nested under `design_teaching_research`
+- S06 adds bounded `active_taste_signals`, `suppressed_taste_signals`, `preserved_decisions`, `changed_decisions`, and `precedence_summaries` arrays
+- the seam exposes active/suppressed taste signals with reasons, preserved vs changed decisions, precedence winners, and support-safe summaries
+- it does **not** embed raw feedback text, transcripts, private memory, raw reference dumps, or intimate owner profile fields
+
+The S06 seam enables Cipher to adapt to owner taste and preserved decisions while:
+- preserving active spec and project intent as higher priority than learned taste
+- keeping conflicting learned signals visible as suppressed with explicit reasons
+- preventing hybrid/external wins from laundering into owner memory without local confirmation
+- maintaining anti-creepy boundaries and support-safe summaries
+
+Future runtimes should inspect S05 schemas when the question is about design-teaching and research truth, and inspect S06 schemas when the question is about taste adaptation, memory-boundary guarding, and precedence outcomes layered on top of that S05 truth.
+
 ## Validation harness
 Run:
 - `python tools/validate_schemas.py`

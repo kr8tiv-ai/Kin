@@ -4,23 +4,30 @@ from typing import Any, cast
 
 from .contracts import (
     AdaptationDecisionSummary,
+    BackupState,
     BehaviorSignalEntry,
     CipherContinuityRecord,
     CipherPersonaAnchorRecord,
     CipherVoiceExpressionRecord,
+    ComputerSetupGuidance,
     ConciergeClaimLifecycleRecord,
     ConciergeSetupGuidanceRecord,
     DesignResearchSummary,
     DesignTeachingResearchRecord,
     DesignTeachingSummary,
     FeedbackLedgerEntry,
+    IntegratedHarnessTruthRecord,
+    InterventionState,
+    ManagedServicePostureRecord,
     PreferenceRecord,
     PromotionDecisionRecord,
     RoutingProvenanceEvent,
     RuntimeStepArtifacts,
     SpecPrecedenceSummary,
+    SupportReadiness,
     TasteAdaptationRecord,
     TasteSignalSummary,
+    TailscaleAccessStatus,
     TelegramVoiceContinuityRecord,
     TelegramVoiceReplyRecord,
     TelegramVoiceTranscriptRecord,
@@ -213,4 +220,53 @@ def load_taste_adaptation_record(data: object) -> TasteAdaptationRecord:
     return cast(
         TasteAdaptationRecord,
         _load("taste-adaptation-record.schema.json", data, "TasteAdaptationRecord"),
+    )
+
+
+def load_tailscale_access_status(data: object) -> TailscaleAccessStatus:
+    return cast(
+        TailscaleAccessStatus,
+        _load("tailscale-access-status.schema.json", data, "TailscaleAccessStatus"),
+    )
+
+
+def load_computer_setup_guidance(data: object) -> ComputerSetupGuidance:
+    return cast(
+        ComputerSetupGuidance,
+        _load("computer-setup-guidance.schema.json", data, "ComputerSetupGuidance"),
+    )
+
+
+def load_backup_state(data: object) -> BackupState:
+    return cast(
+        BackupState,
+        _load("backup-state.schema.json", data, "BackupState"),
+    )
+
+
+def load_intervention_state(data: object) -> InterventionState:
+    return cast(
+        InterventionState,
+        _load("intervention-state.schema.json", data, "InterventionState"),
+    )
+
+
+def load_support_readiness(data: object) -> SupportReadiness:
+    return cast(
+        SupportReadiness,
+        _load("support-readiness.schema.json", data, "SupportReadiness"),
+    )
+
+
+def load_managed_service_posture_record(data: object) -> ManagedServicePostureRecord:
+    return cast(
+        ManagedServicePostureRecord,
+        _load("managed-service-posture-record.schema.json", data, "ManagedServicePostureRecord"),
+    )
+
+
+def load_integrated_harness_truth_record(data: object) -> IntegratedHarnessTruthRecord:
+    return cast(
+        IntegratedHarnessTruthRecord,
+        _load("integrated-harness-truth-record.schema.json", data, "IntegratedHarnessTruthRecord"),
     )

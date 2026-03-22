@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TailscaleAccessStatus",
+  "description": "Support-safe Tailscale access status showing connection state without exposing auth keys, raw logs, or infrastructure credentials.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": ["connected", "disconnected", "needs_setup", "error"]
+    },
+    "device_name": { "type": ["string", "null"] },
+    "tailnet_name": { "type": ["string", "null"] },
+    "last_seen_summary": { "type": ["string", "null"] },
+    "setup_step": { "type": ["string", "null"] },
+    "support_safe_notes": { "type": "string" }
+  },
+  "required": ["status", "support_safe_notes"]
+}

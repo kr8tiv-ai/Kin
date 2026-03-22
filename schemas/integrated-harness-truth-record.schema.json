@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "IntegratedHarnessTruthRecord",
+  "description": "Integrated truth surface composing all upstream slices (S01-S07), proving onboarding, voice, specialist routing, teaching, adaptation, and managed-service honesty work together without overclaiming capability.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "record_id": { "type": "string" },
+    "schema_family": {
+      "type": "string",
+      "enum": ["s08_integrated_harness_truth"]
+    },
+    "concierge_lifecycle": { "$ref": "./concierge-claim-lifecycle.schema.json" },
+    "telegram_voice_turn": { "$ref": "./telegram-voice-turn-record.schema.json" },
+    "cipher_continuity": { "$ref": "./cipher-continuity-record.schema.json" },
+    "website_specialist_harness": { "$ref": "./website-specialist-harness-record.schema.json" },
+    "design_teaching_research": { "$ref": "./design-teaching-research-record.schema.json" },
+    "taste_adaptation": { "$ref": "./taste-adaptation-record.schema.json" },
+    "managed_service_posture": { "$ref": "./managed-service-posture-record.schema.json" },
+    "local_first_honesty": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "onboarding_honest": { "type": "boolean" },
+        "voice_loop_honest": { "type": "boolean" },
+        "specialist_local_ratio": { "type": "number", "minimum": 0, "maximum": 1 },
+        "teaching_active": { "type": "boolean" },
+        "adaptation_bounded": { "type": "boolean" },
+        "managed_service_visible": { "type": "boolean" }
+      },
+      "required": [
+        "onboarding_honest",
+        "voice_loop_honest",
+        "specialist_local_ratio",
+        "teaching_active",
+        "adaptation_bounded",
+        "managed_service_visible"
+      ]
+    },
+    "support_safe_summary": { "type": "string" }
+  },
+  "required": [
+    "record_id",
+    "schema_family",
+    "concierge_lifecycle",
+    "telegram_voice_turn",
+    "cipher_continuity",
+    "website_specialist_harness",
+    "design_teaching_research",
+    "taste_adaptation",
+    "managed_service_posture",
+    "local_first_honesty",
+    "support_safe_summary"
+  ]
+}

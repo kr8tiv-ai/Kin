@@ -1,5 +1,7 @@
 from .contracts import (
     AdaptationDecisionSummary,
+    BackupState,
+    BackupStateStatus,
     BehaviorSignalEntry,
     BehaviorSignalType,
     CipherContinuityRecord,
@@ -11,6 +13,8 @@ from .contracts import (
     CipherPolicyGuardReason,
     CipherSpokenMannerMarker,
     CipherVoiceExpressionRecord,
+    ComputerSetupGuidance,
+    ComputerSetupGuidanceStatus,
     ConciergeBlockingReason,
     ConciergeClaimLifecycleRecord,
     ConciergeClaimStatus,
@@ -35,6 +39,10 @@ from .contracts import (
     GenesisEntitlementRecord,
     GenesisOwnershipRecord,
     GenesisTier,
+    InterventionState,
+    InterventionStateStatus,
+    ManagedServiceOverallPosture,
+    ManagedServicePostureRecord,
     ManualCheckpoint,
     OwnerAccessStatus,
     PreferenceRecord,
@@ -56,10 +64,15 @@ from .contracts import (
     RuntimeReadinessStatus,
     RuntimeReadinessSummary,
     RuntimeStepArtifacts,
+    S07SchemaFamily,
     ScopeRequested,
     SpecPrecedenceSummary,
+    SupportReadiness,
+    SupportReadinessStatus,
     TasteAdaptationRecord,
     TasteSignalSummary,
+    TailscaleAccessStatus,
+    TailscaleAccessStatusType,
     TelegramActivationGateStatus,
     TelegramContinuityStatus,
     TelegramInboundVoiceNoteRecord,
@@ -108,6 +121,12 @@ from .parsers import (
     load_website_specialist_execution,
     load_website_specialist_harness_record,
     load_website_specialist_request,
+    load_tailscale_access_status,
+    load_computer_setup_guidance,
+    load_backup_state,
+    load_intervention_state,
+    load_support_readiness,
+    load_managed_service_posture_record,
 )
 
 __all__ = [
@@ -197,32 +216,41 @@ __all__ = [
     "WebsiteSpecialistRequestRecord",
     "WebsiteSpecialistStatus",
     "WebsiteTaskPhase",
-    "load_cipher_continuity_record",
-    "load_cipher_persona_anchor",
-    "load_cipher_voice_expression",
-    "load_concierge_claim_lifecycle",
-    "load_concierge_setup_guidance",
-    "load_design_research_summary",
-    "load_design_teaching_research_record",
-    "load_design_teaching_summary",
-    "load_runtime_step_artifacts",
-    "load_routing_provenance_event",
-    "load_spec_precedence_summary",
-    "load_taste_adaptation_record",
-    "load_taste_signal_summary",
-    "load_telegram_voice_continuity",
-    "load_telegram_voice_reply",
-    "load_telegram_voice_transcript",
-    "load_telegram_voice_turn",
-    "load_website_specialist_execution",
-    "load_website_specialist_harness_record",
-    "load_website_specialist_request",
+    # S07 types
+    "BackupState",
+    "BackupStateStatus",
+    "ComputerSetupGuidance",
+    "ComputerSetupGuidanceStatus",
+    "InterventionState",
+    "InterventionStateStatus",
+    "ManagedServiceOverallPosture",
+    "ManagedServicePostureRecord",
+    "S07SchemaFamily",
+    "SupportReadiness",
+    "SupportReadinessStatus",
+    "TailscaleAccessStatus",
+    "TailscaleAccessStatusType",
+    # S08 types
+    "IntegratedHarnessTruthRecord",
+    "LocalFirstHonesty",
+    "S08SchemaFamily",
+    # S07 loaders
+    "load_tailscale_access_status",
+    "load_computer_setup_guidance",
+    "load_backup_state",
+    "load_intervention_state",
+    "load_support_readiness",
+    "load_managed_service_posture_record",
+    # S08 loaders
+    "load_integrated_harness_truth_record",
+    # Derivation helpers
     "format_design_research_disclosure",
     "format_provenance_disclosure",
     "format_promotion_audit",
     "derive_cipher_continuity",
     "derive_concierge_lifecycle",
     "derive_design_teaching_research_record",
+    "derive_managed_service_posture_record",
     "derive_taste_adaptation_record",
     "derive_telegram_voice_turn",
     "derive_website_specialist_harness_record",
@@ -283,6 +311,14 @@ def __getattr__(name: str):
         from .website_specialist_harness import derive_website_specialist_harness_record
 
         return derive_website_specialist_harness_record
+    if name in {"derive_managed_service_posture_record"}:
+        from .managed_service_posture import derive_managed_service_posture_record
+
+        return derive_managed_service_posture_record
+    if name in {"derive_integrated_harness_truth"}:
+        from .integrated_harness_truth import derive_integrated_harness_truth
+
+        return derive_integrated_harness_truth
     if name in {"resolve_precedence", "ResolutionResult", "ResolutionSource"}:
         from .precedence import ResolutionResult, ResolutionSource, resolve_precedence
 

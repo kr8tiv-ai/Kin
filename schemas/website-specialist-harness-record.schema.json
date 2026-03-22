@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "WebsiteSpecialistHarnessRecord",
-  "description": "Top-level S04 support-safe website-specialist harness record combining request intake, execution route truth, bounded continuity markers, and activation handoff status.",
+  "description": "Canonical website specialist harness record that proves route honesty and execution state with persona and continuity markers preserved.",
   "type": "object",
   "additionalProperties": false,
   "properties": {

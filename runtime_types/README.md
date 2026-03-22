@@ -298,15 +298,44 @@ This is the authoritative S05 restore point for design-teaching and research tru
 
 Inspect S04 first when the question is whether website-specialist work stayed local, used bounded hybrid help, or refused fallback. Inspect S05 when the operator question is whether Cipher can teach the design reasoning, disclose research provenance honestly, and stay support-safe without exposing transcripts, raw reference dumps, or private memory.
 
-Pinned S05 proof now lives at:
-- `tests/test_design_teaching_research.py`
+## S06 taste adaptation and memory-boundary seam
+A dedicated S06 restore point now exists at `tools/inspect_taste_adaptation_memory_boundary.py`.
+
+It derives representative spec-suppressed, preserved-decisions, and hybrid-guarded taste-adaptation records through `derive_taste_adaptation_record(...)` and prints a stable, support-safe summary for:
+- active taste signal targets and summaries
+- suppressed taste signal targets, reasons, and summaries
+- preserved decision targets and rationales
+- changed decision targets and reasons
+- precedence winners by target
+- composed support-safe adaptation summary
+
+Run:
+- `python tools/inspect_taste_adaptation_memory_boundary.py`
+
+Use this script when a future agent needs to inspect whether Cipher can:
+- keep confirmed project taste active when no spec conflict exists
+- suppress owner teaching taste when the active spec narrows the deliverable
+- guard hybrid/external wins from laundering into owner memory
+- show precedence outcomes with explicit reasons instead of silently disappearing conflicting signals
+
+This is the authoritative S06 restore point for taste adaptation and memory-boundary truth. It intentionally layers on top of S05 rather than replacing it:
+- S05 (`tools/inspect_design_teaching_research.py`) remains the factual design-teaching/research seam.
+- S06 (`tools/inspect_taste_adaptation_memory_boundary.py`) is the adaptation/boundary seam that adds taste signals, decisions, and precedence outcomes on top of canonical S05 truth.
+
+Inspect S05 first when the question is about design-teaching posture, research provenance, or anti-slop rationale. Inspect S06 when the operator question is about whether learned taste signals stayed active or got suppressed, whether decisions were preserved or changed, and whether hybrid/external wins were guarded from owner memory.
+
+The S06 restore point proves the contract seam and support-safe inspection surface only. It does **not** claim that a live taste-learning pipeline, persistent preference storage, or production memory system is fully wired in this repo.
+
+Pinned S06 proof now lives at:
+- `tests/test_taste_adaptation_memory_boundary.py`
 - `tests/test_runtime_types.py`
-- `schemas/examples/design-teaching-research-record.*.example.json`
+- `schemas/examples/taste-adaptation-record.*.example.json`
 
 Preferred verification commands for the current seam are:
-- `python tools/inspect_design_teaching_research.py`
-- `python -m unittest tests.test_design_teaching_research`
-- `python -m unittest tests.test_runtime_types`
+- `python tools/inspect_taste_adaptation_memory_boundary.py`
+- `python -m unittest tests.test_taste_adaptation_memory_boundary`
+- `python tmp_verify_s06.py`
+
 Stdlib test layers now exist at:
 - `tests/test_runtime_types.py`
 - `tests/test_schema_validation.py`

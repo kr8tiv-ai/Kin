@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ManagedServicePostureRecord",
+  "description": "Top-level S07 managed-service posture record that composes canonical S01 onboarding truth and S04 specialist provenance with Tailscale access status, computer-setup guidance, backup state, intervention state, and support readiness markers. Stays support-safe: no raw logs, no infrastructure credentials, no internal system details, and no unsupported self-healing claims.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "record_id": { "type": "string" },
+    "schema_family": {
+      "type": "string",
+      "enum": ["s07_managed_service_posture"]
+    },
+    "concierge_lifecycle": { "$ref": "./concierge-claim-lifecycle.schema.json" },
+    "website_specialist_harness": {
+      "oneOf": [
+        { "$ref": "./website-specialist-harness-record.schema.json" },
+        { "type": "null" }
+      ]
+    },
+    "tailscale_access": { "$ref": "./tailscale-access-status.schema.json" },
+    "computer_setup_guidance": { "$ref": "./computer-setup-guidance.schema.json" },
+    "backup_state": { "$ref": "./backup-state.schema.json" },
+    "intervention_state": { "$ref": "./intervention-state.schema.json" },
+    "support_readiness": { "$ref": "./support-readiness.schema.json" },
+    "overall_posture": {
+      "type": "string",
+      "enum": ["healthy", "needs_attention", "recovering"]
+    },
+    "support_safe_summary": { "type": "string" }
+  },
+  "required": [
+    "record_id",
+    "schema_family",
+    "concierge_lifecycle",
+    "tailscale_access",
+    "computer_setup_guidance",
+    "backup_state",
+    "intervention_state",
+    "support_readiness",
+    "overall_posture",
+    "support_safe_summary"
+  ]
+}

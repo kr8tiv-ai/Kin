@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BackupState",
+  "description": "Support-safe backup state showing backup health and recency without exposing storage credentials, paths, or internal system details.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": ["healthy", "stale", "none", "error"]
+    },
+    "last_backup_summary": { "type": "string" },
+    "backup_health_summary": { "type": "string" },
+    "recommended_action": { "type": "string" },
+    "support_safe_notes": { "type": "string" }
+  },
+  "required": ["status", "last_backup_summary", "support_safe_notes"]
+}

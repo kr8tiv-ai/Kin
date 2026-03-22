@@ -1,0 +1,62 @@
+{
+  "record_id": "managed-service-posture-needs-attention-001",
+  "schema_family": "s07_managed_service_posture",
+  "concierge_lifecycle": {
+    "claim_id": "claim-concierge-attention-001",
+    "claimant_label": "demo-owner-attention",
+    "claim_status": "activation_ready",
+    "setup_stage": "setup_complete",
+    "blocking_reason": null,
+    "manual_checkpoint": null,
+    "activation_ready": true,
+    "next_user_step": "Cipher needs your attention for computer access setup.",
+    "setup_guidance": {
+      "guidance_id": "guide-attention-001",
+      "guidance_status": "needs_user_action",
+      "plain_language_summary": "Cipher is ready but your computer connection needs a quick step.",
+      "next_user_step": "Open the Tailscale app and click Connect to join your tailnet.",
+      "blocking_reason": null,
+      "manual_checkpoint": null,
+      "support_safe_notes": "Owner needs to complete Tailscale device authorization."
+    }
+  },
+  "tailscale_access": {
+    "status": "needs_setup",
+    "device_name": null,
+    "tailnet_name": "kin-operators",
+    "last_seen_summary": "Not yet connected",
+    "setup_step": "authorize_device",
+    "support_safe_notes": "Tailscale is installed but this device needs to be authorized in your tailnet admin console."
+  },
+  "computer_setup_guidance": {
+    "guidance_id": "computer-guide-attention-001",
+    "guidance_status": "needs_user_action",
+    "plain_language_summary": "Your computer needs one more step to connect to Cipher securely.",
+    "next_owner_step": "Open the link sent to your email and click Authorize Device.",
+    "estimated_time_summary": "About 2 minutes",
+    "support_safe_notes": "Device authorization is pending owner action."
+  },
+  "backup_state": {
+    "status": "stale",
+    "last_backup_summary": "Last backup was 5 days ago",
+    "backup_health_summary": "Backups are configured but running behind schedule",
+    "recommended_action": "Check that your backup drive is connected",
+    "support_safe_notes": "Backup frequency has dropped below expected interval."
+  },
+  "intervention_state": {
+    "status": "none",
+    "intervention_type": null,
+    "plain_language_summary": "No intervention needed - just waiting for you to complete the setup step.",
+    "owner_action_required": true,
+    "estimated_resolution_summary": "Should resolve immediately after device authorization",
+    "support_safe_notes": "Owner action is the only blocker."
+  },
+  "support_readiness": {
+    "status": "degraded",
+    "can_receive_support": true,
+    "support_channel_summary": "Support is available, but computer access features are limited until setup completes.",
+    "known_limitations": ["Remote computer access unavailable until Tailscale is connected"]
+  },
+  "overall_posture": "needs_attention",
+  "support_safe_summary": "Cipher needs one quick step from you: authorize your device in Tailscale. Once that's done, everything will be fully connected."
+}

@@ -1,0 +1,62 @@
+{
+  "record_id": "managed-service-posture-healthy-001",
+  "schema_family": "s07_managed_service_posture",
+  "concierge_lifecycle": {
+    "claim_id": "claim-concierge-healthy-001",
+    "claimant_label": "demo-owner-healthy",
+    "claim_status": "activation_ready",
+    "setup_stage": "setup_complete",
+    "blocking_reason": null,
+    "manual_checkpoint": null,
+    "activation_ready": true,
+    "next_user_step": "Cipher is ready to help with your websites and computer.",
+    "setup_guidance": {
+      "guidance_id": "guide-healthy-001",
+      "guidance_status": "ready",
+      "plain_language_summary": "Your setup is complete and Cipher is connected.",
+      "next_user_step": "Send a voice message to Cipher anytime you need help.",
+      "blocking_reason": null,
+      "manual_checkpoint": null,
+      "support_safe_notes": "Owner has completed onboarding and Cipher is activated."
+    }
+  },
+  "tailscale_access": {
+    "status": "connected",
+    "device_name": "cipher-companion-001",
+    "tailnet_name": "kin-operators",
+    "last_seen_summary": "Connected just now",
+    "setup_step": "complete",
+    "support_safe_notes": "Tailscale is connected and Cipher has secure access."
+  },
+  "computer_setup_guidance": {
+    "guidance_id": "computer-guide-healthy-001",
+    "guidance_status": "ready",
+    "plain_language_summary": "Your computer is set up and connected to Cipher.",
+    "next_owner_step": "No setup steps needed - you're all set!",
+    "estimated_time_summary": "No time needed - setup complete",
+    "support_safe_notes": "Computer access is configured and working."
+  },
+  "backup_state": {
+    "status": "healthy",
+    "last_backup_summary": "Backup completed within the last day",
+    "backup_health_summary": "Backups are running normally",
+    "recommended_action": "No action needed",
+    "support_safe_notes": "Backup system is healthy."
+  },
+  "intervention_state": {
+    "status": "none",
+    "intervention_type": "none",
+    "plain_language_summary": "No intervention needed - everything is running smoothly.",
+    "owner_action_required": false,
+    "estimated_resolution_summary": "Not applicable",
+    "support_safe_notes": "No active interventions."
+  },
+  "support_readiness": {
+    "status": "ready",
+    "can_receive_support": true,
+    "support_channel_summary": "Support is available through Telegram voice messages.",
+    "known_limitations": []
+  },
+  "overall_posture": "healthy",
+  "support_safe_summary": "Cipher is healthy, connected, and ready to help. All systems are working normally."
+}

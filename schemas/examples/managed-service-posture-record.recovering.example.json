@@ -1,0 +1,62 @@
+{
+  "record_id": "managed-service-posture-recovering-001",
+  "schema_family": "s07_managed_service_posture",
+  "concierge_lifecycle": {
+    "claim_id": "claim-concierge-recovering-001",
+    "claimant_label": "demo-owner-recovering",
+    "claim_status": "activation_ready",
+    "setup_stage": "setup_complete",
+    "blocking_reason": null,
+    "manual_checkpoint": null,
+    "activation_ready": true,
+    "next_user_step": "Cipher is recovering from a service issue but can still help.",
+    "setup_guidance": {
+      "guidance_id": "guide-recovering-001",
+      "guidance_status": "ready",
+      "plain_language_summary": "Cipher experienced a service interruption but is recovering.",
+      "next_user_step": "You can continue using Cipher while recovery completes.",
+      "blocking_reason": null,
+      "manual_checkpoint": null,
+      "support_safe_notes": "Service recovery in progress, owner can continue normal use."
+    }
+  },
+  "tailscale_access": {
+    "status": "connected",
+    "device_name": "cipher-companion-001",
+    "tailnet_name": "kin-operators",
+    "last_seen_summary": "Connected just now",
+    "setup_step": "complete",
+    "support_safe_notes": "Tailscale connection restored."
+  },
+  "computer_setup_guidance": {
+    "guidance_id": "computer-guide-recovering-001",
+    "guidance_status": "ready",
+    "plain_language_summary": "Your computer connection is restored and Cipher is recovering.",
+    "next_owner_step": "Continue using Cipher normally.",
+    "estimated_time_summary": "Recovery should complete in a few minutes",
+    "support_safe_notes": "Computer access is stable while recovery completes."
+  },
+  "backup_state": {
+    "status": "healthy",
+    "last_backup_summary": "Backup completed earlier today",
+    "backup_health_summary": "Backups are running normally",
+    "recommended_action": "No action needed",
+    "support_safe_notes": "Backup system unaffected by service recovery."
+  },
+  "intervention_state": {
+    "status": "in_progress",
+    "intervention_type": "service_recovery",
+    "plain_language_summary": "Cipher's support team is actively resolving a service issue.",
+    "owner_action_required": false,
+    "estimated_resolution_summary": "Expected to resolve within minutes",
+    "support_safe_notes": "Automatic recovery in progress, no owner action needed."
+  },
+  "support_readiness": {
+    "status": "degraded",
+    "can_receive_support": true,
+    "support_channel_summary": "Support is available but response times may be slightly longer during recovery.",
+    "known_limitations": ["Response times may be delayed during recovery"]
+  },
+  "overall_posture": "recovering",
+  "support_safe_summary": "Cipher experienced a brief service interruption and is recovering automatically. You can continue using Cipher normally."
+}

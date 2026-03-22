@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "InterventionState",
+  "description": "Support-safe intervention state showing whether managed service needs operator attention without exposing raw logs or internal diagnostics.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": ["none", "pending", "in_progress", "resolved", "escalated"]
+    },
+    "intervention_type": { "type": ["string", "null"] },
+    "plain_language_summary": { "type": "string" },
+    "owner_action_required": { "type": "boolean" },
+    "estimated_resolution_summary": { "type": ["string", "null"] },
+    "support_safe_notes": { "type": "string" }
+  },
+  "required": ["status", "plain_language_summary", "owner_action_required", "support_safe_notes"]
+}
