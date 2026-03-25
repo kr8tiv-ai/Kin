@@ -1,0 +1,26 @@
+{
+  "name": "Cipher - Code Kraken",
+  "description": "Cipher is a Code Kraken Kin companion specializing in web design, frontend development, and creative technology. The first of the Genesis Six bloodlines.",
+  "image": "https://assets.kr8tiv.ai/kin/cipher.png",
+  "animation_url": "https://assets.kr8tiv.ai/kin/cipher.glb",
+  "external_url": "https://kr8tiv.ai/kin/cipher",
+  "attributes": [
+    {"trait_type": "Species", "value": "Kraken"},
+    {"trait_type": "Element", "value": "Digital"},
+    {"trait_type": "Rarity", "value": "Genesis"},
+    {"trait_type": "Tentacles", "value": 8},
+    {"trait_type": "Aura", "value": "Neon Blue"},
+    {"trait_type": "Specialization", "value": "Web Design"},
+    {"trait_type": "Generation", "value": 1}
+  ],
+  "properties": {
+    "bloodline": "Code Kraken",
+    "specialization": "web-design",
+    "generation": 1,
+    "category": "Genesis Six",
+    "files": [
+      {"uri": "https://assets.kr8tiv.ai/kin/cipher.glb", "type": "model/gltf-binary"},
+      {"uri": "https://assets.kr8tiv.ai/kin/cipher.png", "type": "image/png"}
+    ]
+  }
+}

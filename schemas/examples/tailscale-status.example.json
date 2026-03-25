@@ -1,0 +1,54 @@
+{
+  "record_id": "tss-k8r2m9",
+  "schema_family": "tailscale_status",
+  "tailnet": "kr8tiv-kin",
+  "devices": [
+    {
+      "device_id": "dev-abc123",
+      "hostname": "cipher-host",
+      "ip_addresses": ["100.64.0.1", "fd7a:115c:a1e0::1"],
+      "online": true,
+      "last_seen": "2026-03-24T04:45:00Z",
+      "os": "linux",
+      "user": "owner@kr8tiv.ai",
+      "tags": ["tag:kin-host", "tag:production"],
+      "is_kin_host": true,
+      "kin_id": "kin-cipher"
+    },
+    {
+      "device_id": "dev-def456",
+      "hostname": "mobile-phone",
+      "ip_addresses": ["100.64.0.2", "fd7a:115c:a1e0::2"],
+      "online": true,
+      "last_seen": "2026-03-24T04:43:00Z",
+      "os": "ios",
+      "user": "owner@kr8tiv.ai",
+      "tags": ["tag:mobile"],
+      "is_kin_host": false
+    },
+    {
+      "device_id": "dev-ghi789",
+      "hostname": "laptop",
+      "ip_addresses": ["100.64.0.3", "fd7a:115c:a1e0::3"],
+      "online": false,
+      "last_seen": "2026-03-23T18:00:00Z",
+      "os": "macos",
+      "user": "owner@kr8tiv.ai",
+      "tags": [],
+      "is_kin_host": false
+    }
+  ],
+  "network_health": {
+    "total_devices": 3,
+    "online_devices": 2,
+    "offline_devices": 1,
+    "health_score": 85,
+    "last_check": "2026-03-24T04:45:00Z"
+  },
+  "auth_key": {
+    "key_id": "k123456",
+    "expires_at": "2026-04-24T00:00:00Z",
+    "reusable": true
+  },
+  "created_at": "2026-03-24T04:45:00Z"
+}

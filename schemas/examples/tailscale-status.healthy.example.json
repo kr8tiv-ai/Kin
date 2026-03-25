@@ -1,0 +1,76 @@
+{
+  "$schema": "../tailscale-status.schema.json",
+  "record_id": "ts-healthy01",
+  "schema_family": "tailscale_status",
+  "tailnet": "kr8tiv",
+  "domain": "kr8tiv.ts.net",
+  "network_health": {
+    "healthy": true,
+    "online_devices": 3,
+    "offline_devices": 0,
+    "total_devices": 3,
+    "warning_count": 0
+  },
+  "devices": [
+    {
+      "device_id": "device-cipher-001",
+      "name": "cipher-kin",
+      "hostname": "cipher-server",
+      "ip_addresses": ["100.64.0.1", "fd7a:115c:a1e0::1"],
+      "os": "linux",
+      "online": true,
+      "last_seen": "2024-01-15T10:30:00.000Z",
+      "created_at": "2024-01-01T00:00:00.000Z",
+      "user": "owner@example.com",
+      "tags": ["tag:kin", "tag:server"],
+      "is_exit_node": false,
+      "is_subnet_router": false,
+      "kin_id": "cipher-001"
+    },
+    {
+      "device_id": "device-macbook-001",
+      "name": "owner-macbook",
+      "hostname": "MacBook-Pro",
+      "ip_addresses": ["100.64.0.2", "fd7a:115c:a1e0::2"],
+      "os": "macos",
+      "online": true,
+      "last_seen": "2024-01-15T10:25:00.000Z",
+      "created_at": "2024-01-10T00:00:00.000Z",
+      "user": "owner@example.com",
+      "tags": ["tag:client"],
+      "is_exit_node": false,
+      "is_subnet_router": false
+    },
+    {
+      "device_id": "device-iphone-001",
+      "name": "owner-iphone",
+      "hostname": "iPhone",
+      "ip_addresses": ["100.64.0.3", "fd7a:115c:a1e0::3"],
+      "os": "ios",
+      "online": true,
+      "last_seen": "2024-01-15T10:28:00.000Z",
+      "created_at": "2024-01-12T00:00:00.000Z",
+      "user": "owner@example.com",
+      "tags": ["tag:client", "tag:mobile"],
+      "is_exit_node": false,
+      "is_subnet_router": false
+    }
+  ],
+  "auth_keys": [
+    {
+      "key_id": "key-setup-001",
+      "description": "Initial setup key",
+      "created_at": "2024-01-01T00:00:00.000Z",
+      "expires_at": "2024-02-01T00:00:00.000Z",
+      "reusable": false
+    }
+  ],
+  "setup_status": {
+    "enabled": true,
+    "setup_complete": true,
+    "setup_step": "complete"
+  },
+  "last_check_timestamp": "2024-01-15T10:30:00.000Z",
+  "created_at": "2024-01-15T10:30:00.000Z",
+  "schema_version": "1.0.0"
+}

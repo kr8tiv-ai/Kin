@@ -1,0 +1,65 @@
+{
+  "record_id": "drift-alert-vortex001-20260323",
+  "schema_family": "drift_alert",
+  "kin_id": "vortex-001",
+  "kin_name": "Vortex",
+  "timestamp": "2026-03-23T21:00:00Z",
+  "drift_score": 0.35,
+  "threshold": 0.20,
+  "severity": "high",
+  "details": {
+    "deviant_metrics": {
+      "task_completion_rate": {
+        "current": 0.72,
+        "baseline": 0.94,
+        "deviation_percent": 23.4,
+        "impact": "high"
+      },
+      "avg_response_time": {
+        "current": 45.2,
+        "baseline": 15.0,
+        "deviation_percent": 201.3,
+        "impact": "high"
+      },
+      "error_rate": {
+        "current": 0.12,
+        "baseline": 0.03,
+        "deviation_percent": 300.0,
+        "impact": "medium"
+      }
+    },
+    "baseline_comparison": {
+      "metrics_above_threshold": [
+        "task_completion_rate",
+        "avg_response_time",
+        "error_rate"
+      ],
+      "worst_deviation": {
+        "metric_name": "error_rate",
+        "deviation_percent": 300.0
+      },
+      "trend": "worsening"
+    },
+    "health_check_context": {
+      "recent_error_count": 8,
+      "recent_check_count": 24,
+      "time_window_hours": 6
+    },
+    "specialization_context": {
+      "expected_specialization": "social-media",
+      "alignment_score": 0.65,
+      "misaligned_behaviors": [
+        "declining content-creation tasks",
+        "extended response times on social-media queries"
+      ]
+    }
+  },
+  "acknowledged": false,
+  "acknowledged_at": null,
+  "acknowledged_by": null,
+  "created_at": "2026-03-23T21:00:00Z",
+  "resolved_at": null,
+  "resolution_notes": null,
+  "notification_sent": true,
+  "notification_channels": ["mission-control", "telegram"]
+}

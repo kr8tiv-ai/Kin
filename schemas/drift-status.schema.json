@@ -1,0 +1,141 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://kr8tiv.ai/schemas/drift-status.schema.json",
+  "title": "DriftStatus",
+  "description": "Aggregate drift status for all Kin companions in Mission Control dashboard. Support-safe summary.",
+  "type": "object",
+  "required": [
+    "record_id",
+    "schema_family",
+    "timestamp",
+    "kin_drift_scores",
+    "alert_count_24h",
+    "critical_count_24h",
+    "overall_health",
+    "created_at"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "record_id": {
+      "type": "string",
+      "description": "Unique identifier for this status record",
+      "pattern": "^drift-status-[a-z0-9]{8,}$"
+    },
+    "schema_family": {
+      "type": "string",
+      "const": "drift_status",
+      "description": "Schema family identifier"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when status was computed"
+    },
+    "kin_drift_scores": {
+      "type": "array",
+      "description": "Drift scores for each Kin companion",
+      "minItems": 0,
+      "items": {
+        "type": "object",
+        "required": ["kin_id", "kin_name", "drift_score", "status"],
+        "properties": {
+          "kin_id": {
+            "type": "string",
+            "description": "Unique identifier for the Kin"
+          },
+          "kin_name": {
+            "type": "string",
+            "description": "Human-readable name of the Kin"
+          },
+          "drift_score": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Current drift score (0 = no drift, 1 = maximum drift)"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["healthy", "warning", "alert", "critical"],
+            "description": "Drift status based on score and threshold"
+          },
+          "trend": {
+            "type": "string",
+            "enum": ["improving", "stable", "worsening"],
+            "description": "Recent trend direction"
+          },
+          "last_alert_severity": {
+            "type": ["string", "null"],
+            "enum": ["low", "medium", "high", "critical", null],
+            "description": "Severity of most recent alert, if any"
+          },
+          "last_alert_at": {
+            "type": ["string", "null"],
+            "format": "date-time",
+            "description": "Timestamp of most recent alert, if any"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "alert_count_24h": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Total drift alerts in the last 24 hours"
+    },
+    "critical_count_24h": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Critical severity alerts in the last 24 hours"
+    },
+    "high_count_24h": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "High severity alerts in the last 24 hours"
+    },
+    "medium_count_24h": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Medium severity alerts in the last 24 hours"
+    },
+    "low_count_24h": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Low severity alerts in the last 24 hours"
+    },
+    "overall_health": {
+      "type": "string",
+      "enum": ["stable", "warning", "critical"],
+      "description": "Overall drift health status across all Kin"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when record was created"
+    },
+    "stable_kin_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of Kin with healthy drift status"
+    },
+    "warning_kin_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of Kin with warning drift status"
+    },
+    "alert_kin_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of Kin with alert drift status"
+    },
+    "critical_kin_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of Kin with critical drift status"
+    },
+    "total_kin_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Total number of Kin companions tracked"
+    }
+  }
+}

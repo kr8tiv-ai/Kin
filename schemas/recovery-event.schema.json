@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RecoveryEvent",
+  "description": "Record of a recovery action taken for a Kin companion. Tracks trigger, action, and result for audit and improvement.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "record_id": {
+      "type": "string",
+      "description": "Unique identifier for this recovery event",
+      "pattern": "^rev-[a-z0-9]{8,}$"
+    },
+    "schema_family": {
+      "type": "string",
+      "const": "recovery_event",
+      "description": "Schema family identifier"
+    },
+    "kin_id": {
+      "type": "string",
+      "description": "ID of the Kin companion being recovered",
+      "pattern": "^kin-[a-z0-9-]+$"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when the recovery was initiated"
+    },
+    "trigger": {
+      "type": "string",
+      "enum": ["health_check", "manual", "scheduled", "threshold_exceeded", "owner_request"],
+      "description": "What triggered the recovery action"
+    },
+    "action": {
+      "type": "string",
+      "enum": ["restart", "notify", "escalate", "reset", "redeploy"],
+      "description": "Recovery action taken"
+    },
+    "result": {
+      "type": "string",
+      "enum": ["success", "failed", "pending", "partial"],
+      "description": "Result of the recovery action"
+    },
+    "details": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Additional details about the recovery",
+      "properties": {
+        "error_message": {
+          "type": "string",
+          "description": "Error message if recovery failed"
+        },
+        "retry_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of retry attempts"
+        },
+        "duration_ms": {
+          "type": "number",
+          "description": "Duration of recovery action in milliseconds"
+        },
+        "previous_status": {
+          "type": "string",
+          "description": "Status before recovery"
+        },
+        "new_status": {
+          "type": "string",
+          "description": "Status after recovery"
+        },
+        "notified_channels": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Notification channels that were alerted"
+        }
+      }
+    },
+    "initiated_by": {
+      "type": "string",
+      "enum": ["daemon", "owner", "system", "api"],
+      "default": "daemon",
+      "description": "Who or what initiated the recovery"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when this record was created"
+    },
+    "schema_version": {
+      "type": "string",
+      "default": "1.0.0",
+      "description": "Schema version"
+    }
+  },
+  "required": [
+    "record_id",
+    "schema_family",
+    "kin_id",
+    "timestamp",
+    "trigger",
+    "action",
+    "result",
+    "created_at"
+  ]
+}

@@ -1,0 +1,53 @@
+# Health Monitor Configuration
+# Controls how the health monitoring daemon checks Kin companions
+
+# VPS identification
+vps_id: "vps-prod-001"
+vps_name: "Production VPS"
+
+# Health check settings
+check_interval_seconds: 30
+timeout_seconds: 10
+max_error_count: 3
+
+# Notification channels (configure in environment)
+notification_channels:
+  - telegram
+  - discord
+
+# Kin companions to monitor
+kin_list:
+  - kin_id: "kin-cipher-001"
+    name: "Cipher"
+    check_type: "http"
+    endpoint: "http://localhost:8080/health"
+    timeout_seconds: 10
+    restart_command: "systemctl restart cipher-kin"
+
+  - kin_id: "kin-nova-001"
+    name: "Nova"
+    check_type: "process"
+    process_name: "nova-kin"
+    timeout_seconds: 10
+    restart_command: "systemctl restart nova-kin"
+
+  - kin_id: "kin-spark-001"
+    name: "Spark"
+    check_type: "ping"
+    endpoint: "spark.kin.local"
+    timeout_seconds: 5
+    restart_command: "systemctl restart spark-kin"
+
+# Recovery policies
+recovery:
+  auto_restart: true
+  restart_cooldown_seconds: 60
+  max_restart_attempts: 3
+  escalation_after_failures: 3
+
+# Logging
+logging:
+  level: "INFO"
+  file: "health_daemon.log"
+  max_size_mb: 100
+  backup_count: 5

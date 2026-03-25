@@ -267,6 +267,24 @@ __all__ = [
     "ResolutionResult",
     "ResolutionSource",
     "RuntimeStepResult",
+    # S02 VPS Health
+    "VpsHealthStatus",
+    "VpsMetrics",
+    "KinSummary",
+    "Alert",
+    "derive_vps_health_status",
+    "get_system_metrics",
+    "validate_vps_health_status",
+    # S05 Tailscale
+    "TailscaleClient",
+    "TailscaleDevice",
+    "TailscaleNetworkStatus",
+    "AuthKey",
+    "NetworkHealth",
+    "SetupStatus",
+    "DeviceOS",
+    "SetupStep",
+    "validate_tailscale_status",
 ]
 
 
@@ -364,4 +382,52 @@ def __getattr__(name: str):
             "RuntimeStepResult": RuntimeStepResult,
         }
         return mapping[name]
+    # VPS Health types (S02)
+    if name in {"VpsHealthStatus", "VpsMetrics", "KinSummary", "Alert"}:
+        from .vps_health import VpsHealthStatus, VpsMetrics, KinSummary, Alert
+
+        mapping = {
+            "VpsHealthStatus": VpsHealthStatus,
+            "VpsMetrics": VpsMetrics,
+            "KinSummary": KinSummary,
+            "Alert": Alert,
+        }
+        return mapping[name]
+    if name in {"derive_vps_health_status", "get_system_metrics", "validate_vps_health_status"}:
+        from .vps_health import derive_vps_health_status, get_system_metrics, validate_vps_health_status
+
+        mapping = {
+            "derive_vps_health_status": derive_vps_health_status,
+            "get_system_metrics": get_system_metrics,
+            "validate_vps_health_status": validate_vps_health_status,
+        }
+        return mapping[name]
+    # Tailscale types (S05)
+    if name in {"TailscaleClient", "TailscaleDevice", "TailscaleNetworkStatus", "AuthKey", "NetworkHealth", "SetupStatus", "DeviceOS", "SetupStep"}:
+        from .tailscale_client import (
+            TailscaleClient,
+            TailscaleDevice,
+            TailscaleNetworkStatus,
+            AuthKey,
+            NetworkHealth,
+            SetupStatus,
+            DeviceOS,
+            SetupStep,
+        )
+
+        mapping = {
+            "TailscaleClient": TailscaleClient,
+            "TailscaleDevice": TailscaleDevice,
+            "TailscaleNetworkStatus": TailscaleNetworkStatus,
+            "AuthKey": AuthKey,
+            "NetworkHealth": NetworkHealth,
+            "SetupStatus": SetupStatus,
+            "DeviceOS": DeviceOS,
+            "SetupStep": SetupStep,
+        }
+        return mapping[name]
+    if name in {"validate_tailscale_status"}:
+        from .tailscale_client import validate_tailscale_status
+
+        return validate_tailscale_status
     raise AttributeError(f"module 'runtime_types' has no attribute {name!r}")

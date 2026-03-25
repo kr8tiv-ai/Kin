@@ -1,0 +1,208 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://kr8tiv.ai/schemas/drift-alert.schema.json",
+  "title": "DriftAlert",
+  "description": "Alert generated when a Kin companion's behavior deviates significantly from its baseline. Support-safe: no owner PII or conversation content.",
+  "type": "object",
+  "required": [
+    "record_id",
+    "schema_family",
+    "kin_id",
+    "kin_name",
+    "timestamp",
+    "drift_score",
+    "threshold",
+    "severity",
+    "details",
+    "acknowledged",
+    "created_at"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "record_id": {
+      "type": "string",
+      "description": "Unique identifier for this alert",
+      "pattern": "^drift-alert-[a-z0-9]{12,}$"
+    },
+    "schema_family": {
+      "type": "string",
+      "const": "drift_alert",
+      "description": "Schema family identifier"
+    },
+    "kin_id": {
+      "type": "string",
+      "description": "Unique identifier for the Kin companion",
+      "pattern": "^[a-z]+-[a-z0-9]+$"
+    },
+    "kin_name": {
+      "type": "string",
+      "description": "Human-readable name of the Kin companion",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when drift was detected"
+    },
+    "drift_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Computed drift score (0 = no drift, 1 = maximum drift)"
+    },
+    "threshold": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Threshold that was exceeded to trigger this alert"
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["low", "medium", "high", "critical"],
+      "description": "Alert severity level based on drift magnitude"
+    },
+    "details": {
+      "type": "object",
+      "description": "Detailed breakdown of drift detection",
+      "required": ["deviant_metrics", "baseline_comparison"],
+      "properties": {
+        "deviant_metrics": {
+          "type": "object",
+          "description": "Metrics showing significant deviation",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "current": {
+                "type": "number",
+                "description": "Current observed value"
+              },
+              "baseline": {
+                "type": "number",
+                "description": "Baseline expected value"
+              },
+              "deviation_percent": {
+                "type": "number",
+                "description": "Percentage deviation from baseline"
+              },
+              "impact": {
+                "type": "string",
+                "enum": ["low", "medium", "high"],
+                "description": "Impact of this deviation"
+              }
+            },
+            "required": ["current", "baseline", "deviation_percent"]
+          }
+        },
+        "baseline_comparison": {
+          "type": "object",
+          "description": "Summary comparison to baseline",
+          "properties": {
+            "metrics_above_threshold": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Names of metrics exceeding threshold"
+            },
+            "worst_deviation": {
+              "type": "object",
+              "description": "The metric with worst deviation",
+              "properties": {
+                "metric_name": {
+                  "type": "string"
+                },
+                "deviation_percent": {
+                  "type": "number"
+                }
+              }
+            },
+            "trend": {
+              "type": "string",
+              "enum": ["improving", "stable", "worsening"],
+              "description": "Recent trend direction"
+            }
+          }
+        },
+        "health_check_context": {
+          "type": "object",
+          "description": "Context from health checks contributing to drift",
+          "properties": {
+            "recent_error_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "recent_check_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "time_window_hours": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        },
+        "specialization_context": {
+          "type": "object",
+          "description": "Context related to specialization alignment",
+          "properties": {
+            "expected_specialization": {
+              "type": "string"
+            },
+            "alignment_score": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "misaligned_behaviors": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "acknowledged": {
+      "type": "boolean",
+      "description": "Whether the alert has been acknowledged by owner or operator"
+    },
+    "acknowledged_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when alert was acknowledged"
+    },
+    "acknowledged_by": {
+      "type": ["string", "null"],
+      "description": "Who acknowledged the alert (owner, operator, system)"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when alert record was created"
+    },
+    "resolved_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when drift was resolved"
+    },
+    "resolution_notes": {
+      "type": ["string", "null"],
+      "description": "Notes on how the drift was addressed"
+    },
+    "notification_sent": {
+      "type": "boolean",
+      "description": "Whether notification was sent for this alert"
+    },
+    "notification_channels": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["mission-control", "telegram", "discord", "email"]
+      },
+      "description": "Channels through which notification was sent"
+    }
+  }
+}

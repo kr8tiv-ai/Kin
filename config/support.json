@@ -1,0 +1,35 @@
+{
+  "knowledge_base_path": "data/support-kb",
+  "escalation": {
+    "webhook_url": null,
+    "slack_channel": null,
+    "email_recipients": [],
+    "business_hours": {
+      "start": "09:00",
+      "end": "18:00",
+      "timezone": "UTC",
+      "days": ["monday", "tuesday", "wednesday", "thursday", "friday"]
+    }
+  },
+  "response_templates": {
+    "greeting": "Hello! I'm here to help with any questions about your Kin companions. What would you like to know?",
+    "fallback": "I'm not sure I understand your question. Could you rephrase it, or would you like to speak with a human support agent?",
+    "escalation_confirmed": "Your request has been escalated to human support. An agent will be with you shortly.",
+    "after_hours": "Our support team is currently offline. You can leave a message and we'll get back to you during business hours."
+  },
+  "rate_limits": {
+    "messages_per_minute": 10,
+    "escalations_per_hour": 3
+  },
+  "features": {
+    "typing_indicator": true,
+    "suggested_questions": true,
+    "auto_escalation_keywords": ["urgent", "emergency", "manager", "supervisor"],
+    "satisfaction_survey": true
+  },
+  "mock_mode": {
+    "enabled": true,
+    "simulate_delay_ms": 500,
+    "simulate_escalation_wait_seconds": 30
+  }
+}

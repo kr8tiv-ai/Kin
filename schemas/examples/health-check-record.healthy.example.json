@@ -1,0 +1,11 @@
+{
+  "record_id": "hcr-001",
+  "schema_family": "health_check_record",
+  "kin_id": "cipher-001",
+  "timestamp": "2026-03-23T12:00:00Z",
+  "status": "healthy",
+  "response_time_ms": 45.2,
+  "error_count": 0,
+  "check_type": "http",
+  "endpoint": "http://localhost:8080/health"
+}

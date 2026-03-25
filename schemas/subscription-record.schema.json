@@ -1,0 +1,212 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kr8tiv.ai/schemas/subscription-record.schema.json",
+  "title": "SubscriptionRecord",
+  "description": "Subscription status and billing information for a Kin owner. Support-safe: no payment details or PII, only tier and usage data.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "record_id",
+    "schema_family",
+    "owner_id",
+    "tier",
+    "status",
+    "usage",
+    "billing_cycle",
+    "renewal_date",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "record_id": {
+      "type": "string",
+      "description": "Unique identifier for this subscription record",
+      "pattern": "^sub-[a-z0-9]{12,}$"
+    },
+    "schema_family": {
+      "type": "string",
+      "const": "subscription_record",
+      "description": "Schema family identifier"
+    },
+    "owner_id": {
+      "type": "string",
+      "description": "Unique identifier for the subscription owner",
+      "pattern": "^owner-[a-z0-9]+$"
+    },
+    "stripe_customer_id": {
+      "type": "string",
+      "description": "Stripe customer ID (internal use, not exposed to UI)",
+      "pattern": "^cus_[a-zA-Z0-9]+$"
+    },
+    "stripe_subscription_id": {
+      "type": "string",
+      "description": "Stripe subscription ID (internal use)",
+      "pattern": "^sub_[a-zA-Z0-9]+$"
+    },
+    "tier": {
+      "type": "string",
+      "enum": ["free", "starter", "pro", "enterprise"],
+      "description": "Current subscription tier"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["active", "past_due", "canceled", "incomplete", "trialing", "unpaid"],
+      "description": "Subscription status from Stripe"
+    },
+    "usage": {
+      "type": "object",
+      "description": "Current usage metrics",
+      "additionalProperties": false,
+      "required": ["kin_count", "api_calls_current", "api_calls_limit", "storage_used_mb", "storage_limit_mb"],
+      "properties": {
+        "kin_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of Kin companions owned"
+        },
+        "kin_limit": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Maximum Kin companions allowed for tier"
+        },
+        "api_calls_current": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "API calls in current billing period"
+        },
+        "api_calls_limit": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "API call limit per billing period (-1 for unlimited)"
+        },
+        "storage_used_mb": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Storage used in megabytes"
+        },
+        "storage_limit_mb": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Storage limit in megabytes (-1 for unlimited)"
+        },
+        "voice_minutes_current": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Voice minutes used in current period"
+        },
+        "voice_minutes_limit": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Voice minutes limit per period (-1 for unlimited)"
+        }
+      }
+    },
+    "billing_cycle": {
+      "type": "object",
+      "description": "Billing cycle information",
+      "additionalProperties": false,
+      "required": ["interval", "current_period_start", "current_period_end"],
+      "properties": {
+        "interval": {
+          "type": "string",
+          "enum": ["month", "year"],
+          "description": "Billing interval"
+        },
+        "current_period_start": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Start of current billing period"
+        },
+        "current_period_end": {
+          "type": "string",
+          "format": "date-time",
+          "description": "End of current billing period"
+        },
+        "amount": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Amount in cents per billing period"
+        },
+        "currency": {
+          "type": "string",
+          "default": "usd",
+          "description": "Currency code (ISO 4217)"
+        }
+      }
+    },
+    "renewal_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Next renewal or billing date"
+    },
+    "trial_end": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "End of trial period, if applicable"
+    },
+    "cancel_at_period_end": {
+      "type": "boolean",
+      "default": false,
+      "description": "Subscription will cancel at end of current period"
+    },
+    "canceled_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "When subscription was canceled, if applicable"
+    },
+    "payment_method": {
+      "type": "object",
+      "description": "Payment method summary (no sensitive data)",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["card", "bank_transfer", "other"],
+          "description": "Payment method type"
+        },
+        "last_four": {
+          "type": "string",
+          "description": "Last 4 digits of card or account"
+        },
+        "brand": {
+          "type": "string",
+          "description": "Card brand (visa, mastercard, etc.)"
+        },
+        "expiry_month": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 12
+        },
+        "expiry_year": {
+          "type": "integer",
+          "minimum": 2024
+        }
+      }
+    },
+    "features": {
+      "type": "object",
+      "description": "Features enabled for this tier",
+      "additionalProperties": {
+        "type": "boolean"
+      },
+      "examples": [
+        {
+          "voice_mode": true,
+          "custom_specializations": false,
+          "priority_support": true,
+          "api_access": true
+        }
+      ]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the subscription was created"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the subscription was last updated"
+    }
+  }
+}

@@ -1,0 +1,241 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://kr8tiv.ai/schemas/drift-baseline.schema.json",
+  "title": "DriftBaseline",
+  "description": "Behavior baseline for a Kin companion against which drift is measured. Captures expected patterns based on specialization.",
+  "type": "object",
+  "required": [
+    "record_id",
+    "schema_family",
+    "kin_id",
+    "kin_name",
+    "specialization",
+    "behavior_profile",
+    "baseline_metrics",
+    "created_at",
+    "last_updated_at"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "record_id": {
+      "type": "string",
+      "description": "Unique identifier for this baseline record",
+      "pattern": "^drift-baseline-[a-z0-9]{8,}$"
+    },
+    "schema_family": {
+      "type": "string",
+      "const": "drift_baseline",
+      "description": "Schema family identifier"
+    },
+    "kin_id": {
+      "type": "string",
+      "description": "Unique identifier for the Kin companion",
+      "pattern": "^[a-z]+-[a-z0-9]+$"
+    },
+    "kin_name": {
+      "type": "string",
+      "description": "Human-readable name of the Kin companion",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "specialization": {
+      "type": "string",
+      "description": "Specialization type for baseline comparison",
+      "enum": [
+        "web-design",
+        "family-companion",
+        "social-media",
+        "developer-support",
+        "creative-writing",
+        "wealth-coaching"
+      ]
+    },
+    "behavior_profile": {
+      "type": "object",
+      "description": "Expected behavior patterns based on specialization",
+      "required": [
+        "task_patterns",
+        "response_patterns",
+        "interaction_patterns"
+      ],
+      "properties": {
+        "task_patterns": {
+          "type": "object",
+          "description": "Expected task handling patterns",
+          "properties": {
+            "primary_task_types": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Primary task types this Kin should handle",
+              "minItems": 1
+            },
+            "avg_task_duration_minutes": {
+              "type": "number",
+              "minimum": 1,
+              "maximum": 480,
+              "description": "Expected average task duration in minutes"
+            },
+            "task_completion_rate_target": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Target task completion rate (0-1)"
+            },
+            "complexity_handling": {
+              "type": "string",
+              "enum": ["simple", "moderate", "complex", "expert"],
+              "description": "Expected complexity level this Kin can handle"
+            }
+          },
+          "additionalProperties": false
+        },
+        "response_patterns": {
+          "type": "object",
+          "description": "Expected response behavior patterns",
+          "properties": {
+            "avg_response_time_seconds": {
+              "type": "number",
+              "minimum": 1,
+              "maximum": 300,
+              "description": "Expected average response time in seconds"
+            },
+            "response_style": {
+              "type": "string",
+              "enum": ["concise", "balanced", "detailed", "comprehensive"],
+              "description": "Expected response verbosity style"
+            },
+            "tone": {
+              "type": "string",
+              "enum": ["professional", "friendly", "casual", "enthusiastic"],
+              "description": "Expected communication tone"
+            },
+            "proactive_suggestions": {
+              "type": "boolean",
+              "description": "Whether Kin should offer proactive suggestions"
+            }
+          },
+          "additionalProperties": false
+        },
+        "interaction_patterns": {
+          "type": "object",
+          "description": "Expected interaction patterns with owner",
+          "properties": {
+            "engagement_level": {
+              "type": "string",
+              "enum": ["minimal", "moderate", "high", "very-high"],
+              "description": "Expected engagement frequency"
+            },
+            "initiated_interactions_ratio": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Ratio of owner-initiated vs Kin-initiated interactions"
+            },
+            "follow_up_rate": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Expected rate of follow-up messages"
+            },
+            "context_retention": {
+              "type": "string",
+              "enum": ["session-only", "short-term", "medium-term", "long-term"],
+              "description": "Expected context retention capability"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "baseline_metrics": {
+      "type": "object",
+      "description": "Quantitative baseline metrics computed from historical data",
+      "required": [
+        "avg_response_time",
+        "task_completion_rate",
+        "error_rate",
+        "specialization_alignment_score"
+      ],
+      "properties": {
+        "avg_response_time": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Average response time in seconds (computed from history)"
+        },
+        "task_completion_rate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Task completion rate (0-1) computed from history"
+        },
+        "error_rate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Error rate (0-1) computed from history"
+        },
+        "specialization_alignment_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "How well behavior aligns with specialization (0-1)"
+        },
+        "uptime_percentage": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Uptime percentage over baseline period"
+        },
+        "interaction_count_7d": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total interactions in last 7 days"
+        },
+        "satisfaction_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 5,
+          "description": "Owner satisfaction score (0-5) if available"
+        }
+      },
+      "additionalProperties": false
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when baseline was created"
+    },
+    "last_updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when baseline was last updated"
+    },
+    "baseline_period_days": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 90,
+      "default": 7,
+      "description": "Number of days of data used to compute baseline"
+    },
+    "sample_size": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Number of data points used to compute baseline"
+    },
+    "confidence_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Confidence in baseline accuracy (higher = more data points)"
+    },
+    "drift_threshold_override": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Custom drift threshold for this Kin (overrides global)"
+    }
+  }
+}

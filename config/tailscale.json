@@ -1,0 +1,52 @@
+{
+  "tailnet": "kr8tiv-kin",
+  "api_key_env": "TAILSCALE_API_KEY",
+  "auth_key_settings": {
+    "default_expiry_days": 30,
+    "default_reusable": true,
+    "default_tags": ["tag:mobile"]
+  },
+  "device_tags": {
+    "kin_host": "tag:kin-host",
+    "mobile": "tag:mobile",
+    "production": "tag:production"
+  },
+  "acl_defaults": {
+    "allow_kin_access": ["tag:kin-host"],
+    "allow_mobile_access": ["tag:mobile", "tag:kin-host"]
+  },
+  "polling": {
+    "status_interval_seconds": 30,
+    "device_check_interval_seconds": 60
+  },
+  "alerts": {
+    "offline_threshold_minutes": 5,
+    "notify_on_offline": true,
+    "notify_on_new_device": true
+  },
+  "mock_mode": {
+    "enabled": true,
+    "mock_devices": [
+      {
+        "device_id": "dev-abc123",
+        "hostname": "cipher-host",
+        "online": true,
+        "os": "linux",
+        "is_kin_host": true,
+        "kin_id": "kin-cipher"
+      },
+      {
+        "device_id": "dev-def456",
+        "hostname": "mobile-phone",
+        "online": true,
+        "os": "ios"
+      },
+      {
+        "device_id": "dev-ghi789",
+        "hostname": "laptop",
+        "online": false,
+        "os": "macos"
+      }
+    ]
+  }
+}

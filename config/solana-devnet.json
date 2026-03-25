@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SolanaDevnetConfig",
+  "description": "Configuration for Solana devnet connection",
+  "rpc_url": "https://api.devnet.solana.com",
+  "websocket_url": "wss://api.devnet.solana.com",
+  "chain": "devnet",
+  "program_id": "K1NCompan10nNFTXXXXXXXXXXXXXXXXXXXXXX",
+  "collection_mint": "G3n3s1sS1xCo11ect10nXXXXXXXXXXXXXXXXX",
+  "treasury_wallet": "Kr8tivTr3asuryWa11etXXXXXXXXXXXXXX",
+  "fee_payer": "Kr8tivF33Pay3rWa11etXXXXXXXXXXXXXXXX",
+  "network_fees": {
+    "mint_nft_lamports": 50000000,
+    "transfer_lamports": 5000,
+    "verify_ownership_lamports": 0
+  },
+  "rate_limits": {
+    "requests_per_second": 10,
+    "max_retries": 3,
+    "retry_delay_ms": 1000
+  },
+  "explorer_base_url": "https://explorer.solana.com",
+  "airdrop": {
+    "enabled": true,
+    "amount_lamports": 1000000000,
+    "max_per_day": 2
+  },
+  "metadata": {
+    "name_prefix": "Kin Companion - ",
+    "symbol": "KIN",
+    "seller_fee_basis_points": 500,
+    "creators": [
+      {
+        "address": "Kr8tivCreatorWallet123456789ABCDEFGHIJ",
+        "share": 100,
+        "verified": true
+      }
+    ]
+  },
+  "assets_base_url": "https://assets.kr8tiv.ai/kin"
+}

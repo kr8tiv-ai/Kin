@@ -1,0 +1,201 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://kr8tiv.ai/schemas/nft-record.schema.json",
+  "title": "NFTRecord",
+  "description": "NFT ownership record for a Kin companion. Links Kin identity to Solana NFT with GLB avatar.",
+  "type": "object",
+  "required": [
+    "record_id",
+    "schema_family",
+    "kin_id",
+    "mint_address",
+    "glb_url",
+    "owner_wallet",
+    "chain",
+    "minted_at",
+    "verification_status"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "record_id": {
+      "type": "string",
+      "description": "Unique identifier for this NFT record",
+      "pattern": "^nft-record-[a-z0-9]{8,}$"
+    },
+    "schema_family": {
+      "type": "string",
+      "const": "nft_record",
+      "description": "Schema family identifier"
+    },
+    "kin_id": {
+      "type": "string",
+      "description": "Unique identifier for the Kin companion",
+      "pattern": "^[a-z]+-[a-z0-9]+$"
+    },
+    "kin_name": {
+      "type": "string",
+      "description": "Human-readable name of the Kin companion",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "mint_address": {
+      "type": "string",
+      "description": "Solana mint address (base58 encoded public key)",
+      "pattern": "^[1-9A-HJ-NP-Za-km-z]{32,44}$"
+    },
+    "glb_url": {
+      "type": "string",
+      "format": "uri",
+      "description": "URL to the GLB 3D avatar file"
+    },
+    "owner_wallet": {
+      "type": "string",
+      "description": "Current owner's wallet address (base58 encoded)",
+      "pattern": "^[1-9A-HJ-NP-Za-km-z]{32,44}$"
+    },
+    "creator_wallet": {
+      "type": "string",
+      "description": "Original creator's wallet address",
+      "pattern": "^[1-9A-HJ-NP-Za-km-z]{32,44}$"
+    },
+    "chain": {
+      "type": "string",
+      "enum": ["devnet", "mainnet-beta"],
+      "description": "Solana network"
+    },
+    "collection_address": {
+      "type": "string",
+      "description": "Collection NFT address if part of a collection",
+      "pattern": "^[1-9A-HJ-NP-Za-km-z]{32,44}$"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "On-chain metadata following Metaplex standard",
+      "required": ["name", "symbol", "uri"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "NFT name",
+          "maxLength": 32
+        },
+        "symbol": {
+          "type": "string",
+          "description": "NFT symbol",
+          "maxLength": 10
+        },
+        "uri": {
+          "type": "string",
+          "format": "uri",
+          "description": "URI to off-chain metadata JSON"
+        },
+        "seller_fee_basis_points": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000,
+          "description": "Royalty percentage in basis points (100 = 1%)"
+        },
+        "creators": {
+          "type": "array",
+          "description": "Creator addresses and their share",
+          "items": {
+            "type": "object",
+            "required": ["address", "share"],
+            "properties": {
+              "address": {
+                "type": "string",
+                "pattern": "^[1-9A-HJ-NP-Za-km-z]{32,44}$"
+              },
+              "share": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100
+              },
+              "verified": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "properties": {
+          "type": "object",
+          "description": "Custom properties for Kin NFT",
+          "properties": {
+            "specialization": {
+              "type": "string"
+            },
+            "bloodline": {
+              "type": "string"
+            },
+            "generation": {
+              "type": "integer"
+            },
+            "attributes": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "trait_type": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": ["string", "integer"]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "minted_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when NFT was minted"
+    },
+    "last_verified_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of last ownership verification"
+    },
+    "verification_status": {
+      "type": "string",
+      "enum": ["verified", "unverified", "pending", "failed"],
+      "description": "Current verification status"
+    },
+    "transfer_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of times NFT has been transferred"
+    },
+    "last_transfer_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of last transfer"
+    },
+    "transaction_signature": {
+      "type": "string",
+      "description": "Signature of the minting transaction",
+      "pattern": "^[1-9A-HJ-NP-Za-km-z]{87,88}$"
+    },
+    "boot_hash": {
+      "type": "string",
+      "description": "Cryptographic hash of Kin boot state for authenticity verification",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "explorer_url": {
+      "type": "string",
+      "format": "uri",
+      "description": "URL to view NFT on Solana explorer"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when record was created"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when record was last updated"
+    }
+  }
+}

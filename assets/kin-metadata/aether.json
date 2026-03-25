@@ -1,0 +1,26 @@
+{
+  "name": "Aether - Frost Ape",
+  "description": "Aether is a Frost Ape Kin companion specializing in creative writing, storytelling, and brainstorming. Your creative muse.",
+  "image": "https://assets.kr8tiv.ai/kin/aether.png",
+  "animation_url": "https://assets.kr8tiv.ai/kin/aether.glb",
+  "external_url": "https://kr8tiv.ai/kin/aether",
+  "attributes": [
+    {"trait_type": "Species", "value": "Ape"},
+    {"trait_type": "Element", "value": "Frost"},
+    {"trait_type": "Rarity", "value": "Genesis"},
+    {"trait_type": "Fur", "value": "Crystalline"},
+    {"trait_type": "Aura", "value": "Northern Lights"},
+    {"trait_type": "Specialization", "value": "Creative Writing"},
+    {"trait_type": "Generation", "value": 1}
+  ],
+  "properties": {
+    "bloodline": "Frost Ape",
+    "specialization": "creative-writing",
+    "generation": 1,
+    "category": "Genesis Six",
+    "files": [
+      {"uri": "https://assets.kr8tiv.ai/kin/aether.glb", "type": "model/gltf-binary"},
+      {"uri": "https://assets.kr8tiv.ai/kin/aether.png", "type": "image/png"}
+    ]
+  }
+}

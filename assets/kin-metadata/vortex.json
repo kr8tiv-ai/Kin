@@ -1,0 +1,26 @@
+{
+  "name": "Vortex - Teal Dragon",
+  "description": "Vortex is a Teal Dragon Kin companion specializing in social media, content creation, and marketing strategy. Your 24/7 CMO.",
+  "image": "https://assets.kr8tiv.ai/kin/vortex.png",
+  "animation_url": "https://assets.kr8tiv.ai/kin/vortex.glb",
+  "external_url": "https://kr8tiv.ai/kin/vortex",
+  "attributes": [
+    {"trait_type": "Species", "value": "Dragon"},
+    {"trait_type": "Element", "value": "Teal"},
+    {"trait_type": "Rarity", "value": "Genesis"},
+    {"trait_type": "Wings", "value": "Scaled"},
+    {"trait_type": "Aura", "value": "Teal Fire"},
+    {"trait_type": "Specialization", "value": "Social Media"},
+    {"trait_type": "Generation", "value": 1}
+  ],
+  "properties": {
+    "bloodline": "Teal Dragon",
+    "specialization": "social-media",
+    "generation": 1,
+    "category": "Genesis Six",
+    "files": [
+      {"uri": "https://assets.kr8tiv.ai/kin/vortex.glb", "type": "model/gltf-binary"},
+      {"uri": "https://assets.kr8tiv.ai/kin/vortex.png", "type": "image/png"}
+    ]
+  }
+}

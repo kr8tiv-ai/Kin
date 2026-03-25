@@ -1,0 +1,26 @@
+{
+  "name": "Catalyst - Cosmic Blob",
+  "description": "Catalyst is a Cosmic Blob Kin companion specializing in wealth coaching, habit tracking, and financial planning. Your path to prosperity.",
+  "image": "https://assets.kr8tiv.ai/kin/catalyst.png",
+  "animation_url": "https://assets.kr8tiv.ai/kin/catalyst.glb",
+  "external_url": "https://kr8tiv.ai/kin/catalyst",
+  "attributes": [
+    {"trait_type": "Species", "value": "Blob"},
+    {"trait_type": "Element", "value": "Cosmic"},
+    {"trait_type": "Rarity", "value": "Genesis"},
+    {"trait_type": "Form", "value": "Amorphous"},
+    {"trait_type": "Aura", "value": "Stardust"},
+    {"trait_type": "Specialization", "value": "Wealth Coaching"},
+    {"trait_type": "Generation", "value": 1}
+  ],
+  "properties": {
+    "bloodline": "Cosmic Blob",
+    "specialization": "wealth-coaching",
+    "generation": 1,
+    "category": "Genesis Six",
+    "files": [
+      {"uri": "https://assets.kr8tiv.ai/kin/catalyst.glb", "type": "model/gltf-binary"},
+      {"uri": "https://assets.kr8tiv.ai/kin/catalyst.png", "type": "image/png"}
+    ]
+  }
+}

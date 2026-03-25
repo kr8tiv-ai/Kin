@@ -1,0 +1,28 @@
+{
+  "$schema": "../vps-health-status.schema.json",
+  "record_id": "vhs-healthy01",
+  "schema_family": "vps_health_status",
+  "vps_id": "vps-prod-01",
+  "vps_name": "Production VPS",
+  "overall_status": "healthy",
+  "system_metrics": {
+    "cpu_percent": 25.5,
+    "memory_percent": 45.2,
+    "disk_percent": 58.0,
+    "uptime_seconds": 1209600,
+    "load_average": [0.5, 0.6, 0.7],
+    "network_in_bytes": 524288000,
+    "network_out_bytes": 262144000
+  },
+  "kin_summary": {
+    "active_kin_count": 6,
+    "total_kin_count": 6,
+    "healthy_count": 6,
+    "unhealthy_count": 0,
+    "unknown_count": 0
+  },
+  "alerts": [],
+  "last_check_timestamp": "2024-01-15T10:30:00.000Z",
+  "created_at": "2024-01-15T10:30:00.000Z",
+  "schema_version": "1.0.0"
+}

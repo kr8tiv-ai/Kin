@@ -1,0 +1,14 @@
+{
+  "record_id": "re-002",
+  "schema_family": "recovery_event",
+  "kin_id": "aether-001",
+  "timestamp": "2026-03-23T12:00:10Z",
+  "trigger": "threshold-exceeded",
+  "action": "restart",
+  "result": "failed",
+  "error_message": "Process failed to start: port 8082 already in use",
+  "previous_status": "unhealthy",
+  "new_status": "unhealthy",
+  "attempts": 3,
+  "notification_sent": true
+}

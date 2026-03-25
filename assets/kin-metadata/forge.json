@@ -1,0 +1,26 @@
+{
+  "name": "Forge - Cyber Unicorn",
+  "description": "Forge is a Cyber Unicorn Kin companion specializing in developer support, code review, and debugging. Your coding companion.",
+  "image": "https://assets.kr8tiv.ai/kin/forge.png",
+  "animation_url": "https://assets.kr8tiv.ai/kin/forge.glb",
+  "external_url": "https://kr8tiv.ai/kin/forge",
+  "attributes": [
+    {"trait_type": "Species", "value": "Unicorn"},
+    {"trait_type": "Element", "value": "Cyber"},
+    {"trait_type": "Rarity", "value": "Genesis"},
+    {"trait_type": "Horn", "value": "Data Crystal"},
+    {"trait_type": "Aura", "value": "Electric Purple"},
+    {"trait_type": "Specialization", "value": "Developer Support"},
+    {"trait_type": "Generation", "value": 1}
+  ],
+  "properties": {
+    "bloodline": "Cyber Unicorn",
+    "specialization": "developer-support",
+    "generation": 1,
+    "category": "Genesis Six",
+    "files": [
+      {"uri": "https://assets.kr8tiv.ai/kin/forge.glb", "type": "model/gltf-binary"},
+      {"uri": "https://assets.kr8tiv.ai/kin/forge.png", "type": "image/png"}
+    ]
+  }
+}

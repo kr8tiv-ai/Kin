@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "HealthCheckRecord",
+  "description": "Record of a health check performed on a Kin companion. Tracks status, response time, and error count for monitoring and alerting.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "record_id": {
+      "type": "string",
+      "description": "Unique identifier for this health check record",
+      "pattern": "^hcr-[a-z0-9]{8,}$"
+    },
+    "schema_family": {
+      "type": "string",
+      "const": "health_check_record",
+      "description": "Schema family identifier"
+    },
+    "kin_id": {
+      "type": "string",
+      "description": "ID of the Kin companion being checked",
+      "pattern": "^kin-[a-z0-9-]+$"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when the health check was performed"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["healthy", "unhealthy", "unknown", "degraded"],
+      "description": "Health status result of the check"
+    },
+    "response_time_ms": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Response time in milliseconds"
+    },
+    "error_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of consecutive errors detected"
+    },
+    "check_type": {
+      "type": "string",
+      "enum": ["ping", "http", "process", "custom"],
+      "default": "ping",
+      "description": "Type of health check performed"
+    },
+    "details": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Additional details about the health check",
+      "properties": {
+        "error_message": {
+          "type": "string",
+          "description": "Error message if check failed"
+        },
+        "http_status_code": {
+          "type": "integer",
+          "description": "HTTP status code if HTTP check"
+        },
+        "process_pid": {
+          "type": "integer",
+          "description": "Process ID if process check"
+        },
+        "memory_usage_mb": {
+          "type": "number",
+          "description": "Memory usage in MB"
+        },
+        "cpu_usage_percent": {
+          "type": "number",
+          "description": "CPU usage percentage"
+        }
+      }
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when this record was created"
+    },
+    "schema_version": {
+      "type": "string",
+      "default": "1.0.0",
+      "description": "Schema version"
+    }
+  },
+  "required": [
+    "record_id",
+    "schema_family",
+    "kin_id",
+    "timestamp",
+    "status",
+    "error_count",
+    "created_at"
+  ]
+}

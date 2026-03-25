@@ -1,0 +1,142 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SupportSession",
+  "description": "Support chat session record for customer support interactions in Mission Control.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "record_id": {
+      "type": "string",
+      "pattern": "^ss-[a-z0-9]+$",
+      "description": "Unique identifier for this session record (prefix: ss-)"
+    },
+    "schema_family": {
+      "type": "string",
+      "enum": ["support_session"],
+      "description": "Schema family identifier for versioning"
+    },
+    "session_id": {
+      "type": "string",
+      "description": "Unique session identifier"
+    },
+    "owner_id": {
+      "type": "string",
+      "description": "ID of the owner who started this session"
+    },
+    "messages": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ChatMessage"
+      },
+      "description": "Chat message history"
+    },
+    "escalation_queued": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this session has been escalated to human support"
+    },
+    "escalation": {
+      "$ref": "#/$defs/EscalationInfo",
+      "description": "Escalation details if queued"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["active", "resolved", "escalated", "closed"],
+      "default": "active",
+      "description": "Current session status"
+    },
+    "satisfaction_rating": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5,
+      "description": "User satisfaction rating (1-5 stars)"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when session was created"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when session was last updated"
+    }
+  },
+  "required": [
+    "record_id",
+    "schema_family",
+    "session_id",
+    "owner_id",
+    "messages",
+    "status",
+    "created_at",
+    "updated_at"
+  ],
+  "$defs": {
+    "ChatMessage": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "message_id": {
+          "type": "string",
+          "description": "Unique message identifier"
+        },
+        "role": {
+          "type": "string",
+          "enum": ["user", "assistant", "system"],
+          "description": "Who sent the message"
+        },
+        "content": {
+          "type": "string",
+          "description": "Message text content"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp when message was sent"
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Additional message metadata (kb_article, confidence, etc.)"
+        }
+      },
+      "required": ["message_id", "role", "content", "timestamp"]
+    },
+    "EscalationInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "escalation_id": {
+          "type": "string",
+          "description": "Unique escalation identifier"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Reason for escalation"
+        },
+        "queued_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the escalation was queued"
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["low", "medium", "high", "urgent"],
+          "default": "medium",
+          "description": "Escalation priority level"
+        },
+        "assigned_to": {
+          "type": "string",
+          "description": "Support agent assigned to this escalation"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["queued", "assigned", "in_progress", "resolved"],
+          "description": "Escalation status"
+        }
+      },
+      "required": ["escalation_id", "reason", "queued_at"]
+    }
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "kin_processes": [
+    {
+      "kin_id": "cipher-001",
+      "name": "Cipher",
+      "health_endpoint": "http://localhost:8080/health",
+      "process_name": "cipher-kin",
+      "restart_command": "systemctl restart cipher-kin",
+      "health_timeout_ms": 5000,
+      "max_consecutive_errors": 3,
+      "auto_restart": true
+    },
+    {
+      "kin_id": "mischief-001",
+      "name": "Mischief",
+      "health_endpoint": "http://localhost:8081/health",
+      "process_name": "mischief-kin",
+      "restart_command": "systemctl restart mischief-kin",
+      "health_timeout_ms": 5000,
+      "max_consecutive_errors": 3,
+      "auto_restart": true
+    },
+    {
+      "kin_id": "vortex-001",
+      "name": "Vortex",
+      "health_endpoint": "http://localhost:8082/health",
+      "process_name": "vortex-kin",
+      "restart_command": "systemctl restart vortex-kin",
+      "health_timeout_ms": 5000,
+      "max_consecutive_errors": 3,
+      "auto_restart": true
+    },
+    {
+      "kin_id": "forge-001",
+      "name": "Forge",
+      "health_endpoint": "http://localhost:8083/health",
+      "process_name": "forge-kin",
+      "restart_command": "systemctl restart forge-kin",
+      "health_timeout_ms": 5000,
+      "max_consecutive_errors": 3,
+      "auto_restart": true
+    },
+    {
+      "kin_id": "aether-001",
+      "name": "Aether",
+      "health_endpoint": "http://localhost:8084/health",
+      "process_name": "aether-kin",
+      "restart_command": "systemctl restart aether-kin",
+      "health_timeout_ms": 5000,
+      "max_consecutive_errors": 3,
+      "auto_restart": true
+    },
+    {
+      "kin_id": "catalyst-001",
+      "name": "Catalyst",
+      "health_endpoint": "http://localhost:8085/health",
+      "process_name": "catalyst-kin",
+      "restart_command": "systemctl restart catalyst-kin",
+      "health_timeout_ms": 5000,
+      "max_consecutive_errors": 3,
+      "auto_restart": true
+    }
+  ],
+  "notification": {
+    "slack_webhook": null,
+    "email_recipients": [],
+    "telegram_bot_token": null
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "record_id": "ss-k8r2m9",
+  "schema_family": "support_session",
+  "session_id": "session-abc123",
+  "owner_id": "owner-xyz789",
+  "messages": [
+    {
+      "message_id": "msg-001",
+      "role": "user",
+      "content": "How do I set up remote access for my Kin?",
+      "timestamp": "2026-03-24T04:00:00Z"
+    },
+    {
+      "message_id": "msg-002",
+      "role": "assistant",
+      "content": "To set up remote access for your Kin, use the Tailscale integration in Mission Control. Click 'Setup Remote Access' in the sidebar and scan the QR code with the Tailscale app.",
+      "timestamp": "2026-03-24T04:00:02Z",
+      "metadata": {
+        "kb_article": "tailscale-setup",
+        "confidence": 0.95
+      }
+    }
+  ],
+  "status": "active",
+  "created_at": "2026-03-24T04:00:00Z",
+  "updated_at": "2026-03-24T04:00:02Z"
+}

@@ -1,0 +1,26 @@
+{
+  "name": "Mischief - Glitch Pup",
+  "description": "Mischief is a Glitch Pup Kin companion specializing in family activities and personal brand whispering. Playful and unpredictable, yet loyal.",
+  "image": "https://assets.kr8tiv.ai/kin/mischief.png",
+  "animation_url": "https://assets.kr8tiv.ai/kin/mischief.glb",
+  "external_url": "https://kr8tiv.ai/kin/mischief",
+  "attributes": [
+    {"trait_type": "Species", "value": "Pup"},
+    {"trait_type": "Element", "value": "Glitch"},
+    {"trait_type": "Rarity", "value": "Genesis"},
+    {"trait_type": "Ears", "value": "Floppy"},
+    {"trait_type": "Aura", "value": "Pixelated Rainbow"},
+    {"trait_type": "Specialization", "value": "Family Companion"},
+    {"trait_type": "Generation", "value": 1}
+  ],
+  "properties": {
+    "bloodline": "Glitch Pup",
+    "specialization": "family-companion",
+    "generation": 1,
+    "category": "Genesis Six",
+    "files": [
+      {"uri": "https://assets.kr8tiv.ai/kin/mischief.glb", "type": "model/gltf-binary"},
+      {"uri": "https://assets.kr8tiv.ai/kin/mischief.png", "type": "image/png"}
+    ]
+  }
+}

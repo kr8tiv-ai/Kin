@@ -1,0 +1,55 @@
+{
+  "record_id": "drift-status-20260323",
+  "schema_family": "drift_status",
+  "timestamp": "2026-03-23T21:00:00Z",
+  "kin_drift_scores": [
+    {
+      "kin_id": "cipher-001",
+      "kin_name": "Cipher",
+      "drift_score": 0.05,
+      "status": "healthy",
+      "trend": "stable",
+      "last_alert_severity": null,
+      "last_alert_at": null
+    },
+    {
+      "kin_id": "mischief-001",
+      "kin_name": "Mischief",
+      "drift_score": 0.08,
+      "status": "healthy",
+      "trend": "improving",
+      "last_alert_severity": "low",
+      "last_alert_at": "2026-03-22T14:30:00Z"
+    },
+    {
+      "kin_id": "vortex-001",
+      "kin_name": "Vortex",
+      "drift_score": 0.35,
+      "status": "critical",
+      "trend": "worsening",
+      "last_alert_severity": "high",
+      "last_alert_at": "2026-03-23T21:00:00Z"
+    },
+    {
+      "kin_id": "forge-001",
+      "kin_name": "Forge",
+      "drift_score": 0.15,
+      "status": "warning",
+      "trend": "stable",
+      "last_alert_severity": null,
+      "last_alert_at": null
+    }
+  ],
+  "alert_count_24h": 3,
+  "critical_count_24h": 1,
+  "high_count_24h": 1,
+  "medium_count_24h": 0,
+  "low_count_24h": 1,
+  "overall_health": "warning",
+  "created_at": "2026-03-23T21:00:00Z",
+  "stable_kin_count": 2,
+  "warning_kin_count": 1,
+  "alert_kin_count": 0,
+  "critical_kin_count": 1,
+  "total_kin_count": 4
+}

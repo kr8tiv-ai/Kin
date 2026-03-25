@@ -1,0 +1,162 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "VpsHealthStatus",
+  "description": "Aggregate health status of a VPS hosting Kin companions. Provides system metrics and Kin health summary for Mission Control dashboard.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "record_id": {
+      "type": "string",
+      "description": "Unique identifier for this VPS health status record",
+      "pattern": "^vhs-[a-z0-9]{8,}$"
+    },
+    "schema_family": {
+      "type": "string",
+      "const": "vps_health_status",
+      "description": "Schema family identifier"
+    },
+    "vps_id": {
+      "type": "string",
+      "description": "Identifier for the VPS instance",
+      "pattern": "^vps-[a-z0-9-]+$"
+    },
+    "vps_name": {
+      "type": "string",
+      "description": "Human-readable name for the VPS"
+    },
+    "overall_status": {
+      "type": "string",
+      "enum": ["healthy", "degraded", "critical", "unknown"],
+      "description": "Overall health status of the VPS"
+    },
+    "system_metrics": {
+      "type": "object",
+      "description": "System-level metrics",
+      "properties": {
+        "cpu_percent": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "CPU usage percentage"
+        },
+        "memory_percent": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Memory usage percentage"
+        },
+        "disk_percent": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Disk usage percentage"
+        },
+        "uptime_seconds": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "VPS uptime in seconds"
+        },
+        "load_average": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 3,
+          "maxItems": 3,
+          "description": "Load average over 1, 5, and 15 minutes"
+        },
+        "network_in_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Network bytes received"
+        },
+        "network_out_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Network bytes sent"
+        }
+      }
+    },
+    "kin_summary": {
+      "type": "object",
+      "description": "Summary of Kin companion health",
+      "properties": {
+        "active_kin_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of active Kin companions"
+        },
+        "total_kin_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total number of Kin companions"
+        },
+        "healthy_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of healthy Kin"
+        },
+        "unhealthy_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of unhealthy Kin"
+        },
+        "unknown_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of Kin with unknown status"
+        }
+      }
+    },
+    "alerts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "alert_id": {
+            "type": "string",
+            "description": "Unique alert identifier"
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["info", "warning", "critical"],
+            "description": "Alert severity level"
+          },
+          "message": {
+            "type": "string",
+            "description": "Alert message"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the alert was triggered"
+          }
+        }
+      },
+      "description": "Active alerts for this VPS"
+    },
+    "last_check_timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of the last health check"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when this record was created"
+    },
+    "schema_version": {
+      "type": "string",
+      "default": "1.0.0",
+      "description": "Schema version"
+    }
+  },
+  "required": [
+    "record_id",
+    "schema_family",
+    "vps_id",
+    "overall_status",
+    "last_check_timestamp",
+    "created_at"
+  ]
+}

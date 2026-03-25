@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "stripe": {
+    "api_key_env": "STRIPE_API_KEY",
+    "webhook_secret_env": "STRIPE_WEBHOOK_SECRET",
+    "api_version": "2023-10-16"
+  },
+  "price_ids": {
+    "starter": {
+      "monthly": "price_starter_monthly",
+      "yearly": "price_starter_yearly"
+    },
+    "pro": {
+      "monthly": "price_pro_monthly",
+      "yearly": "price_pro_yearly"
+    },
+    "enterprise": {
+      "monthly": "price_enterprise_monthly",
+      "yearly": "price_enterprise_yearly"
+    }
+  },
+  "trial_period_days": 14,
+  "grace_period_days": 7,
+  "webhook_events": [
+    "customer.subscription.created",
+    "customer.subscription.updated",
+    "customer.subscription.deleted",
+    "invoice.paid",
+    "invoice.payment_failed"
+  ],
+  "notification_channels": {
+    "subscription_created": ["email"],
+    "subscription_updated": ["email", "mission-control"],
+    "subscription_canceled": ["email"],
+    "payment_failed": ["email", "telegram"],
+    "trial_ending": ["email", "mission-control"]
+  }
+}

@@ -1,0 +1,197 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "tiers": [
+    {
+      "id": "free",
+      "name": "Free",
+      "description": "Try Kin with a single companion",
+      "price": 0,
+      "price_yearly": 0,
+      "currency": "usd",
+      "limits": {
+        "kin_count": 1,
+        "api_calls_per_month": 1000,
+        "storage_mb": 100,
+        "voice_minutes_per_month": 10
+      },
+      "features": {
+        "voice_mode": false,
+        "custom_specializations": false,
+        "priority_support": false,
+        "api_access": false,
+        "drift_alerts": false,
+        "health_monitoring": false,
+        "tailscale_access": false
+      },
+      "display_order": 1,
+      "badge_text": null,
+      "highlighted": false
+    },
+    {
+      "id": "starter",
+      "name": "Starter",
+      "description": "For individuals exploring Kin platform",
+      "price": 900,
+      "price_yearly": 9000,
+      "currency": "usd",
+      "price_display": "$9/month",
+      "price_yearly_display": "$90/year (save 17%)",
+      "limits": {
+        "kin_count": 3,
+        "api_calls_per_month": 10000,
+        "storage_mb": 500,
+        "voice_minutes_per_month": 50
+      },
+      "features": {
+        "voice_mode": true,
+        "custom_specializations": false,
+        "priority_support": false,
+        "api_access": true,
+        "drift_alerts": true,
+        "health_monitoring": true,
+        "tailscale_access": true
+      },
+      "display_order": 2,
+      "badge_text": null,
+      "highlighted": false
+    },
+    {
+      "id": "pro",
+      "name": "Pro",
+      "description": "For power users and small teams",
+      "price": 2900,
+      "price_yearly": 29000,
+      "currency": "usd",
+      "price_display": "$29/month",
+      "price_yearly_display": "$290/year (save 17%)",
+      "limits": {
+        "kin_count": 10,
+        "api_calls_per_month": 100000,
+        "storage_mb": 5000,
+        "voice_minutes_per_month": 500
+      },
+      "features": {
+        "voice_mode": true,
+        "custom_specializations": true,
+        "priority_support": true,
+        "api_access": true,
+        "drift_alerts": true,
+        "health_monitoring": true,
+        "tailscale_access": true,
+        "export_data": true,
+        "custom_integrations": false
+      },
+      "display_order": 3,
+      "badge_text": "Most Popular",
+      "highlighted": true
+    },
+    {
+      "id": "enterprise",
+      "name": "Enterprise",
+      "description": "For organizations with advanced needs",
+      "price": 9900,
+      "price_yearly": 99000,
+      "currency": "usd",
+      "price_display": "$99/month",
+      "price_yearly_display": "$990/year (save 17%)",
+      "limits": {
+        "kin_count": -1,
+        "api_calls_per_month": -1,
+        "storage_mb": -1,
+        "voice_minutes_per_month": -1
+      },
+      "features": {
+        "voice_mode": true,
+        "custom_specializations": true,
+        "priority_support": true,
+        "api_access": true,
+        "drift_alerts": true,
+        "health_monitoring": true,
+        "tailscale_access": true,
+        "export_data": true,
+        "custom_integrations": true,
+        "dedicated_support": true,
+        "sla": true,
+        "sso": false,
+        "audit_logs": true
+      },
+      "display_order": 4,
+      "badge_text": null,
+      "highlighted": false
+    }
+  ],
+  "comparison_matrix": {
+    "features": [
+      {
+        "name": "Kin Companions",
+        "free": "1",
+        "starter": "3",
+        "pro": "10",
+        "enterprise": "Unlimited"
+      },
+      {
+        "name": "API Calls",
+        "free": "1,000/month",
+        "starter": "10,000/month",
+        "pro": "100,000/month",
+        "enterprise": "Unlimited"
+      },
+      {
+        "name": "Storage",
+        "free": "100 MB",
+        "starter": "500 MB",
+        "pro": "5 GB",
+        "enterprise": "Unlimited"
+      },
+      {
+        "name": "Voice Mode",
+        "free": false,
+        "starter": true,
+        "pro": true,
+        "enterprise": true
+      },
+      {
+        "name": "Custom Specializations",
+        "free": false,
+        "starter": false,
+        "pro": true,
+        "enterprise": true
+      },
+      {
+        "name": "Priority Support",
+        "free": false,
+        "starter": false,
+        "pro": true,
+        "enterprise": true
+      },
+      {
+        "name": "Health Monitoring",
+        "free": false,
+        "starter": true,
+        "pro": true,
+        "enterprise": true
+      },
+      {
+        "name": "Drift Alerts",
+        "free": false,
+        "starter": true,
+        "pro": true,
+        "enterprise": true
+      },
+      {
+        "name": "Dedicated Support",
+        "free": false,
+        "starter": false,
+        "pro": false,
+        "enterprise": true
+      },
+      {
+        "name": "SLA",
+        "free": false,
+        "starter": false,
+        "pro": false,
+        "enterprise": true
+      }
+    ]
+  }
+}
