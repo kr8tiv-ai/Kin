@@ -18,11 +18,14 @@ interface KinStatusRecord {
   glb_url: string;
   specialization: string;
   owner_consent_flags: {
-    data_collection: boolean;
-    voice_recording: boolean;
-    research_access: boolean;
+    data_collection?: boolean;
+    voice_recording?: boolean;
+    research_access?: boolean;
   };
-  support_safe_summary: string;
+  support_safe_summary?: string;
+  created_at?: string;
+  updated_at?: string;
+  schema_version?: string;
 }
 
 /**
@@ -81,7 +84,7 @@ function getMockKinStatus(): KinStatusRecord[] {
   
   return [
     {
-      record_id: 'kin-status-cipher001',
+      record_id: 'ksr-cipher001',
       schema_family: 'kin_status_record',
       kin_id: 'cipher-001',
       name: 'Cipher',
@@ -95,9 +98,12 @@ function getMockKinStatus(): KinStatusRecord[] {
         research_access: false,
       },
       support_safe_summary: 'Cipher is actively serving and ready for website tasks.',
+      created_at: now.toISOString(),
+      updated_at: now.toISOString(),
+      schema_version: '1.0.0',
     },
     {
-      record_id: 'kin-status-mischief001',
+      record_id: 'ksr-mischief001',
       schema_family: 'kin_status_record',
       kin_id: 'mischief-001',
       name: 'Mischief',
@@ -111,9 +117,12 @@ function getMockKinStatus(): KinStatusRecord[] {
         research_access: false,
       },
       support_safe_summary: 'Mischief is playful and ready for family activities.',
+      created_at: new Date(now.getTime() - 300000).toISOString(),
+      updated_at: now.toISOString(),
+      schema_version: '1.0.0',
     },
     {
-      record_id: 'kin-status-vortex001',
+      record_id: 'ksr-vortex001',
       schema_family: 'kin_status_record',
       kin_id: 'vortex-001',
       name: 'Vortex',
@@ -127,6 +136,9 @@ function getMockKinStatus(): KinStatusRecord[] {
         research_access: true,
       },
       support_safe_summary: 'Vortex is experiencing intermittent connectivity.',
+      created_at: new Date(now.getTime() - 3600000).toISOString(),
+      updated_at: now.toISOString(),
+      schema_version: '1.0.0',
     },
   ];
 }

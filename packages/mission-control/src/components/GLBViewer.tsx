@@ -1,189 +1,238 @@
-import { useEffect, useRef, useState } from 'react';
+import React, { Suspense, useMemo } from 'react';
+import { Canvas } from '@react-three/fiber';
+import { useGLTF, OrbitControls } from '@react-three/drei';
+import * as THREE from 'three';
+import { ErrorBoundary } from './ErrorBoundary';
 
-interface GLBViewerProps {
-  /** URL to the GLB file */
+export interface GLBViewerProps {
   glbUrl: string;
-  /** Alt text for the avatar */
-  alt?: string;
-  /** Width of the viewer */
-  width?: number | string;
-  /** Height of the viewer */
-  height?: number | string;
-  /** Auto-rotate the model */
-  autoRotate?: boolean;
-  /** Show loading placeholder */
-  showPlaceholder?: boolean;
-  /** Additional CSS class names */
   className?: string;
-  /** Callback when model is loaded */
-  onLoad?: () => void;
-  /** Callback when model fails to load */
-  onError?: (error: Error) => void;
+  showControls?: boolean;
+  autoRotate?: boolean;
 }
 
 /**
- * GLBViewer - Renders 3D GLB avatars using Three.js
- * 
- * Features:
- * - Loads GLB from URL
- * - Renders animated 3D model
- * - Supports rotation/zoom interactions
- * - Falls back to placeholder on error
- * - Shows loading state
+ * Check if WebGL is available in the browser
  */
-export function GLBViewer({
-  glbUrl,
-  alt = 'Kin Avatar',
-  width = '100%',
-  height = '200px',
-  autoRotate = true,
-  showPlaceholder = true,
-  className = '',
-  onLoad,
-  onError,
-}: GLBViewerProps): JSX.Element {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [usingFallback, setUsingFallback] = useState(false);
-
-  useEffect(() => {
-    // For now, use a CSS-based placeholder since Three.js requires dependencies
-    // In production, this would use @react-three/fiber
-    if (!glbUrl) {
-      setError('No GLB URL provided');
-      setLoading(false);
-      return;
-    }
-
-    // Simulate loading for now (in production, would load actual GLB)
-    const timer = setTimeout(() => {
-      setLoading(false);
-      onLoad?.();
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [glbUrl, onLoad]);
-
-  // Error state with fallback
-  if (error && !showPlaceholder) {
-    return (
-      <div
-        className={`flex items-center justify-center bg-red-50 rounded-lg ${className}`}
-        style={{ width, height }}
-        data-testid="glb-viewer-error"
-      >
-        <div className="text-center p-4">
-          <div className="text-2xl mb-2">❌</div>
-          <p className="text-sm text-red-600">{error}</p>
-        </div>
-      </div>
-    );
+function isWebGLAvailable(): boolean {
+  try {
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+    return context !== null;
+  } catch {
+    return false;
   }
+}
 
-  // Loading state
-  if (loading) {
-    return (
-      <div
-        className={`flex items-center justify-center bg-gray-100 rounded-lg ${className}`}
-        style={{ width, height }}
-        data-testid="glb-viewer-loading"
-      >
-        <div className="text-center">
-          <div className="animate-pulse text-4xl mb-2">🎮</div>
-          <p className="text-sm text-gray-500">Loading avatar...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Fallback placeholder (when GLB fails or for development)
-  if (usingFallback || error) {
-    return (
-      <div
-        className={`relative overflow-hidden rounded-lg ${className}`}
-        style={{ width, height }}
-        data-testid="glb-viewer-fallback"
-      >
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center">
-          <div className="text-center">
-            <div className="text-5xl mb-2 animate-bounce">{getKinEmoji(alt)}</div>
-            <span className="text-xs text-gray-500 block">{alt}</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Render the viewer
+/**
+ * Loading spinner component matching KinStatusCard aesthetic
+ */
+function LoadingSpinner(): React.ReactElement {
   return (
     <div
-      ref={containerRef}
-      className={`relative overflow-hidden rounded-lg bg-gradient-to-br from-gray-50 to-gray-100 ${className}`}
-      style={{ width, height }}
-      data-testid="glb-viewer"
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '100%',
+        height: '100%',
+        minHeight: '160px',
+      }}
     >
-      {/* Canvas for Three.js (placeholder for now) */}
-      <canvas
-        ref={canvasRef}
-        className="w-full h-full"
-        aria-label={alt}
+      <div
+        style={{
+          width: '32px',
+          height: '32px',
+          border: '2px solid rgba(255, 255, 255, 0.1)',
+          borderTopColor: 'rgba(99, 102, 241, 0.8)',
+          borderRadius: '50%',
+          animation: 'glb-viewer-spin 0.8s linear infinite',
+        }}
       />
-
-      {/* Avatar Placeholder with animation */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div 
-          className={`text-5xl ${autoRotate ? 'animate-spin-slow' : ''}`}
-          style={{ animationDuration: '20s' }}
-        >
-          {getKinEmoji(alt)}
-        </div>
-      </div>
-
-      {/* Badge showing NFT status */}
-      <div className="absolute top-2 right-2">
-        <span className="bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full border border-green-200">
-          ✓ NFT
-        </span>
-      </div>
-
-      {/* Interaction hint */}
-      <div className="absolute bottom-2 left-2 right-2 text-center">
-        <span className="text-xs text-gray-400 bg-white/50 px-2 py-0.5 rounded">
-          Drag to rotate • Scroll to zoom
-        </span>
-      </div>
+      <style>{`
+        @keyframes glb-viewer-spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }
 
 /**
- * Get emoji based on Kin name for placeholder
+ * WebGL unsupported fallback
  */
-function getKinEmoji(name: string): string {
-  const emojiMap: Record<string, string> = {
-    'Cipher': '🦑',
-    'Mischief': '🐕',
-    'Vortex': '🐉',
-    'Forge': '🦄',
-    'Aether': '🦍',
-    'Catalyst': '🫧',
-    'Code Kraken': '🦑',
-    'Glitch Pup': '🐕',
-    'Teal Dragon': '🐉',
-    'Cyber Unicorn': '🦄',
-    'Frost Ape': '🦍',
-    'Cosmic Blob': '🫧',
-  };
+function WebGLUnsupported(): React.ReactElement {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '100%',
+        height: '100%',
+        minHeight: '160px',
+        background: 'linear-gradient(180deg, rgba(40, 40, 55, 0.6) 0%, rgba(25, 25, 35, 0.8) 100%)',
+        borderRadius: '8px',
+        padding: '16px',
+      }}
+    >
+      <svg
+        width="32"
+        height="32"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="rgba(245, 158, 11, 0.8)"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        style={{ marginBottom: '8px' }}
+      >
+        <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" />
+        <line x1="8" y1="2" x2="8" y2="18" />
+        <line x1="16" y1="6" x2="16" y2="22" />
+      </svg>
+      <span
+        style={{
+          fontFamily: '"Inter", system-ui, sans-serif',
+          fontSize: '12px',
+          fontWeight: 500,
+          color: 'rgba(255, 255, 255, 0.5)',
+          textAlign: 'center',
+        }}
+      >
+        WebGL not supported
+      </span>
+    </div>
+  );
+}
 
-  for (const [key, emoji] of Object.entries(emojiMap)) {
-    if (name.toLowerCase().includes(key.toLowerCase())) {
-      return emoji;
+/**
+ * Model component that loads and renders the GLB
+ */
+function Model({ 
+  glbUrl, 
+  autoRotate = true 
+}: { 
+  glbUrl: string; 
+  autoRotate?: boolean;
+}): React.ReactElement {
+  const { scene } = useGLTF(glbUrl);
+  
+  // Clone and center the scene, auto-scale to fit
+  const clonedScene = useMemo(() => {
+    const cloned = scene.clone();
+    
+    // Calculate bounding box and center
+    const box = new THREE.Box3().setFromObject(cloned);
+    const center = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+    
+    // Center the model
+    cloned.position.sub(center);
+    
+    // Scale to fit in a 2-unit box (will be scaled down in canvas)
+    const maxDim = Math.max(size.x, size.y, size.z);
+    if (maxDim > 0) {
+      const scale = 2 / maxDim;
+      cloned.scale.setScalar(scale);
     }
+    
+    return cloned;
+  }, [scene]);
+
+  return (
+    <>
+      <primitive object={clonedScene} />
+      {autoRotate && (
+        <OrbitControls
+          enableZoom={false}
+          enablePan={false}
+          autoRotate
+          autoRotateSpeed={1}
+          target={[0, 0, 0]}
+        />
+      )}
+    </>
+  );
+}
+
+/**
+ * GLBViewer - Renders 3D GLB models with loading and error states
+ * 
+ * Features:
+ * - WebGL detection with fallback UI
+ * - Suspense loading spinner
+ * - Error boundary for GLB load failures
+ * - Transparent canvas background
+ * - Auto-rotation and centering
+ */
+export function GLBViewer({ 
+  glbUrl, 
+  className = '',
+  showControls = false,
+  autoRotate = true,
+}: GLBViewerProps): React.ReactElement {
+  // Check WebGL support once
+  const webglSupported = useMemo(() => isWebGLAvailable(), []);
+
+  if (!webglSupported) {
+    return <WebGLUnsupported />;
   }
 
-  return '🤖';
+  if (!glbUrl) {
+    return <LoadingSpinner />;
+  }
+
+  return (
+    <div
+      className={className}
+      style={{
+        width: '100%',
+        height: '100%',
+        minHeight: '160px',
+      }}
+    >
+      <ErrorBoundary>
+        <Suspense fallback={<LoadingSpinner />}>
+          <Canvas
+            gl={{ 
+              alpha: true, 
+              antialias: true,
+              powerPreference: 'high-performance',
+            }}
+            camera={{ position: [0, 0, 4], fov: 45 }}
+            style={{ 
+              background: 'transparent',
+              width: '100%',
+              height: '100%',
+            }}
+            dpr={[1, 2]}
+          >
+            {/* Ambient and directional lighting */}
+            <ambientLight intensity={0.6} />
+            <directionalLight position={[5, 5, 5]} intensity={0.8} />
+            <directionalLight position={[-5, 5, -5]} intensity={0.3} />
+            
+            <Model glbUrl={glbUrl} autoRotate={autoRotate} />
+            
+            {showControls && (
+              <OrbitControls 
+                enableZoom={true}
+                enablePan={false}
+              />
+            )}
+          </Canvas>
+        </Suspense>
+      </ErrorBoundary>
+    </div>
+  );
 }
+
+// Preload GLB for better performance
+GLBViewer.preload = (glbUrl: string): void => {
+  useGLTF.preload(glbUrl);
+};
 
 export default GLBViewer;

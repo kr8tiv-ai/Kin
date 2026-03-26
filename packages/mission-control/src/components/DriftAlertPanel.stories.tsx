@@ -1,23 +1,45 @@
+/**
+ * DriftAlertPanel Stories
+ *
+ * Storybook stories for the DriftAlertPanel component with mock alerts at each severity level.
+ *
+ * @module @kr8tiv-ai/mission-control/components/DriftAlertPanel.stories
+ */
+
 import type { Meta, StoryObj } from '@storybook/react';
 import { DriftAlertPanel } from './DriftAlertPanel';
+
+// ============================================================================
+// Story Meta
+// ============================================================================
 
 const meta: Meta<typeof DriftAlertPanel> = {
   title: 'Mission Control/DriftAlertPanel',
   component: DriftAlertPanel,
   tags: ['autodocs'],
+  parameters: {
+    layout: 'padded',
+  },
   argTypes: {
     kinId: {
       control: 'text',
-      description: 'Filter to specific Kin ID',
+      description: 'Filter alerts by Kin ID',
     },
-    severity: {
-      control: 'select',
-      options: ['low', 'medium', 'high', 'critical'],
-      description: 'Filter to specific severity',
-    },
-    limit: {
-      control: 'number',
+    maxAlerts: {
+      control: { type: 'number', min: 1, max: 50 },
       description: 'Maximum number of alerts to display',
+    },
+    unacknowledgedOnly: {
+      control: 'boolean',
+      description: 'Show only unacknowledged alerts',
+    },
+    autoRefresh: {
+      control: 'boolean',
+      description: 'Auto-refresh alerts',
+    },
+    refreshInterval: {
+      control: { type: 'number', min: 5000, max: 300000 },
+      description: 'Auto-refresh interval in milliseconds',
     },
   },
 };
@@ -25,44 +47,93 @@ const meta: Meta<typeof DriftAlertPanel> = {
 export default meta;
 type Story = StoryObj<typeof DriftAlertPanel>;
 
-// Note: These stories will show loading/error states in Storybook
-// because the API isn't available. Use the mock data below for visual testing.
+// ============================================================================
+// Stories
+// ============================================================================
 
 /**
- * Default state with all alerts
+ * Default story showing all severity levels.
+ * Uses mock data from the hook's DEV mode fallback.
  */
 export const Default: Story = {
   args: {
-    limit: 10,
+    maxAlerts: 10,
+    autoRefresh: false,
   },
 };
 
 /**
- * Filtered to critical alerts only
+ * All severity levels displayed with appropriate colors.
+ */
+export const AllSeverities: Story = {
+  args: {
+    maxAlerts: 10,
+    autoRefresh: false,
+  },
+};
+
+/**
+ * Critical alerts only view.
  */
 export const CriticalOnly: Story = {
   args: {
-    severity: 'critical',
-    limit: 5,
+    kinId: 'kin-nova-002',
+    maxAlerts: 5,
+    autoRefresh: false,
   },
 };
 
 /**
- * Filtered to a specific Kin
+ * Unacknowledged alerts only.
  */
-export const FilteredByKin: Story = {
+export const UnacknowledgedOnly: Story = {
   args: {
-    kinId: 'vortex-001',
-    limit: 10,
+    maxAlerts: 10,
+    unacknowledgedOnly: true,
+    autoRefresh: false,
   },
 };
 
 /**
- * Empty state (no alerts)
- * In Storybook this will show loading then empty due to no API
+ * Loading state.
+ * Note: In DEV mode, mock data will appear after loading.
  */
-export const Empty: Story = {
+export const Loading: Story = {
   args: {
-    limit: 0,
+    maxAlerts: 10,
+    autoRefresh: false,
+  },
+};
+
+/**
+ * Empty state with no alerts.
+ * Achieved by filtering to a non-existent kinId.
+ */
+export const EmptyState: Story = {
+  args: {
+    kinId: 'kin-nonexistent',
+    autoRefresh: false,
+  },
+};
+
+/**
+ * Compact view with limited alerts.
+ */
+export const CompactView: Story = {
+  args: {
+    maxAlerts: 3,
+    autoRefresh: false,
+  },
+};
+
+/**
+ * Full featured panel with all options enabled.
+ */
+export const FullFeatured: Story = {
+  args: {
+    maxAlerts: 20,
+    autoRefresh: true,
+    refreshInterval: 60000,
+    unacknowledgedOnly: false,
   },
 };

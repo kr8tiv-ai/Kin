@@ -1,0 +1,106 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://kr8tiv.ai/schemas/kin-status-record.schema.json",
+  "title": "KinStatusRecord",
+  "description": "Status record for a Kin companion in Mission Control dashboard. Provides health status, specialization, and avatar information.",
+  "type": "object",
+  "required": [
+    "record_id",
+    "schema_family",
+    "kin_id",
+    "name",
+    "status",
+    "last_seen",
+    "glb_url",
+    "specialization",
+    "owner_consent_flags",
+    "created_at"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "record_id": {
+      "type": "string",
+      "description": "Unique identifier for this Kin status record",
+      "pattern": "^ksr-[a-z0-9]{8,}$"
+    },
+    "schema_family": {
+      "type": "string",
+      "const": "kin_status_record",
+      "description": "Schema family identifier"
+    },
+    "kin_id": {
+      "type": "string",
+      "description": "Unique identifier for the Kin companion",
+      "pattern": "^[a-z]+-[0-9]{3,}$"
+    },
+    "name": {
+      "type": "string",
+      "description": "Human-readable name of the Kin companion",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "status": {
+      "type": "string",
+      "enum": ["healthy", "degraded", "offline"],
+      "description": "Current health status of the Kin"
+    },
+    "last_seen": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when the Kin was last active"
+    },
+    "glb_url": {
+      "type": "string",
+      "format": "uri",
+      "description": "URL to the GLB 3D avatar model for this Kin"
+    },
+    "specialization": {
+      "type": "string",
+      "description": "Primary specialization of the Kin (e.g., web-design, family-companion)",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "owner_consent_flags": {
+      "type": "object",
+      "description": "Owner consent settings for this Kin",
+      "properties": {
+        "data_collection": {
+          "type": "boolean",
+          "description": "Whether owner consented to data collection",
+          "default": false
+        },
+        "voice_recording": {
+          "type": "boolean",
+          "description": "Whether owner consented to voice recording",
+          "default": false
+        },
+        "research_access": {
+          "type": "boolean",
+          "description": "Whether owner consented to research access",
+          "default": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "support_safe_summary": {
+      "type": "string",
+      "description": "Support-safe summary of Kin status for operator visibility",
+      "maxLength": 500
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when this record was created"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when this record was last updated"
+    },
+    "schema_version": {
+      "type": "string",
+      "default": "1.0.0",
+      "description": "Schema version"
+    }
+  }
+}

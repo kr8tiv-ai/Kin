@@ -1,0 +1,48 @@
+{
+  "name": "kin-platform",
+  "version": "1.0.0",
+  "description": "KIN AI Companion Platform - Managed family of AI friends",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:api\" \"npm run dev:bot\"",
+    "dev:api": "tsx watch api/server.ts",
+    "dev:bot": "tsx watch bot/telegram-bot.ts",
+    "build": "tsc",
+    "start": "node dist/api/server.js",
+    "start:bot": "node dist/bot/telegram-bot.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint . --ext .ts,.tsx",
+    "typecheck": "tsc --noEmit",
+    "db:migrate": "sqlite3 data/kin.db < db/schema.sql",
+    "db:reset": "rm -f data/kin.db && npm run db:migrate",
+    "health:check": "python scripts/health_monitor_daemon.py --once",
+    "health:daemon": "python scripts/health_monitor_daemon.py"
+  },
+  "dependencies": {
+    "@fastify/cors": "^10.0.1",
+    "@fastify/jwt": "^9.0.1",
+    "@fastify/rate-limit": "^10.2.1",
+    "@fastify/sensible": "^6.0.1",
+    "@fastify/websocket": "^11.0.2",
+    "@grammyjs/auto-retry": "^2.0.2",
+    "@grammyjs/conversations": "^2.0.1",
+    "better-sqlite3": "^11.7.0",
+    "fastify": "^5.1.0",
+    "grammy": "^1.33.0",
+    "ollama": "^0.5.12",
+    "openai": "^4.77.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^22.10.2",
+    "concurrently": "^9.1.2",
+    "eslint": "^9.17.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

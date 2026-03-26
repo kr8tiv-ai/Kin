@@ -1,22 +1,9 @@
 import React, { useMemo } from 'react';
+import { GLBViewer } from './GLBViewer';
+import type { KinStatusRecord } from '../types/kin-status';
 
-/**
- * KinStatusRecord props interface
- * Matches schemas/kin-status-record.schema.json
- */
-export interface KinStatusRecord {
-  kinId: string;
-  name: string;
-  status: 'healthy' | 'degraded' | 'offline';
-  lastSeen: string; // ISO 8601
-  glbUrl: string;
-  specialization: string;
-  ownerConsentFlags: {
-    supportSafeSummary?: boolean;
-    allowAvatarDisplay?: boolean;
-    allowStatusTracking?: boolean;
-  };
-}
+// Re-export for convenience
+export type { KinStatusRecord } from '../types/kin-status';
 
 export interface KinStatusCardProps {
   kin: KinStatusRecord;
@@ -81,10 +68,10 @@ const statusConfig = {
 } as const;
 
 /**
- * KinStatusCard - Displays a Kin's status with GLB preview placeholder
+ * KinStatusCard - Displays a Kin's status with 3D GLB avatar preview
  * 
  * Features:
- * - GLB preview area with Kin name overlay (actual GLB rendering in S04)
+ * - 3D GLB avatar preview with auto-rotation
  * - Status badge with animated pulse for healthy/degraded states
  * - Kin name and specialization text
  * - Relative time formatting for last seen
@@ -92,16 +79,16 @@ const statusConfig = {
  */
 export function KinStatusCard({ kin, className = '', onCardClick }: KinStatusCardProps): React.ReactElement {
   const config = statusConfig[kin.status] || statusConfig.offline;
-  const relativeTime = useMemo(() => formatRelativeTime(kin.lastSeen), [kin.lastSeen]);
+  const relativeTime = useMemo(() => formatRelativeTime(kin.last_seen), [kin.last_seen]);
   
   const handleClick = () => {
-    onCardClick?.(kin.kinId);
+    onCardClick?.(kin.kin_id);
   };
   
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      onCardClick?.(kin.kinId);
+      onCardClick?.(kin.kin_id);
     }
   };
   
@@ -130,23 +117,18 @@ export function KinStatusCard({ kin, className = '', onCardClick }: KinStatusCar
         minHeight: '280px',
       }}
     >
-      {/* GLB Preview Placeholder */}
+      {/* GLB Avatar Viewer */}
       <div
         className="glb-preview"
         style={{
           position: 'relative',
           width: '100%',
           height: '160px',
-          background: `
-            radial-gradient(ellipse at center, rgba(60, 60, 80, 0.4) 0%, transparent 70%),
-            linear-gradient(180deg, rgba(40, 40, 55, 0.8) 0%, rgba(25, 25, 35, 0.95) 100%)
-          `,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
           borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
         }}
       >
+        <GLBViewer glbUrl={kin.glb_url} />
+        
         {/* Kin Name Overlay */}
         <span
           style={{
@@ -161,45 +143,11 @@ export function KinStatusCard({ kin, className = '', onCardClick }: KinStatusCar
             color: 'rgba(255, 255, 255, 0.5)',
             textTransform: 'uppercase',
             whiteSpace: 'nowrap',
+            textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)',
           }}
         >
           {kin.name}
         </span>
-        
-        {/* Avatar Placeholder Icon */}
-        <div
-          style={{
-            width: '64px',
-            height: '64px',
-            borderRadius: '50%',
-            background: `
-              radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
-              linear-gradient(135deg, rgba(80, 80, 100, 0.6) 0%, rgba(50, 50, 70, 0.8) 100%)
-            `,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: `
-              0 4px 16px rgba(0, 0, 0, 0.3),
-              inset 0 1px 0 rgba(255, 255, 255, 0.1)
-            `,
-          }}
-          aria-hidden="true"
-        >
-          <svg
-            width="28"
-            height="28"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="rgba(255, 255, 255, 0.3)"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <circle cx="12" cy="8" r="4" />
-            <path d="M4 20c0-4 4-6 8-6s8 2 8 6" />
-          </svg>
-        </div>
       </div>
       
       {/* Content Section */}

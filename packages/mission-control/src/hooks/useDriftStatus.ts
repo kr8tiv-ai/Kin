@@ -1,332 +1,130 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+/**
+ * useDriftStatus Hook
+ *
+ * Fetches drift status from the API with caching and auto-refresh.
+ * Handles loading, error, and empty states with mock data fallback in DEV mode.
+ *
+ * @module @kr8tiv-ai/mission-control/hooks/useDriftStatus
+ */
+
+import { useState, useEffect, useCallback } from 'react';
+import type { DriftStatus, KinDriftScore } from '../types/drift';
 
 /**
- * Drift status data returned by the API
+ * Hook state interface.
  */
-export interface DriftStatusData {
-  record_id: string;
-  timestamp: string;
-  kin_drift_scores: KinDriftScore[];
-  alert_count_24h: number;
-  critical_count_24h: number;
-  high_count_24h: number;
-  medium_count_24h: number;
-  low_count_24h: number;
-  overall_health: 'stable' | 'warning' | 'critical';
-  created_at: string;
-}
-
-export interface KinDriftScore {
-  kin_id: string;
-  kin_name: string;
-  drift_score: number;
-  status: 'healthy' | 'warning' | 'alert' | 'critical';
-  trend: 'improving' | 'stable' | 'worsening';
-  last_alert_severity: 'low' | 'medium' | 'high' | 'critical' | null;
-  last_alert_at: string | null;
-}
-
-export interface UseDriftStatusOptions {
-  /** Refresh interval in milliseconds (default: 60000) */
-  refreshInterval?: number;
-  /** Enable automatic refresh (default: true) */
-  autoRefresh?: boolean;
-}
-
-export interface UseDriftStatusReturn {
-  data: DriftStatusData | null;
+export interface UseDriftStatusState {
+  status: DriftStatus | null;
   loading: boolean;
-  error: string | null;
-  refresh: () => Promise<void>;
-  lastUpdated: Date | null;
+  error: Error | null;
+  refetch: () => Promise<void>;
 }
 
 /**
- * Hook to fetch and auto-refresh drift status data
+ * Hook options interface.
  */
-export function useDriftStatus(options: UseDriftStatusOptions = {}): UseDriftStatusReturn {
-  const { refreshInterval = 60000, autoRefresh = true } = options;
+export interface UseDriftStatusOptions {
+  refreshInterval?: number;
+  autoRefresh?: boolean;
+  baseUrl?: string;
+}
 
-  const [data, setData] = useState<DriftStatusData | null>(null);
+/**
+ * Generate mock drift status for DEV mode fallback.
+ */
+function generateMockDriftStatus(): DriftStatus {
+  const now = new Date().toISOString();
+
+  return {
+    record_id: `dss-mock-${Date.now().toString(16)}`,
+    schema_family: 'drift_status',
+    timestamp: now,
+    kin_drift_scores: [
+      { kin_id: 'kin-atlas-001', kin_name: 'Atlas', drift_score: 0.12, status: 'stable' },
+      { kin_id: 'kin-nova-002', kin_name: 'Nova', drift_score: 0.78, status: 'critical' },
+      { kin_id: 'kin-orion-003', kin_name: 'Orion', drift_score: 0.35, status: 'warning' },
+      { kin_id: 'kin-luna-004', kin_name: 'Luna', drift_score: 0.08, status: 'stable' },
+    ],
+    alert_count_24h: 7,
+    critical_count_24h: 2,
+    overall_health: 'critical',
+    created_at: now,
+  };
+}
+
+/**
+ * Hook for fetching drift status for all monitored Kin.
+ *
+ * @param options - Hook options
+ * @returns Hook state with status, loading, error, and refetch
+ *
+ * @example
+ * ```tsx
+ * const { status, loading, error, refetch } = useDriftStatus({
+ *   refreshInterval: 30000,
+ * });
+ * ```
+ */
+export function useDriftStatus(options: UseDriftStatusOptions = {}): UseDriftStatusState {
+  const {
+    refreshInterval = 30000,
+    autoRefresh = true,
+    baseUrl = '/api',
+  } = options;
+
+  const [status, setStatus] = useState<DriftStatus | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  
-  const abortControllerRef = useRef<AbortController | null>(null);
+  const [error, setError] = useState<Error | null>(null);
 
-  const fetchData = useCallback(async () => {
-    // Cancel any in-flight request
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-    
-    abortControllerRef.current = new AbortController();
+  /**
+   * Fetch status from API.
+   */
+  const fetchStatus = useCallback(async () => {
+    setLoading(true);
+    setError(null);
 
     try {
-      setError(null);
-
-      const response = await fetch('/api/drift/status', {
-        signal: abortControllerRef.current.signal,
-      });
+      const response = await fetch(`${baseUrl}/drift/status`);
 
       if (!response.ok) {
-        throw new Error(`API returned ${response.status}`);
+        throw new Error(`Failed to fetch drift status: ${response.status} ${response.statusText}`);
       }
 
-      const driftData: DriftStatusData = await response.json();
-      setData(driftData);
-      setLastUpdated(new Date());
+      const data: DriftStatus = await response.json();
+      setStatus(data);
     } catch (err) {
-      // Ignore abort errors
-      if (err instanceof Error && err.name === 'AbortError') {
-        return;
+      // In DEV mode, use mock data fallback
+      if (import.meta.env?.DEV || process.env.NODE_ENV === 'development') {
+        console.warn('[useDriftStatus] API unavailable, using mock data:', err);
+        setStatus(generateMockDriftStatus());
+        setError(null);
+      } else {
+        setError(err instanceof Error ? err : new Error(String(err)));
       }
-      
-      console.error('Failed to fetch drift status:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch drift data');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [baseUrl]);
 
   // Initial fetch
   useEffect(() => {
-    fetchData();
-    
-    // Cleanup on unmount
-    return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-    };
-  }, [fetchData]);
+    fetchStatus();
+  }, [fetchStatus]);
 
   // Auto-refresh
   useEffect(() => {
     if (!autoRefresh || refreshInterval <= 0) return;
 
-    const interval = setInterval(fetchData, refreshInterval);
+    const interval = setInterval(fetchStatus, refreshInterval);
     return () => clearInterval(interval);
-  }, [autoRefresh, refreshInterval, fetchData]);
+  }, [autoRefresh, refreshInterval, fetchStatus]);
 
   return {
-    data,
+    status,
     loading,
     error,
-    refresh: fetchData,
-    lastUpdated,
+    refetch: fetchStatus,
   };
-}
-
-/**
- * Hook to fetch drift baseline for a specific Kin
- */
-export function useDriftBaseline(kinId: string | null) {
-  const [data, setData] = useState<DriftBaseline | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!kinId) {
-      setData(null);
-      return;
-    }
-
-    const fetchBaseline = async () => {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const response = await fetch(`/api/drift/baseline/${kinId}`);
-        
-        if (!response.ok) {
-          throw new Error(`API returned ${response.status}`);
-        }
-
-        const baseline: DriftBaseline = await response.json();
-        setData(baseline);
-      } catch (err) {
-        console.error('Failed to fetch drift baseline:', err);
-        setError(err instanceof Error ? err.message : 'Failed to fetch baseline');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchBaseline();
-  }, [kinId]);
-
-  const resetBaseline = useCallback(async (specialization?: string) => {
-    if (!kinId) return null;
-
-    try {
-      const response = await fetch(`/api/drift/baseline/${kinId}/reset`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ specialization }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`API returned ${response.status}`);
-      }
-
-      const result = await response.json();
-      if (result.baseline) {
-        setData(result.baseline);
-      }
-      return result;
-    } catch (err) {
-      console.error('Failed to reset baseline:', err);
-      throw err;
-    }
-  }, [kinId]);
-
-  return { data, loading, error, resetBaseline };
-}
-
-/**
- * Hook to fetch and manage drift alerts
- */
-export function useDriftAlerts(options: {
-  kinId?: string;
-  severity?: string;
-  limit?: number;
-} = {}) {
-  const { kinId, severity, limit = 50 } = options;
-
-  const [alerts, setAlerts] = useState<DriftAlert[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchAlerts = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const params = new URLSearchParams();
-      if (kinId) params.append('kin_id', kinId);
-      if (severity) params.append('severity', severity);
-      params.append('limit', String(limit));
-
-      const response = await fetch(`/api/drift/alerts?${params}`);
-      
-      if (!response.ok) {
-        throw new Error(`API returned ${response.status}`);
-      }
-
-      const data = await response.json();
-      setAlerts(data.alerts || []);
-    } catch (err) {
-      console.error('Failed to fetch drift alerts:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch alerts');
-    } finally {
-      setLoading(false);
-    }
-  }, [kinId, severity, limit]);
-
-  useEffect(() => {
-    fetchAlerts();
-  }, [fetchAlerts]);
-
-  const acknowledgeAlert = useCallback(async (alertId: string) => {
-    try {
-      const response = await fetch(`/api/drift/alerts/${alertId}/acknowledge`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-      });
-
-      if (!response.ok) {
-        throw new Error(`API returned ${response.status}`);
-      }
-
-      const result = await response.json();
-      
-      // Update local state
-      setAlerts(prev => prev.map(a => 
-        a.record_id === alertId 
-          ? { ...a, acknowledged: true, acknowledged_at: result.alert?.acknowledged_at }
-          : a
-      ));
-
-      return result;
-    } catch (err) {
-      console.error('Failed to acknowledge alert:', err);
-      throw err;
-    }
-  }, []);
-
-  return { alerts, loading, error, refresh: fetchAlerts, acknowledgeAlert };
-}
-
-// --- Types ---
-
-interface DriftBaseline {
-  record_id: string;
-  schema_family: 'drift_baseline';
-  kin_id: string;
-  kin_name: string;
-  specialization: string;
-  behavior_profile: {
-    task_patterns: {
-      primary_task_types: string[];
-      avg_task_duration_minutes: number;
-      task_completion_rate_target: number;
-      complexity_handling: string;
-    };
-    response_patterns: {
-      avg_response_time_seconds: number;
-      response_style: string;
-      tone: string;
-      proactive_suggestions: boolean;
-    };
-    interaction_patterns: {
-      engagement_level: string;
-      initiated_interactions_ratio: number;
-      follow_up_rate: number;
-      context_retention: string;
-    };
-  };
-  baseline_metrics: {
-    avg_response_time: number;
-    task_completion_rate: number;
-    error_rate: number;
-    specialization_alignment_score: number;
-  };
-  created_at: string;
-  last_updated_at: string;
-}
-
-export interface DriftAlert {
-  record_id: string;
-  schema_family: 'drift_alert';
-  kin_id: string;
-  kin_name: string;
-  timestamp: string;
-  drift_score: number;
-  threshold: number;
-  severity: 'low' | 'medium' | 'high' | 'critical';
-  details: {
-    deviant_metrics: Record<string, {
-      current: number;
-      baseline: number;
-      deviation_percent: number;
-      impact: 'low' | 'medium' | 'high';
-    }>;
-    baseline_comparison: {
-      metrics_above_threshold: string[];
-      worst_deviation: {
-        metric_name: string;
-        deviation_percent: number;
-      };
-      trend: 'improving' | 'stable' | 'worsening';
-    };
-  };
-  acknowledged: boolean;
-  acknowledged_at: string | null;
-  created_at: string;
-  resolved_at: string | null;
-  notification_sent: boolean;
-  notification_channels: string[];
 }
 
 export default useDriftStatus;

@@ -1,316 +1,567 @@
-import { useState } from 'react';
-import { useDriftAlerts, DriftAlert } from '../hooks/useDriftStatus';
+/**
+ * DriftAlertPanel Component
+ *
+ * Displays and manages drift alerts with severity badges, drift score vs threshold
+ * comparison, relative time display, and acknowledgment functionality.
+ *
+ * @module @kr8tiv-ai/mission-control/components/DriftAlertPanel
+ */
 
-interface DriftAlertPanelProps {
-  /** Filter to specific Kin ID */
-  kinId?: string;
-  /** Filter to specific severity */
-  severity?: 'low' | 'medium' | 'high' | 'critical';
-  /** Maximum number of alerts to display */
-  limit?: number;
-  /** Additional CSS classes */
-  className?: string;
+import React, { useState, useCallback, useMemo } from 'react';
+import { useDriftAlerts } from '../hooks/useDriftAlerts';
+import type { DriftAlert, DriftSeverity } from '../types/drift';
+
+// ============================================================================
+// Utility Functions
+// ============================================================================
+
+/**
+ * Format relative time since a timestamp.
+ */
+function formatRelativeTime(timestamp: string): string {
+  const now = Date.now();
+  const then = new Date(timestamp).getTime();
+  const diffMs = now - then;
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHour = Math.floor(diffMin / 60);
+  const diffDay = Math.floor(diffHour / 24);
+
+  if (diffSec < 60) {
+    return 'just now';
+  } else if (diffMin < 60) {
+    return `${diffMin} minute${diffMin === 1 ? '' : 's'} ago`;
+  } else if (diffHour < 24) {
+    return `${diffHour} hour${diffHour === 1 ? '' : 's'} ago`;
+  } else if (diffDay < 7) {
+    return `${diffDay} day${diffDay === 1 ? '' : 's'} ago`;
+  } else {
+    return new Date(timestamp).toLocaleDateString();
+  }
 }
 
 /**
- * DriftAlertPanel - Displays and manages drift alerts for Kin companions
- *
- * Features:
- * - Severity badges with color coding
- * - Drift score vs threshold comparison
- * - Relative time display
- * - Acknowledgment functionality
- * - Loading/error/empty states
+ * Get severity color for badge.
  */
-export function DriftAlertPanel({
+function getSeverityColor(severity: DriftSeverity): string {
+  switch (severity) {
+    case 'critical':
+      return '#dc2626'; // red-600
+    case 'high':
+      return '#ea580c'; // orange-600
+    case 'medium':
+      return '#ca8a04'; // yellow-600
+    case 'low':
+    default:
+      return '#6b7280'; // gray-500
+  }
+}
+
+/**
+ * Get severity background color for badge.
+ */
+function getSeverityBgColor(severity: DriftSeverity): string {
+  switch (severity) {
+    case 'critical':
+      return '#fef2f2'; // red-50
+    case 'high':
+      return '#fff7ed'; // orange-50
+    case 'medium':
+      return '#fefce8'; // yellow-50
+    case 'low':
+    default:
+      return '#f9fafb'; // gray-50
+  }
+}
+
+/**
+ * Format drift score as percentage.
+ */
+function formatDriftScore(score: number): string {
+  return `${Math.round(score * 100)}%`;
+}
+
+// ============================================================================
+// Sub-Components
+// ============================================================================
+
+/**
+ * Severity badge component.
+ */
+interface SeverityBadgeProps {
+  severity: DriftSeverity;
+}
+
+const SeverityBadge: React.FC<SeverityBadgeProps> = ({ severity }) => {
+  const bgColor = getSeverityBgColor(severity);
+  const textColor = getSeverityColor(severity);
+
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        padding: '0.125rem 0.5rem',
+        borderRadius: '0.25rem',
+        fontSize: '0.75rem',
+        fontWeight: 600,
+        textTransform: 'uppercase',
+        letterSpacing: '0.05em',
+        backgroundColor: bgColor,
+        color: textColor,
+      }}
+    >
+      {severity}
+    </span>
+  );
+};
+
+/**
+ * Drift score display with threshold comparison.
+ */
+interface DriftScoreDisplayProps {
+  driftScore: number;
+  threshold: number;
+}
+
+const DriftScoreDisplay: React.FC<DriftScoreDisplayProps> = ({ driftScore, threshold }) => {
+  const isOverThreshold = driftScore > threshold;
+  const scoreColor = isOverThreshold ? getSeverityColor('critical') : '#16a34a'; // green-600
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.25rem' }}>
+      <span
+        style={{
+          fontSize: '1.125rem',
+          fontWeight: 600,
+          color: scoreColor,
+        }}
+      >
+        {formatDriftScore(driftScore)}
+      </span>
+      <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+        / {formatDriftScore(threshold)} threshold
+      </span>
+    </div>
+  );
+};
+
+/**
+ * Single alert card component.
+ */
+interface AlertCardProps {
+  alert: DriftAlert;
+  onAcknowledge: (alertId: string) => Promise<boolean>;
+  acknowledging: string | null;
+}
+
+const AlertCard: React.FC<AlertCardProps> = ({ alert, onAcknowledge, acknowledging }) => {
+  const [ackError, setAckError] = useState<string | null>(null);
+
+  const handleAcknowledge = useCallback(async () => {
+    setAckError(null);
+    const success = await onAcknowledge(alert.record_id);
+    if (!success) {
+      setAckError('Failed to acknowledge. Please try again.');
+    }
+  }, [alert.record_id, onAcknowledge]);
+
+  const isAcknowledging = acknowledging === alert.record_id;
+
+  return (
+    <div
+      style={{
+        border: '1px solid #e5e7eb',
+        borderRadius: '0.5rem',
+        padding: '1rem',
+        backgroundColor: alert.acknowledged ? '#f9fafb' : '#ffffff',
+        opacity: alert.acknowledged ? 0.7 : 1,
+      }}
+    >
+      {/* Header: Kin name + Severity badge + Time */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          marginBottom: '0.75rem',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <span style={{ fontSize: '1rem', fontWeight: 600, color: '#111827' }}>
+            {alert.kin_name}
+          </span>
+          <SeverityBadge severity={alert.severity} />
+        </div>
+        <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+          {formatRelativeTime(alert.timestamp)}
+        </span>
+      </div>
+
+      {/* Drift score vs threshold */}
+      <div style={{ marginBottom: '0.75rem' }}>
+        <DriftScoreDisplay driftScore={alert.drift_score} threshold={alert.threshold} />
+      </div>
+
+      {/* Deviant metrics */}
+      <div style={{ marginBottom: '0.75rem' }}>
+        <span style={{ fontSize: '0.75rem', fontWeight: 500, color: '#374151' }}>
+          Deviant metrics:{' '}
+        </span>
+        <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+          {alert.details.deviant_metrics.map(m => m.replace(/_/g, ' ')).join(', ')}
+        </span>
+      </div>
+
+      {/* Trend indicator */}
+      <div style={{ marginBottom: '0.75rem' }}>
+        <span style={{ fontSize: '0.75rem', fontWeight: 500, color: '#374151' }}>
+          Trend:{' '}
+        </span>
+        <span
+          style={{
+            fontSize: '0.75rem',
+            color:
+              alert.details.trend === 'increasing'
+                ? '#dc2626'
+                : alert.details.trend === 'decreasing'
+                  ? '#16a34a'
+                  : '#6b7280',
+          }}
+        >
+          {alert.details.trend}
+        </span>
+      </div>
+
+      {/* Remediation guidance */}
+      <div
+        style={{
+          padding: '0.75rem',
+          backgroundColor: '#f3f4f6',
+          borderRadius: '0.375rem',
+          marginBottom: '0.75rem',
+        }}
+      >
+        <p
+          style={{
+            fontSize: '0.875rem',
+            color: '#374151',
+            margin: 0,
+            lineHeight: 1.5,
+          }}
+        >
+          {alert.remediation_guidance}
+        </p>
+      </div>
+
+      {/* Acknowledgment section */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        {alert.acknowledged ? (
+          <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+            ✓ Acknowledged {alert.acknowledged_at ? formatRelativeTime(alert.acknowledged_at) : ''}
+          </span>
+        ) : (
+          <>
+            <button
+              onClick={handleAcknowledge}
+              disabled={isAcknowledging}
+              style={{
+                padding: '0.375rem 0.75rem',
+                fontSize: '0.75rem',
+                fontWeight: 500,
+                color: '#ffffff',
+                backgroundColor: isAcknowledging ? '#9ca3af' : '#2563eb',
+                border: 'none',
+                borderRadius: '0.375rem',
+                cursor: isAcknowledging ? 'not-allowed' : 'pointer',
+                transition: 'background-color 0.2s',
+              }}
+            >
+              {isAcknowledging ? 'Acknowledging...' : 'Acknowledge'}
+            </button>
+            {ackError && (
+              <span style={{ fontSize: '0.75rem', color: '#dc2626' }}>{ackError}</span>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ============================================================================
+// Main Component
+// ============================================================================
+
+/**
+ * Props for DriftAlertPanel component.
+ */
+export interface DriftAlertPanelProps {
+  /** Filter alerts by Kin ID */
+  kinId?: string;
+  /** Auto-refresh interval in milliseconds */
+  refreshInterval?: number;
+  /** Whether to auto-refresh */
+  autoRefresh?: boolean;
+  /** Base URL for API requests */
+  baseUrl?: string;
+  /** Maximum number of alerts to display */
+  maxAlerts?: number;
+  /** Show only unacknowledged alerts */
+  unacknowledgedOnly?: boolean;
+  /** Custom className for styling */
+  className?: string;
+  /** Custom styles */
+  style?: React.CSSProperties;
+}
+
+/**
+ * DriftAlertPanel displays and manages drift alerts.
+ *
+ * @example
+ * ```tsx
+ * <DriftAlertPanel
+ *   kinId="kin-nova-002"
+ *   maxAlerts={10}
+ *   unacknowledgedOnly={true}
+ * />
+ * ```
+ */
+export const DriftAlertPanel: React.FC<DriftAlertPanelProps> = ({
   kinId,
-  severity,
-  limit = 50,
-  className = '',
-}: DriftAlertPanelProps) {
-  const { alerts, loading, error, refresh, acknowledgeAlert } = useDriftAlerts({
+  refreshInterval = 30000,
+  autoRefresh = true,
+  baseUrl = '/api',
+  maxAlerts = 20,
+  unacknowledgedOnly = false,
+  className,
+  style,
+}) => {
+  const { alerts, loading, error, refetch, acknowledge } = useDriftAlerts({
     kinId,
-    severity,
-    limit,
+    refreshInterval,
+    autoRefresh,
+    baseUrl,
   });
 
   const [acknowledging, setAcknowledging] = useState<string | null>(null);
-  const [ackError, setAckError] = useState<string | null>(null);
 
-  // Get severity badge styling
-  const getSeverityBadge = (severity: DriftAlert['severity']) => {
-    const styles = {
-      low: 'bg-gray-100 text-gray-700 border-gray-200',
-      medium: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-      high: 'bg-orange-100 text-orange-800 border-orange-200',
-      critical: 'bg-red-100 text-red-800 border-red-200',
-    };
-
-    const icons = {
-      low: '○',
-      medium: '◐',
-      high: '◑',
-      critical: '●',
-    };
-
-    return (
-      <span className={`px-2 py-0.5 text-xs font-medium rounded-full border ${styles[severity]}`}>
-        {icons[severity]} {severity.charAt(0).toUpperCase() + severity.slice(1)}
-      </span>
-    );
-  };
-
-  // Format relative time
-  const formatRelativeTime = (timestamp: string): string => {
-    const now = new Date();
-    const then = new Date(timestamp);
-    const diffMs = now.getTime() - then.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMins / 60);
-    const diffDays = Math.floor(diffHours / 24);
-
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
-    if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
-    if (diffDays < 7) return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
-    return then.toLocaleDateString();
-  };
-
-  // Handle acknowledgment
-  const handleAcknowledge = async (alertId: string) => {
-    setAcknowledging(alertId);
-    setAckError(null);
-
-    try {
-      await acknowledgeAlert(alertId);
-    } catch (err) {
-      setAckError(err instanceof Error ? err.message : 'Failed to acknowledge');
-    } finally {
+  // Handle acknowledgment with loading state
+  const handleAcknowledge = useCallback(
+    async (alertId: string) => {
+      setAcknowledging(alertId);
+      const result = await acknowledge(alertId);
       setAcknowledging(null);
+      return result;
+    },
+    [acknowledge]
+  );
+
+  // Filter and sort alerts
+  const displayedAlerts = useMemo(() => {
+    let filtered = alerts;
+
+    // Filter by acknowledgment status
+    if (unacknowledgedOnly) {
+      filtered = filtered.filter(a => !a.acknowledged);
     }
-  };
 
-  // Format drift score vs threshold
-  const formatScoreComparison = (driftScore: number, threshold: number): string => {
-    const scorePercent = (driftScore * 100).toFixed(0);
-    const thresholdPercent = (threshold * 100).toFixed(0);
-    return `${scorePercent}% / ${thresholdPercent}%`;
-  };
-
-  // Get trend indicator
-  const getTrendIndicator = (trend: 'improving' | 'stable' | 'worsening') => {
-    const styles = {
-      improving: 'text-green-500',
-      stable: 'text-gray-500',
-      worsening: 'text-red-500',
+    // Sort by severity (critical first) then by timestamp (newest first)
+    const severityOrder: Record<DriftSeverity, number> = {
+      critical: 0,
+      high: 1,
+      medium: 2,
+      low: 3,
     };
 
-    const arrows = {
-      improving: '↓',
-      stable: '→',
-      worsening: '↑',
-    };
+    filtered = [...filtered].sort((a, b) => {
+      const severityDiff = severityOrder[a.severity] - severityOrder[b.severity];
+      if (severityDiff !== 0) return severityDiff;
+      return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+    });
 
-    return (
-      <span className={styles[trend]} title={`Trend: ${trend}`}>
-        {arrows[trend]}
-      </span>
-    );
-  };
+    // Limit to maxAlerts
+    return filtered.slice(0, maxAlerts);
+  }, [alerts, unacknowledgedOnly, maxAlerts]);
+
+  // Count alerts by severity
+  const severityCounts = useMemo(() => {
+    const counts = { critical: 0, high: 0, medium: 0, low: 0 };
+    for (const alert of alerts) {
+      counts[alert.severity]++;
+    }
+    return counts;
+  }, [alerts]);
 
   // Loading state
   if (loading && alerts.length === 0) {
     return (
-      <div className={`bg-white rounded-lg shadow-md p-6 ${className}`} data-testid="drift-alert-panel">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-800">Drift Alerts</h3>
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-kin-primary"></div>
+      <div
+        className={className}
+        style={{
+          padding: '2rem',
+          textAlign: 'center',
+          color: '#6b7280',
+          ...style,
+        }}
+      >
+        <div style={{ marginBottom: '0.5rem' }}>
+          <span style={{ fontSize: '1.5rem' }}>⏳</span>
         </div>
-        <div className="text-center py-4 text-gray-500">Loading alerts...</div>
+        <p style={{ margin: 0, fontSize: '0.875rem' }}>Loading drift alerts...</p>
       </div>
     );
   }
 
   // Error state
-  if (error) {
+  if (error && alerts.length === 0) {
     return (
-      <div className={`bg-white rounded-lg shadow-md p-6 ${className}`} data-testid="drift-alert-panel">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-800">Drift Alerts</h3>
-          <span className="text-red-500">⚠️</span>
+      <div
+        className={className}
+        style={{
+          padding: '2rem',
+          textAlign: 'center',
+          color: '#dc2626',
+          ...style,
+        }}
+      >
+        <div style={{ marginBottom: '0.5rem' }}>
+          <span style={{ fontSize: '1.5rem' }}>⚠️</span>
         </div>
-        <div className="text-center py-4">
-          <p className="text-red-500 text-sm mb-2">{error}</p>
-          <button
-            onClick={refresh}
-            className="text-sm text-kin-primary hover:underline"
-          >
-            Retry
-          </button>
-        </div>
+        <p style={{ margin: 0, fontSize: '0.875rem', marginBottom: '1rem' }}>
+          Failed to load drift alerts
+        </p>
+        <button
+          onClick={refetch}
+          style={{
+            padding: '0.5rem 1rem',
+            fontSize: '0.875rem',
+            fontWeight: 500,
+            color: '#ffffff',
+            backgroundColor: '#2563eb',
+            border: 'none',
+            borderRadius: '0.375rem',
+            cursor: 'pointer',
+          }}
+        >
+          Retry
+        </button>
       </div>
     );
   }
 
   // Empty state
-  if (alerts.length === 0) {
+  if (displayedAlerts.length === 0) {
     return (
-      <div className={`bg-white rounded-lg shadow-md p-6 ${className}`} data-testid="drift-alert-panel">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-800">Drift Alerts</h3>
+      <div
+        className={className}
+        style={{
+          padding: '2rem',
+          textAlign: 'center',
+          color: '#6b7280',
+          ...style,
+        }}
+      >
+        <div style={{ marginBottom: '0.5rem' }}>
+          <span style={{ fontSize: '1.5rem' }}>✓</span>
         </div>
-        <div className="text-center py-4">
-          <div className="text-4xl mb-2">✓</div>
-          <p className="text-gray-500 text-sm">No drift alerts</p>
-          <p className="text-gray-400 text-xs mt-1">All Kin companions are within normal parameters</p>
-        </div>
+        <p style={{ margin: 0, fontSize: '0.875rem' }}>
+          {unacknowledgedOnly
+            ? 'No unacknowledged drift alerts'
+            : 'No drift alerts'}
+        </p>
       </div>
     );
   }
 
-  // Count unacknowledged alerts
-  const unacknowledgedCount = alerts.filter(a => !a.acknowledged).length;
-
+  // Main render
   return (
-    <div className={`bg-white rounded-lg shadow-md p-6 ${className}`} data-testid="drift-alert-panel">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center space-x-2">
-          <h3 className="text-lg font-semibold text-gray-800">Drift Alerts</h3>
-          {unacknowledgedCount > 0 && (
-            <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-red-100 text-red-800">
-              {unacknowledgedCount} new
+    <div className={className} style={style}>
+      {/* Header with counts */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '1rem',
+          padding: '0.75rem',
+          backgroundColor: '#f9fafb',
+          borderRadius: '0.5rem',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#111827' }}>
+            Drift Alerts
+          </span>
+          {severityCounts.critical > 0 && (
+            <span
+              style={{
+                fontSize: '0.75rem',
+                fontWeight: 500,
+                color: getSeverityColor('critical'),
+              }}
+            >
+              {severityCounts.critical} critical
+            </span>
+          )}
+          {severityCounts.high > 0 && (
+            <span
+              style={{
+                fontSize: '0.75rem',
+                fontWeight: 500,
+                color: getSeverityColor('high'),
+              }}
+            >
+              {severityCounts.high} high
             </span>
           )}
         </div>
         <button
-          onClick={refresh}
-          className="text-xs text-gray-500 hover:text-gray-700 transition-colors"
-          title="Refresh"
+          onClick={refetch}
+          disabled={loading}
+          style={{
+            padding: '0.25rem 0.5rem',
+            fontSize: '0.75rem',
+            fontWeight: 500,
+            color: '#374151',
+            backgroundColor: 'transparent',
+            border: '1px solid #d1d5db',
+            borderRadius: '0.25rem',
+            cursor: loading ? 'not-allowed' : 'pointer',
+            opacity: loading ? 0.5 : 1,
+          }}
         >
-          ↻
+          {loading ? 'Refreshing...' : 'Refresh'}
         </button>
       </div>
 
-      {/* Acknowledgment error */}
-      {ackError && (
-        <div className="mb-4 p-2 bg-red-50 rounded border border-red-200 text-red-700 text-sm">
-          {ackError}
-          <button
-            onClick={() => setAckError(null)}
-            className="ml-2 text-red-500 hover:text-red-700"
-          >
-            ✕
-          </button>
-        </div>
-      )}
-
-      {/* Alert List */}
-      <div className="space-y-3 max-h-96 overflow-y-auto">
-        {alerts.map((alert) => (
-          <div
+      {/* Alert list */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+        {displayedAlerts.map(alert => (
+          <AlertCard
             key={alert.record_id}
-            className={`p-3 rounded-lg border ${
-              alert.acknowledged
-                ? 'bg-gray-50 border-gray-200'
-                : 'bg-white border-gray-300'
-            }`}
-          >
-            {/* Alert Header */}
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center space-x-2">
-                {getSeverityBadge(alert.severity)}
-                <span className="font-medium text-gray-800">{alert.kin_name}</span>
-              </div>
-              <span className="text-xs text-gray-500">
-                {formatRelativeTime(alert.timestamp)}
-              </span>
-            </div>
-
-            {/* Score Comparison */}
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center space-x-1 text-sm">
-                <span className="text-gray-600">Drift:</span>
-                <span className={`font-mono ${
-                  alert.drift_score > alert.threshold ? 'text-red-600 font-semibold' : 'text-gray-800'
-                }`}>
-                  {formatScoreComparison(alert.drift_score, alert.threshold)}
-                </span>
-                <span className="text-gray-400 text-xs">(score / threshold)</span>
-              </div>
-              {getTrendIndicator(alert.details.baseline_comparison.trend)}
-            </div>
-
-            {/* Worst Deviation */}
-            {alert.details.baseline_comparison.worst_deviation && (
-              <div className="text-xs text-gray-600 mb-2">
-                <span className="font-medium">Worst deviation:</span>{' '}
-                <span className="text-gray-800">
-                  {alert.details.baseline_comparison.worst_deviation.metric_name.replace(/_/g, ' ')}
-                </span>
-                <span className="text-red-600 ml-1">
-                  ({alert.details.baseline_comparison.worst_deviation.deviation_percent.toFixed(1)}% off)
-                </span>
-              </div>
-            )}
-
-            {/* Metrics Above Threshold */}
-            {alert.details.baseline_comparison.metrics_above_threshold.length > 0 && (
-              <div className="text-xs text-gray-500 mb-2">
-                <span className="font-medium">Metrics affected:</span>{' '}
-                {alert.details.baseline_comparison.metrics_above_threshold.map((m, i) => (
-                  <span key={m}>
-                    {m.replace(/_/g, ' ')}
-                    {i < alert.details.baseline_comparison.metrics_above_threshold.length - 1 ? ', ' : ''}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            {/* Acknowledgment / Actions */}
-            <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-              {alert.acknowledged ? (
-                <span className="text-xs text-gray-500">
-                  ✓ Acknowledged {alert.acknowledged_at && formatRelativeTime(alert.acknowledged_at)}
-                </span>
-              ) : (
-                <button
-                  onClick={() => handleAcknowledge(alert.record_id)}
-                  disabled={acknowledging === alert.record_id}
-                  className={`text-xs px-2 py-1 rounded transition-colors ${
-                    acknowledging === alert.record_id
-                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                      : 'bg-kin-primary text-white hover:bg-kin-primary-dark'
-                  }`}
-                >
-                  {acknowledging === alert.record_id ? 'Acknowledging...' : 'Acknowledge'}
-                </button>
-              )}
-
-              {alert.notification_sent && (
-                <span className="text-xs text-gray-400" title={`Notified via: ${alert.notification_channels.join(', ')}`}>
-                  🔔 Notified
-                </span>
-              )}
-            </div>
-          </div>
+            alert={alert}
+            onAcknowledge={handleAcknowledge}
+            acknowledging={acknowledging}
+          />
         ))}
       </div>
 
-      {/* Footer */}
-      <div className="mt-4 pt-3 border-t border-gray-100">
-        <div className="flex items-center justify-between text-xs text-gray-500">
-          <span>{alerts.length} alert{alerts.length !== 1 ? 's' : ''}</span>
-          <div className="flex items-center space-x-3">
-            <span className="flex items-center"><span className="w-2 h-2 bg-gray-400 rounded-full mr-1"></span> Low</span>
-            <span className="flex items-center"><span className="w-2 h-2 bg-yellow-500 rounded-full mr-1"></span> Medium</span>
-            <span className="flex items-center"><span className="w-2 h-2 bg-orange-500 rounded-full mr-1"></span> High</span>
-            <span className="flex items-center"><span className="w-2 h-2 bg-red-500 rounded-full mr-1"></span> Critical</span>
-          </div>
+      {/* Show more indicator */}
+      {alerts.length > maxAlerts && (
+        <div
+          style={{
+            marginTop: '0.75rem',
+            textAlign: 'center',
+            fontSize: '0.75rem',
+            color: '#6b7280',
+          }}
+        >
+          Showing {maxAlerts} of {alerts.length} alerts
         </div>
-      </div>
+      )}
     </div>
   );
-}
+};
 
 export default DriftAlertPanel;

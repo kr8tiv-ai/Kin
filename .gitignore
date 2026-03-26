@@ -29,3 +29,12 @@ target/
 vendor/
 .cache/
 tmp/
+
+# IDE / AI tool configs
+.agents/
+.claude/
+.kilocode/
+.pi/
+.trae/
+.windsurf/
+$null

@@ -1,0 +1,80 @@
+{
+  "fixtures": [
+    {
+      "record_id": "ksr-cipher001",
+      "schema_family": "kin_status_record",
+      "kin_id": "cipher-001",
+      "name": "Cipher",
+      "status": "healthy",
+      "last_seen": "2026-03-25T08:00:00.000Z",
+      "glb_url": "https://assets.kr8tiv.ai/kin/cipher.glb",
+      "specialization": "web-design",
+      "owner_consent_flags": {
+        "data_collection": true,
+        "voice_recording": true,
+        "research_access": false
+      },
+      "support_safe_summary": "Cipher is actively serving and ready for website tasks.",
+      "created_at": "2026-03-25T08:00:00.000Z",
+      "updated_at": "2026-03-25T08:00:00.000Z",
+      "schema_version": "1.0.0"
+    },
+    {
+      "record_id": "ksr-mischief001",
+      "schema_family": "kin_status_record",
+      "kin_id": "mischief-001",
+      "name": "Mischief",
+      "status": "healthy",
+      "last_seen": "2026-03-25T07:55:00.000Z",
+      "glb_url": "https://assets.kr8tiv.ai/kin/mischief.glb",
+      "specialization": "family-companion",
+      "owner_consent_flags": {
+        "data_collection": true,
+        "voice_recording": false,
+        "research_access": false
+      },
+      "support_safe_summary": "Mischief is playful and ready for family activities.",
+      "created_at": "2026-03-25T07:55:00.000Z",
+      "updated_at": "2026-03-25T08:00:00.000Z",
+      "schema_version": "1.0.0"
+    },
+    {
+      "record_id": "ksr-vortex001",
+      "schema_family": "kin_status_record",
+      "kin_id": "vortex-001",
+      "name": "Vortex",
+      "status": "degraded",
+      "last_seen": "2026-03-25T07:00:00.000Z",
+      "glb_url": "https://assets.kr8tiv.ai/kin/vortex.glb",
+      "specialization": "social-media",
+      "owner_consent_flags": {
+        "data_collection": false,
+        "voice_recording": false,
+        "research_access": true
+      },
+      "support_safe_summary": "Vortex is experiencing intermittent connectivity.",
+      "created_at": "2026-03-25T07:00:00.000Z",
+      "updated_at": "2026-03-25T08:00:00.000Z",
+      "schema_version": "1.0.0"
+    },
+    {
+      "record_id": "ksr-offline001",
+      "schema_family": "kin_status_record",
+      "kin_id": "dormant-001",
+      "name": "Dormant",
+      "status": "offline",
+      "last_seen": "2026-03-24T12:00:00.000Z",
+      "glb_url": "https://assets.kr8tiv.ai/kin/dormant.glb",
+      "specialization": "research-assistant",
+      "owner_consent_flags": {
+        "data_collection": false,
+        "voice_recording": false,
+        "research_access": true
+      },
+      "support_safe_summary": "Dormant has been offline for over 24 hours.",
+      "created_at": "2026-03-24T12:00:00.000Z",
+      "updated_at": "2026-03-25T08:00:00.000Z",
+      "schema_version": "1.0.0"
+    }
+  ]
+}

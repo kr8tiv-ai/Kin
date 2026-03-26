@@ -1,0 +1,258 @@
+/**
+ * KIN Telegram Bot - Main entry point
+ *
+ * Provides the primary user loop for interacting with Cipher and other Kin companions.
+ */
+
+import { Bot, GrammyError, HttpError, Context, session, SessionFlavor } from 'grammy';
+import { autoRetry } from '@grammyjs/auto-retry';
+import { ConversationFlavor, conversations, createConversation } from '@grammyjs/conversations';
+import { getOllamaClient, isLocalLlmAvailable } from '../inference/local-llm.js';
+import { buildCipherPrompt } from '../inference/cipher-prompts.js';
+import { FallbackHandler } from '../inference/fallback-handler.js';
+import { conversationStore, type ConversationMemory } from './memory/conversation-store.js';
+import { handleStart } from './handlers/start.js';
+import { handleHelp } from './handlers/help.js';
+import { handleStatus } from './handlers/status.js';
+import { handleReset } from './handlers/reset.js';
+import { handleVoice } from './handlers/voice.js';
+
+// ============================================================================
+// Types
+// ============================================================================
+
+interface SessionData {
+  userId: string;
+  companionId: string;
+  conversationStarted: boolean;
+  lastActivity: Date;
+  preferences: {
+    voiceEnabled: boolean;
+    teachingMode: boolean;
+  };
+}
+
+type BotContext = Context & SessionFlavor<SessionData> & ConversationFlavor;
+
+interface BotConfig {
+  token: string;
+  webhookUrl?: string;
+  webhookPort?: number;
+  usePolling?: boolean;
+}
+
+// ============================================================================
+// Bot Factory
+// ============================================================================
+
+export function createKINBot(config: BotConfig) {
+  const bot = new Bot<BotContext>(config.token);
+
+  // Install retry plugin for automatic retries on network errors
+  bot.use(autoRetry());
+
+  // Session middleware
+  bot.use(
+    session({
+      initial: (): SessionData => ({
+        userId: '',
+        companionId: 'cipher',
+        conversationStarted: false,
+        lastActivity: new Date(),
+        preferences: {
+          voiceEnabled: true,
+          teachingMode: true,
+        },
+      }),
+    })
+  );
+
+  // Conversations plugin
+  bot.use(conversations());
+
+  // Initialize fallback handler
+  const fallback = new FallbackHandler(
+    {
+      discloseRouting: true,
+      preferredProvider: 'openai',
+    },
+    {
+      openai: process.env.OPENAI_API_KEY ? { apiKey: process.env.OPENAI_API_KEY } : undefined,
+      anthropic: process.env.ANTHROPIC_API_KEY ? { apiKey: process.env.ANTHROPIC_API_KEY } : undefined,
+    }
+  );
+
+  // ==========================================================================
+  // Command Handlers
+  // ==========================================================================
+
+  bot.command('start', async (ctx) => {
+    await handleStart(ctx, conversationStore);
+  });
+
+  bot.command('help', async (ctx) => {
+    await handleHelp(ctx);
+  });
+
+  bot.command('status', async (ctx) => {
+    await handleStatus(ctx, conversationStore);
+  });
+
+  bot.command('reset', async (ctx) => {
+    await handleReset(ctx, conversationStore);
+  });
+
+  // ==========================================================================
+  // Voice Handler
+  // ==========================================================================
+
+  bot.on('message:voice', async (ctx) => {
+    await handleVoice(ctx, fallback);
+  });
+
+  // ==========================================================================
+  // Message Handler (Main Loop)
+  // ==========================================================================
+
+  bot.on('message:text', async (ctx) => {
+    const userId = ctx.from?.id.toString() ?? 'unknown';
+    const message = ctx.message.text;
+
+    // Update session
+    ctx.session.userId = userId;
+    ctx.session.lastActivity = new Date();
+    ctx.session.conversationStarted = true;
+
+    // Show typing indicator
+    await ctx.api.sendChatAction(ctx.chat.id, 'typing');
+
+    try {
+      // Get conversation history
+      const history = await conversationStore.getHistory(userId, 20);
+
+      // Build messages for the LLM
+      const systemPrompt = buildCipherPrompt({
+        userContext: {
+          name: ctx.from?.first_name ?? 'Friend',
+          telegramId: userId,
+        },
+        taskContext: {
+          mode: 'chat',
+          userMessage: message,
+        },
+      });
+
+      const messages = [
+        { role: 'system' as const, content: systemPrompt },
+        ...history.map((m) => ({
+          role: m.role as 'user' | 'assistant',
+          content: m.content,
+        })),
+        { role: 'user' as const, content: message },
+      ];
+
+      // Generate response with fallback
+      let response: string;
+      
+      // Check local availability
+      const localAvailable = await isLocalLlmAvailable();
+      
+      if (localAvailable) {
+        try {
+          const client = getOllamaClient();
+          const result = await client.chat({
+            messages,
+            model: 'llama3.2',
+            options: {
+              temperature: 0.8,
+              top_p: 0.9,
+            },
+          });
+          response = result.message.content;
+        } catch (localError) {
+          console.error('Local LLM error, using fallback:', localError);
+          // Use cloud fallback
+          const fallbackResult = await fallback.executeWithFallback(
+            messages,
+            async () => { throw localError; }, // Will trigger fallback
+            { taskType: 'simple' }
+          );
+          response = fallbackResult.content;
+        }
+      } else {
+        // No local available, use cloud directly
+        const fallbackResult = await fallback.executeWithFallback(
+          messages,
+          async () => { throw new Error('Local unavailable'); },
+          { taskType: 'simple' }
+        );
+        response = fallbackResult.content;
+      }
+
+      // Store in conversation history
+      await conversationStore.addMessage(userId, 'user', message);
+      await conversationStore.addMessage(userId, 'assistant', response);
+
+      // Send response
+      await ctx.reply(response);
+
+    } catch (error) {
+      console.error('Error handling message:', error);
+      await ctx.reply(
+        "Hey, I hit a snag processing that. Give me a moment and try again? 🐙"
+      );
+    }
+  });
+
+  // ==========================================================================
+  // Error Handler
+  // ==========================================================================
+
+  bot.catch((err) => {
+    const ctx = err.ctx;
+    console.error(`Error while handling update ${ctx.update.update_id}:`);
+
+    if (err.error instanceof GrammyError) {
+      console.error('Error in request:', err.error.description);
+    } else if (err.error instanceof HttpError) {
+      console.error('Could not connect to Telegram:', err.error);
+    } else {
+      console.error('Unknown error:', err.error);
+    }
+  });
+
+  return bot;
+}
+
+// ============================================================================
+// Start Bot
+// ============================================================================
+
+export async function startBot(config: BotConfig) {
+  const bot = createKINBot(config);
+
+  if (config.webhookUrl) {
+    // Webhook mode for production
+    await bot.api.setWebhook(config.webhookUrl, {
+      allowed_updates: ['message', 'edited_message', 'callback_query'],
+    });
+    console.log(`Webhook set to ${config.webhookUrl}`);
+    
+    // Start webhook server
+    // (This would typically be handled by a separate server like Fastify)
+    return bot;
+  } else if (config.usePolling !== false) {
+    // Polling mode for development
+    console.log('Starting bot in polling mode...');
+    await bot.start();
+    return bot;
+  }
+
+  return bot;
+}
+
+// ============================================================================
+// Default Export
+// ============================================================================
+
+export default createKINBot;
