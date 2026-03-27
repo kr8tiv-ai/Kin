@@ -63,8 +63,8 @@ export function DeviceCard({
             align-items: center;
             gap: 8px;
             padding: 8px 12px;
-            background: var(--input-bg, #0f0f1a);
-            border-radius: 6px;
+            background: var(--bg);
+            border-radius: var(--radius-sm);
           }
 
           .device-status-indicator {
@@ -74,11 +74,12 @@ export function DeviceCard({
           }
 
           .device-card.online .device-status-indicator {
-            background: var(--success, #22c55e);
+            background: var(--cyan);
+            box-shadow: 0 0 6px var(--cyan);
           }
 
           .device-card.offline .device-status-indicator {
-            background: var(--error, #ef4444);
+            background: var(--magenta);
           }
 
           .device-info {
@@ -88,6 +89,7 @@ export function DeviceCard({
 
           .device-name {
             display: block;
+            font-family: var(--font-body);
             font-size: 13px;
             font-weight: 500;
             overflow: hidden;
@@ -97,12 +99,15 @@ export function DeviceCard({
 
           .device-ip {
             display: block;
+            font-family: var(--font-mono);
             font-size: 11px;
-            color: var(--text-secondary, #9ca3af);
+            color: var(--text-muted);
           }
 
           .device-os {
             font-size: 16px;
+            font-family: var(--font-mono);
+            color: var(--text-muted);
           }
         `}</style>
       </div>
@@ -193,18 +198,18 @@ export function DeviceCard({
 
       <style>{`
         .device-card {
-          background: var(--card-bg, #1a1a2e);
-          border-radius: 8px;
+          background: var(--surface);
+          border-radius: var(--radius-sm);
           overflow: hidden;
           border-left: 3px solid transparent;
         }
 
         .device-card.online {
-          border-left-color: var(--success, #22c55e);
+          border-left-color: var(--cyan);
         }
 
         .device-card.offline {
-          border-left-color: var(--error, #ef4444);
+          border-left-color: var(--magenta);
         }
 
         .device-header {
@@ -212,7 +217,7 @@ export function DeviceCard({
           justify-content: space-between;
           align-items: center;
           padding: 12px 16px;
-          background: var(--input-bg, #0f0f1a);
+          background: var(--bg);
         }
 
         .device-status {
@@ -228,22 +233,24 @@ export function DeviceCard({
         }
 
         .device-card.online .device-status-indicator {
-          background: var(--success, #22c55e);
-          box-shadow: 0 0 6px var(--success, #22c55e);
+          background: var(--cyan);
+          box-shadow: 0 0 6px var(--cyan), 0 0 12px rgba(0, 240, 255, 0.3);
         }
 
         .device-card.offline .device-status-indicator {
-          background: var(--error, #ef4444);
+          background: var(--magenta);
         }
 
         .device-status-text {
+          font-family: var(--font-body);
           font-size: 12px;
           font-weight: 500;
         }
 
         .device-os {
+          font-family: var(--font-mono);
           font-size: 12px;
-          color: var(--text-secondary, #9ca3af);
+          color: var(--text-muted);
         }
 
         .device-body {
@@ -252,6 +259,7 @@ export function DeviceCard({
 
         .device-hostname {
           margin: 0 0 8px 0;
+          font-family: var(--font-display);
           font-size: 16px;
           font-weight: 600;
         }
@@ -260,7 +268,8 @@ export function DeviceCard({
           display: inline-flex;
           align-items: center;
           gap: 4px;
-          background: var(--primary, #6366f1);
+          background: rgba(0, 240, 255, 0.15);
+          color: var(--cyan);
           padding: 4px 8px;
           border-radius: 4px;
           margin-bottom: 12px;
@@ -288,11 +297,12 @@ export function DeviceCard({
         }
 
         .detail-label {
-          color: var(--text-secondary, #9ca3af);
+          font-family: var(--font-mono);
+          color: var(--text-muted);
         }
 
         .detail-value {
-          font-family: monospace;
+          font-family: var(--font-mono);
           font-size: 12px;
         }
 
@@ -308,23 +318,25 @@ export function DeviceCard({
         }
 
         .tag {
+          font-family: var(--font-mono);
           font-size: 10px;
           padding: 2px 6px;
-          background: var(--input-bg, #0f0f1a);
+          background: var(--bg);
           border-radius: 3px;
-          color: var(--text-secondary, #9ca3af);
+          color: var(--text-muted);
         }
 
         .device-actions {
           display: flex;
           gap: 8px;
           padding: 12px 16px;
-          border-top: 1px solid var(--border, #374151);
+          border-top: 1px solid var(--border);
         }
 
         .btn {
           padding: 6px 12px;
           border-radius: 4px;
+          font-family: var(--font-body);
           font-size: 12px;
           font-weight: 500;
           cursor: pointer;
@@ -334,21 +346,21 @@ export function DeviceCard({
 
         .btn-secondary {
           background: transparent;
-          border: 1px solid var(--border, #374151);
-          color: var(--text, #e5e7eb);
+          border: 1px solid var(--border);
+          color: var(--text);
         }
 
         .btn-secondary:hover {
-          background: var(--hover, #1f2937);
+          background: var(--surface-hover);
         }
 
         .btn-danger {
-          background: var(--error, #ef4444);
+          background: var(--magenta);
           color: white;
         }
 
         .btn-danger:hover {
-          background: #dc2626;
+          background: #e6009a;
         }
 
         .btn-small {
