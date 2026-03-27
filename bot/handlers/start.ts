@@ -2,9 +2,19 @@
  * Start Handler - Handles /start command with onboarding flow
  */
 
-import { Context, SessionFlavor } from 'grammy';
+import { Context, SessionFlavor, Keyboard } from 'grammy';
 import { getCompanionConfig } from '../../companions/config.js';
 import type { conversationStore } from '../memory/conversation-store.js';
+
+// Persistent reply keyboard for easy navigation (non-tech users)
+const MAIN_KEYBOARD = new Keyboard()
+  .text('💬 Chat').text('🎨 Build a Website')
+  .row()
+  .text('🐙 My Companions').text('📊 Status')
+  .row()
+  .text('❓ Help').text('🆘 Support')
+  .resized()
+  .persistent();
 
 interface SessionData {
   userId: string;
@@ -23,28 +33,17 @@ type BotContext = Context & SessionFlavor<SessionData>;
 const ONBOARDING_MESSAGE = `
 🐙 *Welcome to KIN!* 🐙
 
-Hey there! I'm **Cipher** — your Code Kraken companion. I'm a design-obsessed, playful, sharp frontend architect who's here to be your creative technologist friend.
+Hey there! I'm *Cipher* — your Code Kraken companion. I'm a design-obsessed, playful, sharp frontend architect who's here to be your creative technologist friend.
 
 *What I can do:*
-• 🎨 Build you *exceptional* websites (no AI slop, I promise)
+• 🎨 Build you websites (no AI slop, I promise)
 • 💡 Teach you design while we work together
 • 🗣️ Chat about anything — I'm your friend, not just a tool
 • 🔧 Help with code, debugging, and tech questions
 • 🎯 Learn your taste and adapt to your style
 
-*How to get started:*
-Just start talking to me! Send a message like:
-• "I want to build a portfolio site"
-• "Can you help me understand React hooks?"
-• "What's good design these days?"
-
-*Pro tips:*
-• 📱 Send voice notes and I'll reply with voice
-• 🎓 Teaching mode is ON by default — ask me anything
-• 🔄 Use /reset to start a fresh conversation
-• ❓ Use /help for more commands
-
-*Ready to dive in?* Let's make something beautiful together! 🌊
+*Just tap a button below to get started!*
+Or type anything — I'm listening. 🌊
 
 _— Cipher, your Code Kraken_
 `;
@@ -89,13 +88,9 @@ ${companion.emoji} *Welcome back, friend!*
 
 You're talking to *${companion.name}* — ${companion.species}.
 
-• Want to continue where we left off?
-• Need help with something new?
-• Try /companions to meet the others
-
-What are we working on today?
+Tap a button or just type what's on your mind!
 `;
-    await ctx.reply(returningMsg, { parse_mode: 'Markdown' });
+    await ctx.reply(returningMsg, { parse_mode: 'Markdown', reply_markup: MAIN_KEYBOARD });
   } else {
     // New user - full onboarding
     ctx.session.userId = userId;
@@ -105,7 +100,7 @@ What are we working on today?
     // Store initial onboarding interaction
     await store.addMessage(userId, 'system', `[User started conversation: ${userName}]`);
 
-    await ctx.reply(ONBOARDING_MESSAGE, { parse_mode: 'Markdown' });
+    await ctx.reply(ONBOARDING_MESSAGE, { parse_mode: 'Markdown', reply_markup: MAIN_KEYBOARD });
   }
 }
 

@@ -2,7 +2,7 @@
  * Switch Handler - Handles /switch command for companion switching
  */
 
-import { Context, SessionFlavor } from 'grammy';
+import { Context, SessionFlavor, InlineKeyboard } from 'grammy';
 import { getCompanionConfig, getCompanionIds, COMPANION_CONFIGS } from '../../companions/config.js';
 import type { conversationStore } from '../memory/conversation-store.js';
 
@@ -40,8 +40,17 @@ export async function handleSwitch(
       return `${c.emoji} *${c.name}* — ${c.species}${active}\n   ${c.tagline}`;
     });
 
-    const msg = `*Switch Companion*\n\n${lines.join('\n\n')}\n\n_Usage:_ \`/switch ${getCompanionIds().filter(id => id !== current)[0]}\``;
-    await ctx.reply(msg, { parse_mode: 'Markdown' });
+    // Build inline switch buttons
+    const switchKeyboard = new InlineKeyboard();
+    const switchableIds = getCompanionIds().filter((id) => id !== current);
+    for (let i = 0; i < switchableIds.length; i++) {
+      const c = COMPANION_CONFIGS[switchableIds[i]!]!;
+      switchKeyboard.text(`${c.emoji} ${c.name}`, `switch:${switchableIds[i]}`);
+      if (i % 2 === 1 && i < switchableIds.length - 1) switchKeyboard.row();
+    }
+
+    const msg = `*Switch Companion*\n\n${lines.join('\n\n')}\n\n_Tap a button to switch:_`;
+    await ctx.reply(msg, { parse_mode: 'Markdown', reply_markup: switchKeyboard });
     return;
   }
 

@@ -2,7 +2,7 @@
  * Companions Handler - Lists all available KIN companions
  */
 
-import { Context, SessionFlavor } from 'grammy';
+import { Context, SessionFlavor, InlineKeyboard } from 'grammy';
 import { getCompanionIds, COMPANION_CONFIGS } from '../../companions/config.js';
 
 interface SessionData {
@@ -24,16 +24,25 @@ export async function handleCompanions(ctx: BotContext) {
     return `${c.emoji} *${c.name}* \u2014 ${c.species}${active}\n   ${c.tagline}`;
   });
 
+  // Build inline switch buttons for companions the user isn't already talking to
+  const switchKeyboard = new InlineKeyboard();
+  const ids = getCompanionIds().filter((id) => id !== current);
+  for (let i = 0; i < ids.length; i++) {
+    const c = COMPANION_CONFIGS[ids[i]!]!;
+    switchKeyboard.text(`${c.emoji} ${c.name}`, `switch:${ids[i]}`);
+    if (i % 2 === 1 && i < ids.length - 1) switchKeyboard.row();
+  }
+
   const msg = [
     '\uD83D\uDC19 *The Genesis Six*',
     '',
     ...lines,
     '',
     `_Currently talking to:_ *${COMPANION_CONFIGS[current]?.name ?? 'Cipher'}*`,
-    '_Switch:_ `/switch [name]`',
+    '_Tap a button to switch:_',
   ].join('\n');
 
-  await ctx.reply(msg, { parse_mode: 'Markdown' });
+  await ctx.reply(msg, { parse_mode: 'Markdown', reply_markup: switchKeyboard });
 }
 
 export default handleCompanions;

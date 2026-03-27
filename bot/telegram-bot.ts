@@ -4,7 +4,7 @@
  * Provides the primary user loop for interacting with Cipher and other Kin companions.
  */
 
-import { Bot, GrammyError, HttpError, Context, session, SessionFlavor } from 'grammy';
+import { Bot, GrammyError, HttpError, Context, session, SessionFlavor, InlineKeyboard } from 'grammy';
 import { autoRetry } from '@grammyjs/auto-retry';
 import { ConversationFlavor, conversations, createConversation } from '@grammyjs/conversations';
 import { buildCipherPrompt } from '../inference/cipher-prompts.js';
@@ -18,10 +18,19 @@ import { handleReset } from './handlers/reset.js';
 import { handleHealth } from './handlers/health.js';
 import { handleSwitch } from './handlers/switch.js';
 import { handleCompanions } from './handlers/companions.js';
+import { handleSupport, handleSupportCallback } from './handlers/support.js';
 import { handleVoice } from './handlers/voice.js';
 import { createSkillRouter, onReminderFired } from './skills/index.js';
 import type { SkillContext } from './skills/index.js';
 import { sanitizeInput, escapeMarkdown } from './utils/sanitize.js';
+
+// Suggestion buttons shown after Cipher responses
+const SUGGESTION_BUTTONS = new InlineKeyboard()
+  .text('💬 Tell me more', 'suggest:more')
+  .text('🎨 Build something', 'suggest:build')
+  .row()
+  .text('🔄 New topic', 'suggest:new')
+  .text('❓ Help', 'suggest:help');
 
 // In-character error messages (Cipher personality)
 const CIPHER_ERROR_MESSAGES = [
@@ -143,6 +152,94 @@ export function createKINBot(config: BotConfig) {
     await handleCompanions(ctx);
   });
 
+  bot.command('support', async (ctx) => {
+    await handleSupport(ctx);
+  });
+
+  // ==========================================================================
+  // Callback Query Handlers (Inline Button Presses)
+  // ==========================================================================
+
+  bot.on('callback_query:data', async (ctx) => {
+    const data = ctx.callbackQuery.data;
+
+    // Support category buttons
+    if (data.startsWith('support:')) {
+      await handleSupportCallback(ctx, data);
+      return;
+    }
+
+    // Suggestion buttons after Cipher responses
+    if (data === 'suggest:more') {
+      await ctx.answerCallbackQuery();
+      // Inject "Tell me more about that" as if user typed it
+      const userId = ctx.from?.id.toString() ?? 'unknown';
+      ctx.session.userId = userId;
+      await ctx.api.sendChatAction(ctx.chat!.id, 'typing');
+      const history = await conversationStore.getHistory(userId, 20);
+      const systemPrompt = buildCipherPrompt('Tell me more about that', {
+        userName: ctx.from?.first_name ?? 'Friend',
+        taskContext: { type: 'chat' },
+        timeContext: new Date().toLocaleString('en-US', { weekday: 'long', hour: 'numeric', minute: 'numeric' }),
+      });
+      const messages = [
+        { role: 'system' as const, content: systemPrompt },
+        ...history.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+        { role: 'user' as const, content: 'Tell me more about that' },
+      ];
+      const companionId = ctx.session.companionId ?? 'cipher';
+      const result = await supervisedChat(messages, companionId, fallback, { taskType: 'chat' });
+      await conversationStore.addMessage(userId, 'user', 'Tell me more about that');
+      await conversationStore.addMessage(userId, 'assistant', result.content);
+      try {
+        await ctx.reply(result.content, { parse_mode: 'Markdown', reply_markup: SUGGESTION_BUTTONS });
+      } catch {
+        await ctx.reply(result.content, { reply_markup: SUGGESTION_BUTTONS });
+      }
+      return;
+    }
+
+    if (data === 'suggest:build') {
+      await ctx.answerCallbackQuery();
+      await ctx.reply(
+        "🎨 *Let's build something!*\n\nDescribe what you want — a portfolio, a landing page, a blog — and I'll design it with you.\n\nWhat are we making?",
+        { parse_mode: 'Markdown' },
+      );
+      return;
+    }
+
+    if (data === 'suggest:new') {
+      await ctx.answerCallbackQuery();
+      await ctx.reply(
+        "🔄 Fresh start! What would you like to talk about?",
+      );
+      return;
+    }
+
+    if (data === 'suggest:help') {
+      await ctx.answerCallbackQuery();
+      await handleHelp(ctx as any);
+      return;
+    }
+
+    // Companion switch buttons
+    if (data.startsWith('switch:')) {
+      const companionId = data.slice('switch:'.length);
+      ctx.session.companionId = companionId;
+      const { getCompanionConfig } = await import('../companions/config.js');
+      const config = getCompanionConfig(companionId);
+      await ctx.answerCallbackQuery({ text: `Switched to ${config.name}!` });
+      await ctx.reply(
+        `${config.emoji} *Switched to ${config.name}* — ${config.species}\n\n${config.tagline}\n\n_Say hi! ${config.name} is ready to chat._`,
+        { parse_mode: 'Markdown' },
+      );
+      return;
+    }
+
+    // Unknown callback — acknowledge silently
+    await ctx.answerCallbackQuery();
+  });
+
   // ==========================================================================
   // Voice Handler
   // ==========================================================================
@@ -160,6 +257,31 @@ export function createKINBot(config: BotConfig) {
     const rawMessage = ctx.message.text;
     const message = sanitizeInput(rawMessage);
     if (!message) return; // Empty after sanitization
+
+    // Handle ReplyKeyboard button taps (map to commands/prompts)
+    const buttonMap: Record<string, () => Promise<void>> = {
+      '💬 Chat': async () => {
+        await ctx.reply("I'm all ears! What's on your mind? 🐙");
+      },
+      '🎨 Build a Website': async () => {
+        await ctx.reply(
+          "🎨 *Let's build something!*\n\nDescribe what you want — a portfolio, a landing page, a blog — and I'll design it with you.\n\nWhat are we making?",
+          { parse_mode: 'Markdown' },
+        );
+      },
+      '🐙 My Companions': async () => { await handleCompanions(ctx as any); },
+      '📊 Status': async () => { await handleStatus(ctx as any, conversationStore); },
+      '❓ Help': async () => { await handleHelp(ctx as any); },
+      '🆘 Support': async () => { await handleSupport(ctx as any); },
+    };
+
+    const buttonHandler = buttonMap[message];
+    if (buttonHandler) {
+      ctx.session.userId = userId;
+      ctx.session.lastActivity = new Date();
+      await buttonHandler();
+      return;
+    }
 
     // Update session
     ctx.session.userId = userId;
@@ -221,12 +343,12 @@ export function createKINBot(config: BotConfig) {
       await conversationStore.addMessage(userId, 'user', message);
       await conversationStore.addMessage(userId, 'assistant', response);
 
-      // Send response (sanitize to prevent markdown injection from LLM output)
+      // Send response with suggestion buttons
       try {
-        await ctx.reply(response, { parse_mode: 'Markdown' });
+        await ctx.reply(response, { parse_mode: 'Markdown', reply_markup: SUGGESTION_BUTTONS });
       } catch {
-        // If Markdown parsing fails, send as plain text
-        await ctx.reply(response);
+        // If Markdown parsing fails, send as plain text with buttons
+        await ctx.reply(response, { reply_markup: SUGGESTION_BUTTONS });
       }
 
     } catch (error) {
