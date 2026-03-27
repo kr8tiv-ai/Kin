@@ -47,3 +47,25 @@ export {
 } from './pipeline';
 
 export { default as VoicePipeline } from './pipeline';
+
+// Local STT (whisper.cpp)
+export {
+  transcribeWithWhisperCpp,
+  isWhisperCppAvailable,
+  type WhisperLocalConfig,
+} from './local-stt';
+
+// Local TTS (XTTS v2 + Piper)
+export {
+  synthesizeWithXtts,
+  synthesizeWithPiper,
+  synthesizeLocalTts,
+  hasVoiceProfile,
+  saveVoiceProfile,
+  isXttsAvailable,
+  isPiperAvailable,
+  type XttsConfig,
+  type PiperConfig,
+  type VoiceProfile,
+  type LocalTtsConfig,
+} from './local-tts';

@@ -116,28 +116,27 @@ export async function transcribeWithWhisper(
 }
 
 /**
- * Transcribe using local Whisper (whisper.cpp or similar)
+ * Transcribe using local whisper.cpp
  */
 export async function transcribeLocal(
   audioBuffer: Buffer,
   config: VoiceConfig
 ): Promise<TranscriptionResult> {
-  // For local Whisper, we'd typically:
-  // 1. Save audio to temp file
-  // 2. Run whisper.cpp CLI or Python whisper
-  // 3. Parse output
+  const { transcribeWithWhisperCpp, isWhisperCppAvailable } = await import('./local-stt.js');
 
-  const whisperPath = process.env.LOCAL_WHISPER_PATH ?? 'whisper';
-  const startTime = performance.now();
+  const available = await isWhisperCppAvailable();
+  if (!available) {
+    console.warn('[voice] whisper.cpp not available, falling back to Whisper API');
+    return transcribeWithWhisper(audioBuffer, config);
+  }
 
-  // STUB: Local whisper.cpp integration not yet implemented
-  // Requires: whisper.cpp binary or Python whisper installed locally
-  // Would use child_process to run CLI, then parse output
-
-  console.log('[STUB] Local transcription not yet implemented, falling back to API');
-  
-  // Fall back to API
-  return transcribeWithWhisper(audioBuffer, config);
+  return transcribeWithWhisperCpp(audioBuffer, {
+    binaryPath: process.env.WHISPER_CPP_PATH,
+    modelPath: process.env.WHISPER_MODEL_PATH,
+    language: 'en',
+    threads: Number(process.env.WHISPER_THREADS) || 4,
+    timeoutMs: 30000,
+  });
 }
 
 // ============================================================================
@@ -331,27 +330,27 @@ export async function synthesizeWithOpenAI(
 }
 
 /**
- * Synthesize speech locally using piper or similar
+ * Synthesize speech locally using XTTS v2 (voice cloning) or Piper (fast fallback)
  */
 export async function synthesizeLocal(
   text: string,
   companionId: string,
   config: VoiceConfig
 ): Promise<SynthesisResult> {
-  // For local TTS, we'd typically use:
-  // - piper-tts for fast, decent quality
-  // - Coqui TTS for higher quality
-  // - espeak for basic synthesis
+  const { synthesizeLocalTts, isXttsAvailable, isPiperAvailable } = await import('./local-tts.js');
 
-  const ttsPath = process.env.LOCAL_TTS_PATH ?? 'piper';
-  const startTime = performance.now();
+  // Check if any local provider is available
+  const [xttsUp, piperUp] = await Promise.all([isXttsAvailable(), isPiperAvailable()]);
 
-  // STUB: Local TTS (piper/Coqui) not yet implemented
-  // Requires: piper-tts binary or Coqui TTS installed locally
-  console.log('[STUB] Local TTS not yet implemented, falling back to API');
+  if (!xttsUp && !piperUp) {
+    console.warn('[voice] No local TTS available (XTTS/Piper), falling back to OpenAI');
+    return synthesizeWithOpenAI(text, companionId, config);
+  }
 
-  // Fall back to OpenAI
-  return synthesizeWithOpenAI(text, companionId, config);
+  return synthesizeLocalTts(text, companionId, {
+    provider: xttsUp ? 'xtts' : 'piper',
+    profilesDir: process.env.VOICE_PROFILES_DIR,
+  });
 }
 
 // ============================================================================
