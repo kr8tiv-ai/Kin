@@ -2,7 +2,7 @@
  * Voice Handler - Handles voice note messages
  */
 
-import { Context, SessionFlavor } from 'grammy';
+import { Context, SessionFlavor, InputFile } from 'grammy';
 import type { FallbackHandler } from '../../inference/fallback-handler.js';
 import { conversationStore } from '../memory/conversation-store.js';
 import { buildCipherPrompt } from '../../inference/cipher-prompts.js';
@@ -48,7 +48,7 @@ export async function handleVoice(
   ctx.session.conversationStarted = true;
 
   // Show typing/recording indicator
-  await ctx.api.sendChatAction(ctx.chat.id, 'typing');
+  await ctx.api.sendChatAction(ctx.chat!.id, 'typing');
 
   try {
     // Get voice pipeline
@@ -87,15 +87,9 @@ export async function handleVoice(
     const history = await conversationStore.getHistory(userId, 10);
 
     // Build prompt with voice personality
-    const systemPrompt = buildCipherPrompt({
-      userContext: {
-        name: ctx.from?.first_name ?? 'Friend',
-        telegramId: userId,
-      },
-      taskContext: {
-        mode: 'voice',
-        userMessage: transcription,
-      },
+    const systemPrompt = buildCipherPrompt(transcription, {
+      userName: ctx.from?.first_name ?? 'Friend',
+      taskContext: { type: 'chat' },
     }) + '\n\n' + VOICE_PERSONALITY;
 
     const messages = [
@@ -107,24 +101,34 @@ export async function handleVoice(
       { role: 'user' as const, content: transcription },
     ];
 
-    // Generate response
-    const response = await fallback.executeWithFallback(
-      async (client) => {
+    // Generate response with fallback
+    let response: string;
+    
+    try {
+      // Try local first
+      const { getOllamaClient, isLocalLlmAvailable } = await import('../../inference/local-llm.js');
+      const localAvailable = await isLocalLlmAvailable();
+      
+      if (localAvailable) {
+        const client = getOllamaClient();
         const result = await client.chat({
           messages,
           model: 'llama3.2',
           options: { temperature: 0.8 },
         });
-        return result.message.content;
-      },
-      async (provider) => {
-        const result = await provider.chat({
-          messages,
-          model: 'gpt-4o',
-        });
-        return result.choices[0].message.content ?? '';
+        response = result.message.content;
+      } else {
+        throw new Error('Local unavailable');
       }
-    );
+    } catch {
+      // Fallback to cloud
+      const fallbackResult = await fallback.executeWithFallback(
+        messages,
+        async () => { throw new Error('Need cloud fallback'); },
+        { taskType: 'simple' }
+      );
+      response = fallbackResult.content;
+    }
 
     // Store messages
     await conversationStore.addMessage(userId, 'user', transcription);
@@ -135,14 +139,12 @@ export async function handleVoice(
     
     if (voiceEnabled && process.env.ELEVENLABS_API_KEY) {
       try {
-        await ctx.api.sendChatAction(ctx.chat.id, 'record_voice');
-        
+        await ctx.api.sendChatAction(ctx.chat!.id, 'record_voice');
+
         const synthesis = await voicePipeline.synthesize(response, companionId);
-        
+
         // Send voice reply
-        await ctx.api.sendVoice(ctx.chat.id, {
-          source: synthesis.audioBuffer,
-        });
+        await ctx.api.sendVoice(ctx.chat!.id, new InputFile(new Uint8Array(synthesis.audioBuffer)));
       } catch (error) {
         // Fallback to text if TTS fails
         console.error('TTS error:', error);

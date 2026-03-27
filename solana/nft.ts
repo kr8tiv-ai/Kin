@@ -70,7 +70,7 @@ export interface TransferResult {
 // Companion NFT Metadata
 // ============================================================================
 
-const COMPANION_METADATA: Record<string, Partial<NFTMetadata>> = {
+export const COMPANION_METADATA: Record<string, Partial<NFTMetadata>> = {
   cipher: {
     name: 'Cipher - Code Kraken',
     symbol: 'CIPHER',

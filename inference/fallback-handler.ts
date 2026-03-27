@@ -179,7 +179,7 @@ class CostTracker {
     inputTokens: number,
     outputTokens: number
   ): number {
-    const pricing = COST_PER_1K_TOKENS[provider]?.[model as keyof typeof COST_PER_1K_TOKENS['openai']];
+    const pricing = (COST_PER_1K_TOKENS[provider] as Record<string, { input: number; output: number }>)?.[model];
     
     if (!pricing) {
       // Use average pricing as fallback
@@ -487,7 +487,7 @@ export class FallbackHandler {
    * Format disclosure message
    */
   private formatDisclosure(reason: RoutingReason, provider: string): string {
-    const template = DISCLOSURE_MESSAGES[reason] ?? DISCLOSURE_MESSAGES.local_error;
+    const template = DISCLOSURE_MESSAGES[reason as keyof typeof DISCLOSURE_MESSAGES] ?? DISCLOSURE_MESSAGES.local_error;
     return template.replace('{{provider}}', provider === 'openai' ? 'OpenAI' : 'Claude');
   }
 

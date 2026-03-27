@@ -11,7 +11,7 @@ import jwt from '@fastify/jwt';
 import rateLimit from '@fastify/rate-limit';
 import websocket from '@fastify/websocket';
 import sensible from '@fastify/sensible';
-import { Database } from 'better-sqlite3';
+import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
 
@@ -39,7 +39,7 @@ export interface ApiConfig {
 }
 
 export interface AppContext {
-  db: Database;
+  db: InstanceType<typeof Database>;
   config: Required<ApiConfig>;
 }
 
@@ -66,7 +66,7 @@ export async function createServer(config: ApiConfig = {}) {
     databasePath: config.databasePath ?? process.env.DATABASE_PATH ?? path.join(process.cwd(), 'data', 'kin.db'),
     corsOrigins: config.corsOrigins ?? (environment === 'development' ? ['http://localhost:3000', 'http://localhost:5173'] : []),
     rateLimitMax: config.rateLimitMax ?? 100,
-    environment,
+    environment: environment as 'development' | 'production' | 'test',
   };
 
   // Ensure data directory exists
@@ -166,7 +166,7 @@ export async function createServer(config: ApiConfig = {}) {
 
   fastify.register(async (wsFastify) => {
     wsFastify.get('/ws', { websocket: true }, (connection, request) => {
-      connection.socket.on('message', (message) => {
+      connection.socket.on('message', (message: string) => {
         // Parse message
         try {
           const data = JSON.parse(message.toString());
@@ -203,7 +203,7 @@ export async function createServer(config: ApiConfig = {}) {
   // Error Handler
   // ==========================================================================
 
-  fastify.setErrorHandler((error, request, reply) => {
+  fastify.setErrorHandler((error: { statusCode?: number; message: string; stack?: string }, request, reply) => {
     const statusCode = error.statusCode ?? 500;
     
     // Log error

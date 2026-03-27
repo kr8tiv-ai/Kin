@@ -303,6 +303,7 @@ export class MetricsCollector {
         provider,
         model,
         ...this.calculateMetrics(metrics),
+        lastUpdated: new Date().toISOString(),
       });
     }
 
@@ -387,8 +388,8 @@ export class MetricsCollector {
     const sum = latencies.reduce((a, b) => a + b, 0);
 
     return {
-      min: latencies[0],
-      max: latencies[latencies.length - 1],
+      min: latencies[0] ?? 0,
+      max: latencies[latencies.length - 1] ?? 0,
       avg: sum / latencies.length,
       median: this.percentile(latencies, 50),
       p95: this.percentile(latencies, 95),
@@ -525,7 +526,7 @@ export class MetricsCollector {
   private percentile(sorted: number[], p: number): number {
     if (sorted.length === 0) return 0;
     const index = Math.ceil((p / 100) * sorted.length) - 1;
-    return sorted[Math.max(0, index)];
+    return sorted[Math.max(0, index)] ?? 0;
   }
 
   /**

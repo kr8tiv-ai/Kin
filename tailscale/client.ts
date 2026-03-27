@@ -444,12 +444,44 @@ export class RemoteAccessManager {
 
   /**
    * Get user's trust level based on history and verification
+   *
+   * Trust ladder:
+   *   4 Owner  — OWNER_TELEGRAM_ID env match
+   *   3 Admin  — manual promotion only (not auto-assigned)
+   *   2 Member — earliest session >= 7 days old
+   *   1 Visitor — earliest session >= 1 day old
+   *   0 Guest  — no session history or earliest session < 1 day
    */
   async getUserTrustLevel(userId: string): Promise<number> {
-    // STUB: Trust level calculation not yet implemented
-    // TODO: Integrate with user account age, session history, MFA status
-    // For now, default to Level 1 (Visitor)
-    return 1;
+    // Level 4: Owner — configured in env
+    const ownerId = process.env.OWNER_TELEGRAM_ID;
+    if (ownerId && userId === ownerId) return 4;
+
+    // Find the earliest session belonging to this user
+    let earliestStart: Date | null = null;
+    for (const session of this.sessions.values()) {
+      if (session.userId !== userId) continue;
+      if (!earliestStart || session.startedAt < earliestStart) {
+        earliestStart = session.startedAt;
+      }
+    }
+
+    // No session history at all → Level 0 (Guest)
+    if (!earliestStart) return 0;
+
+    const now = Date.now();
+    const sessionAgeMs = now - earliestStart.getTime();
+    const oneDayMs = 24 * 60 * 60 * 1000;
+
+    // Account age < 1 day → Level 0 (Guest)
+    if (sessionAgeMs < oneDayMs) return 0;
+
+    // Account age < 7 days → Level 1 (Visitor)
+    if (sessionAgeMs < 7 * oneDayMs) return 1;
+
+    // Account age >= 7 days → Level 2 (Member)
+    // Level 3 (Admin) requires manual promotion (not auto-assigned)
+    return 2;
   }
 }
 

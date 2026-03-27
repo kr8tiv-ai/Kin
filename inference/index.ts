@@ -106,21 +106,3 @@ export {
   type MetricCallback,
 } from './metrics';
 
-// ============================================================================
-// Convenience Re-exports
-// ============================================================================
-
-/**
- * Default local LLM client
- */
-export { default as OllamaClient } from './local-llm';
-
-/**
- * Default fallback handler
- */
-export { default as FallbackHandler } from './fallback-handler';
-
-/**
- * Default metrics collector
- */
-export { default as MetricsCollector } from './metrics';

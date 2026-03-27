@@ -46,8 +46,6 @@ export {
   type VoicePersonality,
 } from './pipeline';
 
-export { default as VoicePipeline } from './pipeline';
-
 // Local STT (whisper.cpp)
 export {
   transcribeWithWhisperCpp,

@@ -42,5 +42,3 @@ export {
   type DesignReference,
   type QualityCheck,
 } from './pipeline';
-
-export { default as WebsitePipeline } from './pipeline';

@@ -115,10 +115,11 @@ const DEFAULT_PROFILES: Record<string, Omit<VoiceProfile, 'referenceAudioPath'>>
  * Looks for reference audio at: {profilesDir}/{companionId}.wav
  */
 function resolveProfile(companionId: string, profilesDir: string): VoiceProfile {
-  const base = DEFAULT_PROFILES[companionId] ?? DEFAULT_PROFILES.cipher;
+  const base = DEFAULT_PROFILES[companionId] ?? DEFAULT_PROFILES['cipher']!;
   return {
     ...base,
     companionId,
+    language: base?.language ?? 'en',
     referenceAudioPath: join(profilesDir, `${companionId}.wav`),
   };
 }

@@ -91,7 +91,7 @@ const memoryRoutes: FastifyPluginAsync = async (fastify) => {
       if (!grouped[pref.companion_id]) {
         grouped[pref.companion_id] = [];
       }
-      grouped[pref.companion_id].push(pref.content);
+      grouped[pref.companion_id]!.push(pref.content);
     }
 
     return { preferences: grouped };

@@ -15,9 +15,11 @@ import { handleStart } from './handlers/start.js';
 import { handleHelp } from './handlers/help.js';
 import { handleStatus } from './handlers/status.js';
 import { handleReset } from './handlers/reset.js';
+import { handleHealth } from './handlers/health.js';
 import { handleVoice } from './handlers/voice.js';
 import { createSkillRouter, onReminderFired } from './skills/index.js';
 import type { SkillContext } from './skills/index.js';
+import { sanitizeInput } from './utils/sanitize.js';
 
 // ============================================================================
 // Types
@@ -34,7 +36,7 @@ interface SessionData {
   };
 }
 
-type BotContext = Context & SessionFlavor<SessionData> & ConversationFlavor;
+type BotContext = Context & SessionFlavor<SessionData> & ConversationFlavor<Context>;
 
 interface BotConfig {
   token: string;
@@ -51,7 +53,7 @@ export function createKINBot(config: BotConfig) {
   const bot = new Bot<BotContext>(config.token);
 
   // Install retry plugin for automatic retries on network errors
-  bot.use(autoRetry());
+  bot.use(autoRetry() as any);
 
   // Session middleware
   bot.use(
@@ -80,7 +82,7 @@ export function createKINBot(config: BotConfig) {
     try {
       const chatId = Number(reminder.userId);
       if (!isNaN(chatId)) {
-        await bot.api.sendMessage(chatId, `⏰ Reminder: ${reminder.text}`);
+        await bot.api.sendMessage(chatId, `⏰ Reminder: ${reminder.task}`);
       }
     } catch (err) {
       console.error('Failed to deliver reminder:', err);
@@ -119,6 +121,10 @@ export function createKINBot(config: BotConfig) {
     await handleReset(ctx, conversationStore);
   });
 
+  bot.command('health', async (ctx) => {
+    await handleHealth(ctx);
+  });
+
   // ==========================================================================
   // Voice Handler
   // ==========================================================================
@@ -133,7 +139,9 @@ export function createKINBot(config: BotConfig) {
 
   bot.on('message:text', async (ctx) => {
     const userId = ctx.from?.id.toString() ?? 'unknown';
-    const message = ctx.message.text;
+    const rawMessage = ctx.message.text;
+    const message = sanitizeInput(rawMessage);
+    if (!message) return; // Empty after sanitization
 
     // Update session
     ctx.session.userId = userId;
@@ -278,6 +286,15 @@ export async function startBot(config: BotConfig) {
     // Polling mode for development
     console.log('Starting bot in polling mode...');
     await bot.start();
+
+    const shutdown = async () => {
+      console.log('\nShutting down KIN...');
+      await bot.stop();
+      process.exit(0);
+    };
+    process.on('SIGINT', shutdown);
+    process.on('SIGTERM', shutdown);
+
     return bot;
   }
 

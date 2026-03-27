@@ -177,7 +177,7 @@ class SQLiteConversationStore {
     }
   }
 
-  async getMessageCount(userId: string, companionId: string = 'cipher'): Promise<number> {
+  getMessageCount(userId: string, companionId: string = 'cipher'): number {
     const stmt = this.db.prepare(`
       SELECT COUNT(*) as count FROM conversations
       WHERE user_id = ? AND companion_id = ?
@@ -301,7 +301,7 @@ class InMemoryConversationStore {
     }
   }
 
-  async getMessageCount(userId: string, companionId: string = 'cipher'): Promise<number> {
+  getMessageCount(userId: string, companionId: string = 'cipher'): number {
     const key = this.getKey(userId, companionId);
     return this.messages.get(key)?.length ?? 0;
   }

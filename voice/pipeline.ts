@@ -72,7 +72,7 @@ export async function transcribeWithWhisper(
   }
 
   const formData = new FormData();
-  formData.append('file', new Blob([audioBuffer]), 'audio.ogg');
+  formData.append('file', new Blob([new Uint8Array(audioBuffer)]), 'audio.ogg');
   formData.append('model', 'whisper-1');
   formData.append('response_format', 'verbose_json');
 
@@ -208,8 +208,8 @@ export async function synthesizeWithElevenLabs(
     throw new VoicePipelineError('ElevenLabs API key required', 'MISSING_API_KEY');
   }
 
-  const voice = COMPANION_VOICES[companionId] ?? COMPANION_VOICES.cipher;
-  const voiceId = config.defaultVoice ?? process.env.ELEVENLABS_VOICE_ID ?? voice.voiceId;
+  const voice = COMPANION_VOICES[companionId] ?? COMPANION_VOICES['cipher']!;
+  const voiceId = config.defaultVoice ?? process.env.ELEVENLABS_VOICE_ID ?? voice?.voiceId;
 
   const startTime = performance.now();
 
@@ -435,7 +435,7 @@ export class VoicePipeline {
    * Get voice personality for companion
    */
   getVoicePersonality(companionId: string): VoicePersonality {
-    return COMPANION_VOICES[companionId] ?? COMPANION_VOICES.cipher;
+    return COMPANION_VOICES[companionId] ?? COMPANION_VOICES['cipher']!;
   }
 }
 
@@ -456,8 +456,8 @@ function estimateAudioDuration(buffer: Buffer, format: string): number {
     flac: 80000,  // Lossless, variable
   };
 
-  const bps = bytesPerSecond[format] ?? bytesPerSecond.mp3;
-  return buffer.length / bps;
+  const bps = bytesPerSecond[format] ?? bytesPerSecond['mp3']!;
+  return buffer.length / bps!;
 }
 
 /**

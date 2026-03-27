@@ -23,5 +23,3 @@ export {
   type MintResult,
   type TransferResult,
 } from './nft';
-
-export { default as SolanaNFTClient } from './nft';

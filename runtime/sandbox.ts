@@ -117,7 +117,7 @@ export class Sandbox {
 
     // Extract the base command (first word)
     const parts = trimmed.split(/\s+/);
-    const baseCmd = parts[0].replace(/^\.\//, '').replace(/^\/.*\//, '').toLowerCase();
+    const baseCmd = parts[0]!.replace(/^\.\//, '').replace(/^\/.*\//, '').toLowerCase();
 
     // Check blocked list
     if (this.blocked.has(baseCmd)) {

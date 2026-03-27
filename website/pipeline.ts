@@ -223,9 +223,9 @@ function parseGeneratedFiles(response: string): GeneratedFile[] {
   let fileIndex = 0;
   
   while ((match = codeBlockRegex.exec(response)) !== null) {
-    const language = match[1];
+    const language = match[1] ?? '';
     const path = match[2] || `file-${fileIndex}.${getExtension(language)}`;
-    const content = match[3].trim();
+    const content = (match[3] ?? '').trim();
 
     files.push({
       path,
@@ -286,7 +286,7 @@ function extractExplanation(response: string): {
   
   let match;
   while ((match = teachingRegex.exec(response)) !== null) {
-    teachingPoints.push(match[1].trim());
+    teachingPoints.push((match[1] ?? '').trim());
   }
 
   return {

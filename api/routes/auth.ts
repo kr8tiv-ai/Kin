@@ -99,7 +99,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
   // Verify token
   fastify.get('/auth/verify', async (request) => {
     try {
-      const decoded = await request.jwtVerify();
+      const decoded = await request.jwtVerify() as { userId: string };
       return { valid: true, userId: decoded.userId };
     } catch {
       return { valid: false };

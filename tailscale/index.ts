@@ -53,5 +53,3 @@ export {
   type RemoteSession,
   type AccessRequest,
 } from './client';
-
-export { default as TailscaleClient } from './client';

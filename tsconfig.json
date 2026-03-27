@@ -16,7 +16,7 @@
     "forceConsistentCasingInFileNames": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
-    "noPropertyAccessFromIndexSignature": true,
+    "noPropertyAccessFromIndexSignature": false,
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"]
@@ -29,7 +29,10 @@
     "website/**/*.ts",
     "nft/**/*.ts",
     "tailscale/**/*.ts",
-    "companions/**/*.ts"
+    "companions/**/*.ts",
+    "voice/**/*.ts",
+    "runtime/**/*.ts",
+    "scripts/**/*.ts"
   ],
   "exclude": [
     "node_modules",

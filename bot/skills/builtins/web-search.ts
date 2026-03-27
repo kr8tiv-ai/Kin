@@ -31,19 +31,19 @@ function extractQuery(message: string): string | null {
 
   // "search for X", "search X"
   const searchFor = lower.match(/search\s+(?:for\s+)?["']?(.+?)["']?\s*$/i);
-  if (searchFor) return searchFor[1].trim();
+  if (searchFor?.[1]) return searchFor[1].trim();
 
   // "look up X", "lookup X"
   const lookUp = lower.match(/look\s*up\s+["']?(.+?)["']?\s*$/i);
-  if (lookUp) return lookUp[1].trim();
+  if (lookUp?.[1]) return lookUp[1].trim();
 
   // "google X", "find info on X"
   const google = lower.match(/(?:google|find\s+(?:info|information)\s+(?:on|about))\s+["']?(.+?)["']?\s*$/i);
-  if (google) return google[1].trim();
+  if (google?.[1]) return google[1].trim();
 
   // "what is X" / "who is X" (only if message starts with these)
   const whatIs = lower.match(/^(?:what|who|where|when|how)\s+(?:is|are|was|were|do|does|did)\s+(.+?)\??$/i);
-  if (whatIs && lower.includes('search')) return whatIs[1].trim();
+  if (whatIs?.[1] && lower.includes('search')) return whatIs[1].trim();
 
   return null;
 }
