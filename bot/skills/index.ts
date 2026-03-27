@@ -48,6 +48,7 @@ export {
   weatherSkill,
   calculatorSkill,
   reminderSkill,
+  webSearchSkill,
 } from './builtins/index.js';
 
 // Reminder API (for wiring up notification delivery)

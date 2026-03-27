@@ -16,6 +16,8 @@ import { handleHelp } from './handlers/help.js';
 import { handleStatus } from './handlers/status.js';
 import { handleReset } from './handlers/reset.js';
 import { handleVoice } from './handlers/voice.js';
+import { createSkillRouter, onReminderFired } from './skills/index.js';
+import type { SkillContext } from './skills/index.js';
 
 // ============================================================================
 // Types
@@ -69,6 +71,21 @@ export function createKINBot(config: BotConfig) {
 
   // Conversations plugin
   bot.use(conversations());
+
+  // Initialize skill router
+  const skillRouter = createSkillRouter();
+
+  // Wire reminder notifications — when a reminder fires, send message to user
+  onReminderFired(async (reminder) => {
+    try {
+      const chatId = Number(reminder.userId);
+      if (!isNaN(chatId)) {
+        await bot.api.sendMessage(chatId, `⏰ Reminder: ${reminder.text}`);
+      }
+    } catch (err) {
+      console.error('Failed to deliver reminder:', err);
+    }
+  });
 
   // Initialize fallback handler
   const fallback = new FallbackHandler(
@@ -127,6 +144,27 @@ export function createKINBot(config: BotConfig) {
     await ctx.api.sendChatAction(ctx.chat.id, 'typing');
 
     try {
+      // Check if message triggers a skill (before LLM)
+      const matchedSkill = skillRouter.matchSkill(message);
+      if (matchedSkill) {
+        const history = await conversationStore.getHistory(userId, 20);
+        const skillCtx: SkillContext = {
+          message,
+          userId,
+          userName: ctx.from?.first_name ?? 'Friend',
+          conversationHistory: history.map((m) => ({ role: m.role, content: m.content })),
+          env: process.env as Record<string, string | undefined>,
+        };
+        const result = await skillRouter.executeSkill(matchedSkill.name, skillCtx);
+        if (result && result.type !== 'error') {
+          await conversationStore.addMessage(userId, 'user', message);
+          await conversationStore.addMessage(userId, 'assistant', result.content);
+          await ctx.reply(result.content, { parse_mode: result.type === 'markdown' ? 'Markdown' : undefined });
+          return;
+        }
+        // If skill returned error, fall through to LLM
+      }
+
       // Get conversation history
       const history = await conversationStore.getHistory(userId, 20);
 

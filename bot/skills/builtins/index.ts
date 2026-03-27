@@ -9,15 +9,18 @@ import type { KinSkill } from '../types.js';
 import { weatherSkill } from './weather.js';
 import { calculatorSkill } from './calculator.js';
 import { reminderSkill } from './reminder.js';
+import { webSearchSkill } from './web-search.js';
 
 export const builtinSkills: KinSkill[] = [
   weatherSkill,
   calculatorSkill,
   reminderSkill,
+  webSearchSkill,
 ];
 
 export { weatherSkill } from './weather.js';
 export { calculatorSkill } from './calculator.js';
 export { reminderSkill } from './reminder.js';
+export { webSearchSkill } from './web-search.js';
 
 export default builtinSkills;
