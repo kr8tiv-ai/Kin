@@ -1,5 +1,6 @@
 /**
  * NetworkHealthWidget component for displaying Tailscale network status.
+ * Styled with KIN / KR8TIV design system tokens.
  */
 
 import React from 'react';
@@ -126,43 +127,55 @@ export function NetworkHealthWidget({
 
       <style>{`
         .network-health-widget {
-          background: var(--card-bg, #1a1a2e);
-          border-radius: 12px;
-          padding: 16px;
+          background: var(--glass-bg, rgba(255,255,255,0.02));
+          backdrop-filter: blur(var(--glass-blur, 20px));
+          -webkit-backdrop-filter: blur(var(--glass-blur, 20px));
+          border-radius: var(--radius-md, 20px);
+          border: 1px solid var(--border, rgba(255,255,255,0.1));
+          padding: 24px;
+          color: var(--text, #ffffff);
         }
 
         .widget-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: 16px;
+          margin-bottom: 20px;
         }
 
         .widget-header h3 {
           margin: 0;
-          font-size: 14px;
-          font-weight: 600;
+          font-family: var(--font-display, 'Outfit', sans-serif);
+          font-weight: 800;
+          font-size: 16px;
+          color: var(--gold, #ffd700);
         }
 
         .refresh-btn {
           background: transparent;
-          border: none;
-          color: var(--text-secondary, #9ca3af);
+          border: 1px solid var(--border, rgba(255,255,255,0.1));
+          color: var(--text-muted, rgba(255,255,255,0.7));
           cursor: pointer;
-          padding: 4px;
-          border-radius: 4px;
-          transition: all 0.2s;
+          padding: 6px;
+          border-radius: var(--radius-sm, 12px);
+          transition: all 0.2s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
 
         .refresh-btn:hover {
-          background: var(--hover, #1f2937);
-          color: var(--text, #e5e7eb);
+          background: var(--surface-hover, #141414);
+          color: var(--cyan, #00f0ff);
+          border-color: var(--cyan, #00f0ff);
+          box-shadow: 0 0 12px rgba(0, 240, 255, 0.15);
         }
 
         .health-score-container {
           display: flex;
-          gap: 16px;
-          margin-bottom: 16px;
+          gap: 20px;
+          margin-bottom: 20px;
+          align-items: center;
         }
 
         .health-score {
@@ -170,57 +183,76 @@ export function NetworkHealthWidget({
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          width: 80px;
-          height: 80px;
+          width: 84px;
+          height: 84px;
           border-radius: 50%;
-          background: var(--input-bg, #0f0f1a);
+          background: var(--surface, #0A0A0A);
+          flex-shrink: 0;
         }
 
         .health-score.excellent {
-          border: 3px solid var(--success, #22c55e);
+          border: 3px solid var(--cyan, #00f0ff);
+          box-shadow: 0 0 16px rgba(0, 240, 255, 0.2);
         }
 
         .health-score.excellent .score-value {
-          color: var(--success, #22c55e);
+          color: var(--cyan, #00f0ff);
         }
 
         .health-score.good {
-          border: 3px solid var(--info, #3b82f6);
+          border: 3px solid var(--cyan, #00f0ff);
+          box-shadow: 0 0 16px rgba(0, 240, 255, 0.15);
         }
 
         .health-score.good .score-value {
-          color: var(--info, #3b82f6);
+          color: var(--cyan, #00f0ff);
         }
 
         .health-score.warning {
-          border: 3px solid var(--warning, #f59e0b);
+          border: 3px solid var(--gold, #ffd700);
+          box-shadow: 0 0 16px rgba(255, 215, 0, 0.2);
         }
 
         .health-score.warning .score-value {
-          color: var(--warning, #f59e0b);
+          color: var(--gold, #ffd700);
         }
 
         .health-score.critical {
-          border: 3px solid var(--error, #ef4444);
+          border: 3px solid var(--magenta, #ff00aa);
+          box-shadow: 0 0 16px rgba(255, 0, 170, 0.2);
         }
 
         .health-score.critical .score-value {
-          color: var(--error, #ef4444);
+          color: var(--magenta, #ff00aa);
+        }
+
+        .health-score.unknown {
+          border: 3px solid var(--border, rgba(255,255,255,0.1));
+        }
+
+        .health-score.unknown .score-value {
+          color: var(--text-muted, rgba(255,255,255,0.7));
         }
 
         .score-value {
-          font-size: 24px;
-          font-weight: 700;
+          font-family: var(--font-display, 'Outfit', sans-serif);
+          font-size: 26px;
+          font-weight: 800;
+          line-height: 1.1;
         }
 
         .score-label {
-          font-size: 10px;
-          color: var(--text-secondary, #9ca3af);
+          font-family: var(--font-mono, 'JetBrains Mono', monospace);
+          font-size: 9px;
+          text-transform: uppercase;
+          letter-spacing: 0.15em;
+          color: var(--text-muted, rgba(255,255,255,0.7));
+          margin-top: 2px;
         }
 
         .health-stats {
           display: flex;
-          gap: 12px;
+          gap: 16px;
           align-items: center;
         }
 
@@ -231,19 +263,34 @@ export function NetworkHealthWidget({
         }
 
         .stat-value {
-          font-size: 20px;
-          font-weight: 600;
+          font-family: var(--font-display, 'Outfit', sans-serif);
+          font-size: 22px;
+          font-weight: 800;
+          color: var(--text, #ffffff);
         }
 
         .stat-label {
-          font-size: 11px;
-          color: var(--text-secondary, #9ca3af);
+          font-family: var(--font-mono, 'JetBrains Mono', monospace);
+          font-size: 10px;
+          text-transform: uppercase;
+          letter-spacing: 0.15em;
+          color: var(--text-muted, rgba(255,255,255,0.7));
+        }
+
+        .devices-section {
+          border-top: 1px solid var(--border, rgba(255,255,255,0.1));
+          padding-top: 16px;
+          margin-top: 4px;
         }
 
         .devices-section h4 {
-          margin: 0 0 8px 0;
-          font-size: 12px;
-          color: var(--text-secondary, #9ca3af);
+          margin: 0 0 12px 0;
+          font-family: var(--font-mono, 'JetBrains Mono', monospace);
+          font-size: 11px;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.15em;
+          color: var(--text-muted, rgba(255,255,255,0.7));
         }
 
         .devices-list {
@@ -254,36 +301,69 @@ export function NetworkHealthWidget({
 
         .devices-more {
           text-align: center;
-          font-size: 12px;
-          color: var(--text-secondary, #9ca3af);
-          margin-top: 8px;
+          font-family: var(--font-mono, 'JetBrains Mono', monospace);
+          font-size: 11px;
+          color: var(--text-muted, rgba(255,255,255,0.7));
+          margin-top: 10px;
         }
 
         .tailnet-info {
           margin-top: 16px;
-          padding-top: 12px;
-          border-top: 1px solid var(--border, #374151);
+          padding-top: 14px;
+          border-top: 1px solid var(--border, rgba(255,255,255,0.1));
           font-size: 12px;
+          display: flex;
+          align-items: center;
+          gap: 6px;
         }
 
         .tailnet-label {
-          color: var(--text-secondary, #9ca3af);
+          font-family: var(--font-mono, 'JetBrains Mono', monospace);
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+          font-size: 10px;
+          color: var(--text-muted, rgba(255,255,255,0.7));
         }
 
         .tailnet-name {
-          margin-left: 4px;
-          color: var(--text, #e5e7eb);
+          font-family: var(--font-mono, 'JetBrains Mono', monospace);
+          font-size: 12px;
+          color: var(--cyan, #00f0ff);
         }
 
         .loading-spinner {
           text-align: center;
           padding: 24px;
-          color: var(--text-secondary, #9ca3af);
+          font-family: var(--font-mono, 'JetBrains Mono', monospace);
+          font-size: 12px;
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+          color: var(--text-muted, rgba(255,255,255,0.7));
         }
 
         .error-message {
-          color: var(--error, #ef4444);
+          color: var(--magenta, #ff00aa);
+          font-size: 13px;
           margin-bottom: 12px;
+        }
+
+        .btn.btn-small {
+          background: transparent;
+          border: 1px solid var(--cyan, #00f0ff);
+          border-radius: var(--radius-pill, 100px);
+          color: var(--cyan, #00f0ff);
+          cursor: pointer;
+          padding: 6px 16px;
+          font-family: var(--font-mono, 'JetBrains Mono', monospace);
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+          transition: all 0.2s ease;
+        }
+
+        .btn.btn-small:hover {
+          background: rgba(0, 240, 255, 0.1);
+          box-shadow: 0 0 12px rgba(0, 240, 255, 0.2);
         }
       `}</style>
     </div>

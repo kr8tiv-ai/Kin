@@ -6,13 +6,15 @@ interface VpsHealthWidgetProps {
 
 /**
  * VpsHealthWidget - Displays VPS health metrics and Kin process status
- * 
+ *
  * Features:
  * - CPU and memory usage display
  * - System uptime
  * - Kin process health summary
  * - Auto-refresh every 30 seconds
  * - Manual refresh button
+ *
+ * Styled with KIN / KR8TIV design system tokens.
  */
 export function VpsHealthWidget({ className = '' }: VpsHealthWidgetProps) {
   const { data, loading, error, refresh, lastUpdated } = useVpsHealth({
@@ -49,15 +51,118 @@ export function VpsHealthWidget({ className = '' }: VpsHealthWidgetProps) {
     return lastUpdated.toLocaleTimeString();
   };
 
+  // Metric color based on threshold
+  const metricColor = (value: number): string => {
+    if (value > 80) return 'var(--magenta, #ff00aa)';
+    if (value > 60) return 'var(--gold, #ffd700)';
+    return 'var(--cyan, #00f0ff)';
+  };
+
+  // Status color for Kin process indicators
+  const statusColor = (status: string): string => {
+    if (status === 'healthy') return 'var(--cyan, #00f0ff)';
+    if (status === 'unhealthy') return 'var(--magenta, #ff00aa)';
+    return 'var(--text-muted, rgba(255,255,255,0.7))';
+  };
+
+  /* ---- Shared Styles ---- */
+
+  const cardStyle: React.CSSProperties = {
+    background: 'var(--glass-bg, rgba(255,255,255,0.02))',
+    backdropFilter: 'blur(var(--glass-blur, 20px))',
+    WebkitBackdropFilter: 'blur(var(--glass-blur, 20px))',
+    borderRadius: 'var(--radius-md, 20px)',
+    border: '1px solid var(--border, rgba(255,255,255,0.1))',
+    padding: '24px',
+    color: 'var(--text, #ffffff)',
+  };
+
+  const headerStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: '20px',
+  };
+
+  const titleStyle: React.CSSProperties = {
+    margin: 0,
+    fontFamily: "var(--font-display, 'Outfit', sans-serif)",
+    fontWeight: 800,
+    fontSize: '16px',
+    color: 'var(--gold, #ffd700)',
+  };
+
+  const labelStyle: React.CSSProperties = {
+    fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)",
+    textTransform: 'uppercase' as const,
+    letterSpacing: '0.15em',
+    fontSize: '10px',
+    color: 'var(--text-muted, rgba(255,255,255,0.7))',
+  };
+
+  const metricValueStyle = (value: number): React.CSSProperties => ({
+    fontFamily: "var(--font-display, 'Outfit', sans-serif)",
+    fontWeight: 800,
+    fontSize: '28px',
+    lineHeight: 1.1,
+    color: metricColor(value),
+  });
+
+  const uptimeValueStyle: React.CSSProperties = {
+    fontFamily: "var(--font-display, 'Outfit', sans-serif)",
+    fontWeight: 800,
+    fontSize: '28px',
+    lineHeight: 1.1,
+    color: 'var(--text, #ffffff)',
+  };
+
+  const refreshBtnStyle: React.CSSProperties = {
+    background: 'transparent',
+    border: '1px solid var(--border, rgba(255,255,255,0.1))',
+    borderRadius: 'var(--radius-sm, 12px)',
+    color: 'var(--cyan, #00f0ff)',
+    cursor: 'pointer',
+    padding: '4px 8px',
+    fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)",
+    fontSize: '14px',
+    transition: 'all 0.2s ease',
+  };
+
+  const dotStyle = (color: string): React.CSSProperties => ({
+    width: '8px',
+    height: '8px',
+    borderRadius: '50%',
+    backgroundColor: color,
+    display: 'inline-block',
+    boxShadow: `0 0 6px ${color}`,
+  });
+
+  const dividerStyle: React.CSSProperties = {
+    borderTop: '1px solid var(--border, rgba(255,255,255,0.1))',
+    paddingTop: '16px',
+    marginTop: '0',
+  };
+
+  const spinnerStyle: React.CSSProperties = {
+    width: '16px',
+    height: '16px',
+    borderRadius: '50%',
+    border: '2px solid transparent',
+    borderBottomColor: 'var(--cyan, #00f0ff)',
+    animation: 'spin 0.8s linear infinite',
+  };
+
   // Loading state
   if (loading && !data) {
     return (
-      <div className={`bg-white rounded-lg shadow-md p-6 ${className}`} data-testid="vps-health-widget">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-800">VPS Health</h3>
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-kin-primary"></div>
+      <div className={className} style={cardStyle} data-testid="vps-health-widget">
+        <div style={headerStyle}>
+          <h3 style={titleStyle}>VPS Health</h3>
+          <div style={spinnerStyle} />
         </div>
-        <div className="text-center py-4 text-gray-500">Loading...</div>
+        <div style={{ textAlign: 'center', padding: '16px 0', color: 'var(--text-muted, rgba(255,255,255,0.7))' }}>
+          Loading...
+        </div>
       </div>
     );
   }
@@ -65,16 +170,29 @@ export function VpsHealthWidget({ className = '' }: VpsHealthWidgetProps) {
   // Error state
   if (error) {
     return (
-      <div className={`bg-white rounded-lg shadow-md p-6 ${className}`} data-testid="vps-health-widget">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-800">VPS Health</h3>
-          <span className="text-red-500">⚠️</span>
+      <div className={className} style={cardStyle} data-testid="vps-health-widget">
+        <div style={headerStyle}>
+          <h3 style={titleStyle}>VPS Health</h3>
         </div>
-        <div className="text-center py-4">
-          <p className="text-red-500 text-sm mb-2">Unable to load health data</p>
+        <div style={{ textAlign: 'center', padding: '16px 0' }}>
+          <p style={{ color: 'var(--magenta, #ff00aa)', fontSize: '13px', marginBottom: '12px' }}>
+            Unable to load health data
+          </p>
           <button
             onClick={refresh}
-            className="text-sm text-kin-primary hover:underline"
+            style={{
+              background: 'transparent',
+              border: '1px solid var(--cyan, #00f0ff)',
+              borderRadius: 'var(--radius-pill, 100px)',
+              color: 'var(--cyan, #00f0ff)',
+              cursor: 'pointer',
+              padding: '6px 16px',
+              fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)",
+              fontSize: '12px',
+              textTransform: 'uppercase' as const,
+              letterSpacing: '0.1em',
+              transition: 'all 0.2s ease',
+            }}
           >
             Retry
           </button>
@@ -86,17 +204,19 @@ export function VpsHealthWidget({ className = '' }: VpsHealthWidgetProps) {
   const metrics = data?.vps_metrics || { cpu_percent: 0, memory_percent: 0, uptime_seconds: 0 };
 
   return (
-    <div className={`bg-white rounded-lg shadow-md p-6 ${className}`} data-testid="vps-health-widget">
+    <div className={className} style={cardStyle} data-testid="vps-health-widget">
       {/* Widget Header */}
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-800">VPS Health</h3>
-        <div className="flex items-center space-x-2">
-          <span className={`w-2 h-2 rounded-full ${
-            unhealthyCount > 0 ? 'bg-yellow-500' : 'bg-green-500'
-          }`}></span>
+      <div style={headerStyle}>
+        <h3 style={titleStyle}>VPS Health</h3>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span style={dotStyle(
+            unhealthyCount > 0
+              ? 'var(--magenta, #ff00aa)'
+              : 'var(--cyan, #00f0ff)'
+          )} />
           <button
             onClick={handleCheckNow}
-            className="text-xs text-gray-500 hover:text-gray-700 transition-colors"
+            style={refreshBtnStyle}
             title="Check now"
           >
             ↻
@@ -105,73 +225,97 @@ export function VpsHealthWidget({ className = '' }: VpsHealthWidgetProps) {
       </div>
 
       {/* VPS Metrics */}
-      <div className="grid grid-cols-3 gap-4 mb-4">
-        <div className="text-center">
-          <div className={`text-2xl font-semibold ${
-            metrics.cpu_percent > 80 ? 'text-red-500' : 
-            metrics.cpu_percent > 60 ? 'text-yellow-500' : 'text-gray-700'
-          }`}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={metricValueStyle(metrics.cpu_percent)}>
             {metrics.cpu_percent.toFixed(0)}%
           </div>
-          <div className="text-xs text-gray-500">CPU</div>
+          <div style={labelStyle}>CPU</div>
         </div>
-        <div className="text-center">
-          <div className={`text-2xl font-semibold ${
-            metrics.memory_percent > 80 ? 'text-red-500' : 
-            metrics.memory_percent > 60 ? 'text-yellow-500' : 'text-gray-700'
-          }`}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={metricValueStyle(metrics.memory_percent)}>
             {metrics.memory_percent.toFixed(0)}%
           </div>
-          <div className="text-xs text-gray-500">Memory</div>
+          <div style={labelStyle}>Memory</div>
         </div>
-        <div className="text-center">
-          <div className="text-2xl font-semibold text-gray-700">
+        <div style={{ textAlign: 'center' }}>
+          <div style={uptimeValueStyle}>
             {formatUptime(metrics.uptime_seconds)}
           </div>
-          <div className="text-xs text-gray-500">Uptime</div>
+          <div style={labelStyle}>Uptime</div>
         </div>
       </div>
 
       {/* Kin Status Summary */}
-      <div className="pt-4 border-t border-gray-100">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-gray-700">Kin Processes</span>
-          <span className="text-sm text-gray-500">{totalKin} total</span>
+      <div style={dividerStyle}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+          <span style={{
+            fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)",
+            textTransform: 'uppercase' as const,
+            letterSpacing: '0.15em',
+            fontSize: '11px',
+            fontWeight: 600,
+            color: 'var(--text, #ffffff)',
+          }}>
+            Kin Processes
+          </span>
+          <span style={{
+            fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)",
+            fontSize: '11px',
+            color: 'var(--text-muted, rgba(255,255,255,0.7))',
+          }}>
+            {totalKin} total
+          </span>
         </div>
 
-        <div className="flex items-center space-x-3">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
           {/* Healthy */}
-          <div className="flex items-center space-x-1">
-            <span className="w-2 h-2 rounded-full bg-green-500"></span>
-            <span className="text-sm text-gray-600">{healthyCount}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={dotStyle('var(--cyan, #00f0ff)')} />
+            <span style={{ fontSize: '13px', color: 'var(--cyan, #00f0ff)' }}>{healthyCount}</span>
           </div>
 
           {/* Unhealthy */}
           {unhealthyCount > 0 && (
-            <div className="flex items-center space-x-1">
-              <span className="w-2 h-2 rounded-full bg-red-500"></span>
-              <span className="text-sm text-red-600">{unhealthyCount}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={dotStyle('var(--magenta, #ff00aa)')} />
+              <span style={{ fontSize: '13px', color: 'var(--magenta, #ff00aa)' }}>{unhealthyCount}</span>
             </div>
           )}
 
           {/* Unknown */}
           {unknownCount > 0 && (
-            <div className="flex items-center space-x-1">
-              <span className="w-2 h-2 rounded-full bg-gray-400"></span>
-              <span className="text-sm text-gray-500">{unknownCount}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={dotStyle('var(--text-muted, rgba(255,255,255,0.7))')} />
+              <span style={{ fontSize: '13px', color: 'var(--text-muted, rgba(255,255,255,0.7))' }}>{unknownCount}</span>
             </div>
           )}
         </div>
 
         {/* Individual Kin Status */}
-        <div className="mt-3 space-y-1">
+        <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
           {Object.entries(healthSummary).slice(0, 5).map(([kinId, health]) => (
-            <div key={kinId} className="flex items-center justify-between text-xs">
-              <span className="text-gray-600 truncate">{kinId.split('-')[0]}</span>
-              <span className={`capitalize ${
-                health.status === 'healthy' ? 'text-green-600' :
-                health.status === 'unhealthy' ? 'text-red-600' : 'text-gray-400'
-              }`}>
+            <div key={kinId} style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              fontSize: '12px',
+            }}>
+              <span style={{
+                fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)",
+                color: 'var(--text-muted, rgba(255,255,255,0.7))',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}>
+                {kinId.split('-')[0]}
+              </span>
+              <span style={{
+                fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)",
+                textTransform: 'capitalize' as const,
+                fontSize: '11px',
+                color: statusColor(health.status),
+              }}>
                 {health.status}
               </span>
             </div>
@@ -180,8 +324,18 @@ export function VpsHealthWidget({ className = '' }: VpsHealthWidgetProps) {
       </div>
 
       {/* Last Updated */}
-      <div className="mt-4 pt-3 border-t border-gray-100 text-center">
-        <span className="text-xs text-gray-400">
+      <div style={{
+        ...dividerStyle,
+        marginTop: '16px',
+        textAlign: 'center',
+      }}>
+        <span style={{
+          fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)",
+          fontSize: '10px',
+          textTransform: 'uppercase' as const,
+          letterSpacing: '0.1em',
+          color: 'var(--text-muted, rgba(255,255,255,0.7))',
+        }}>
           Updated: {formatLastUpdated()}
         </span>
       </div>
