@@ -1,3 +1,4 @@
+import React from 'react';
 import { useSubscription, SubscriptionData } from '../hooks/useSubscription';
 import { UsageMeter } from './UsageMeter';
 import { BillingHistory } from './BillingHistory';
@@ -8,6 +9,228 @@ interface SubscriptionStatusProps {
   /** Additional CSS classes */
   className?: string;
 }
+
+// Inline style constants for the KR8TIV design system
+const cardStyle: React.CSSProperties = {
+  background: 'var(--glass-bg)',
+  backdropFilter: 'blur(var(--glass-blur))',
+  WebkitBackdropFilter: 'blur(var(--glass-blur))',
+  border: '1px solid var(--border)',
+  borderRadius: 'var(--radius-md)',
+  padding: '1.5rem',
+};
+
+const headerRowStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  marginBottom: '1rem',
+};
+
+const headerTitleStyle: React.CSSProperties = {
+  fontFamily: 'var(--font-display)',
+  fontSize: '1.125rem',
+  fontWeight: 600,
+  color: 'var(--gold)',
+  margin: 0,
+};
+
+const statusRowStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.5rem',
+};
+
+const statusLabelStyle: React.CSSProperties = {
+  fontFamily: 'var(--font-mono)',
+  fontSize: '0.7rem',
+  color: 'var(--text-muted)',
+  textTransform: 'uppercase',
+  letterSpacing: '0.05em',
+};
+
+const tierRowStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  marginBottom: '1rem',
+};
+
+const metersWrapperStyle: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '0.75rem',
+  marginBottom: '1rem',
+};
+
+const renewalSectionStyle: React.CSSProperties = {
+  paddingTop: '0.75rem',
+  borderTop: '1px solid var(--border)',
+};
+
+const renewalRowStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+};
+
+const renewalLabelStyle: React.CSSProperties = {
+  fontFamily: 'var(--font-body)',
+  fontSize: '0.875rem',
+  color: 'var(--text-muted)',
+};
+
+const renewalValueStyle: React.CSSProperties = {
+  fontFamily: 'var(--font-mono)',
+  fontSize: '0.875rem',
+  fontWeight: 500,
+  color: 'var(--text)',
+};
+
+const cancelWarningStyle: React.CSSProperties = {
+  marginTop: '0.5rem',
+  padding: '0.5rem',
+  background: 'rgba(255, 215, 0, 0.1)',
+  border: '1px solid rgba(255, 215, 0, 0.2)',
+  borderRadius: 'var(--radius-sm)',
+};
+
+const cancelWarningTextStyle: React.CSSProperties = {
+  fontFamily: 'var(--font-body)',
+  fontSize: '0.75rem',
+  color: 'var(--gold)',
+};
+
+const actionsRowStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  paddingTop: '0.75rem',
+  borderTop: '1px solid var(--border)',
+};
+
+const billingHistoryBtnStyle: React.CSSProperties = {
+  background: 'none',
+  border: 'none',
+  fontFamily: 'var(--font-body)',
+  fontSize: '0.75rem',
+  color: 'var(--text-muted)',
+  cursor: 'pointer',
+  padding: 0,
+  transition: 'color 0.2s',
+};
+
+const cancelBtnStyle: React.CSSProperties = {
+  background: 'none',
+  border: 'none',
+  fontFamily: 'var(--font-body)',
+  fontSize: '0.75rem',
+  color: 'var(--magenta)',
+  cursor: 'pointer',
+  padding: 0,
+  transition: 'opacity 0.2s',
+};
+
+const modalOverlayStyle: React.CSSProperties = {
+  position: 'fixed',
+  inset: 0,
+  background: 'rgba(0, 0, 0, 0.8)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  zIndex: 50,
+};
+
+const modalContentStyle: React.CSSProperties = {
+  background: 'var(--surface)',
+  borderRadius: 'var(--radius-lg)',
+  maxWidth: '32rem',
+  width: '100%',
+  margin: '1rem',
+  border: '1px solid var(--border)',
+};
+
+const loadingSpinnerStyle: React.CSSProperties = {
+  width: '1rem',
+  height: '1rem',
+  borderRadius: '50%',
+  border: '2px solid transparent',
+  borderBottomColor: 'var(--cyan)',
+  animation: 'spin 1s linear infinite',
+};
+
+const centeredTextStyle: React.CSSProperties = {
+  textAlign: 'center',
+  padding: '1rem 0',
+  fontFamily: 'var(--font-body)',
+  fontSize: '0.875rem',
+  color: 'var(--text-muted)',
+};
+
+const errorTextStyle: React.CSSProperties = {
+  fontFamily: 'var(--font-body)',
+  fontSize: '0.875rem',
+  color: 'var(--magenta)',
+  marginBottom: '0.5rem',
+};
+
+const retryBtnStyle: React.CSSProperties = {
+  background: 'none',
+  border: 'none',
+  fontFamily: 'var(--font-body)',
+  fontSize: '0.875rem',
+  color: 'var(--cyan)',
+  cursor: 'pointer',
+  textDecoration: 'underline',
+  padding: 0,
+};
+
+const upgradeBtnStyle: React.CSSProperties = {
+  background: 'none',
+  border: 'none',
+  fontFamily: 'var(--font-mono)',
+  fontSize: '0.7rem',
+  letterSpacing: '0.05em',
+  textTransform: 'uppercase',
+  color: 'var(--cyan)',
+  cursor: 'pointer',
+  padding: 0,
+  transition: 'opacity 0.2s',
+};
+
+/** Tier badge styles using KR8TIV accent colors */
+const tierBadgeStyles: Record<string, React.CSSProperties> = {
+  free: {
+    background: 'rgba(255, 255, 255, 0.05)',
+    color: 'var(--text-muted)',
+    border: '1px solid var(--border)',
+  },
+  starter: {
+    background: 'rgba(0, 240, 255, 0.1)',
+    color: 'var(--cyan)',
+    border: '1px solid rgba(0, 240, 255, 0.2)',
+  },
+  pro: {
+    background: 'rgba(255, 0, 170, 0.1)',
+    color: 'var(--magenta)',
+    border: '1px solid rgba(255, 0, 170, 0.2)',
+  },
+  enterprise: {
+    background: 'rgba(255, 215, 0, 0.1)',
+    color: 'var(--gold)',
+    border: '1px solid rgba(255, 215, 0, 0.2)',
+  },
+};
+
+/** Status indicator color map */
+const statusColors: Record<string, string> = {
+  active: 'var(--cyan)',
+  trialing: 'var(--cyan)',
+  past_due: 'var(--magenta)',
+  canceled: 'var(--text-muted)',
+  incomplete: 'var(--gold)',
+  unpaid: 'var(--magenta)',
+};
 
 /**
  * SubscriptionStatus - Displays subscription tier, usage, and billing info
@@ -35,18 +258,24 @@ export function SubscriptionStatus({
   } = useSubscription();
 
   const [showBillingHistory, setShowBillingHistory] = React.useState(showHistory);
+  const [billingHover, setBillingHover] = React.useState(false);
 
-  // Get tier badge styling
+  // Get tier badge
   const getTierBadge = (tier: string) => {
-    const styles: Record<string, string> = {
-      free: 'bg-gray-100 text-gray-700 border-gray-200',
-      starter: 'bg-blue-100 text-blue-800 border-blue-200',
-      pro: 'bg-purple-100 text-purple-800 border-purple-200',
-      enterprise: 'bg-amber-100 text-amber-800 border-amber-200',
+    const baseStyle: React.CSSProperties = {
+      fontFamily: 'var(--font-mono)',
+      fontSize: '0.75rem',
+      fontWeight: 500,
+      letterSpacing: '0.05em',
+      textTransform: 'uppercase',
+      padding: '0.25rem 0.75rem',
+      borderRadius: 'var(--radius-pill)',
+      display: 'inline-block',
+      ...(tierBadgeStyles[tier] || tierBadgeStyles.free),
     };
 
     return (
-      <span className={`px-3 py-1 text-sm font-medium rounded-full border ${styles[tier] || styles.free}`}>
+      <span style={baseStyle}>
         {tier.charAt(0).toUpperCase() + tier.slice(1)}
       </span>
     );
@@ -54,18 +283,18 @@ export function SubscriptionStatus({
 
   // Get status indicator
   const getStatusIndicator = (status: string) => {
-    const colors: Record<string, string> = {
-      active: 'text-green-500',
-      trialing: 'text-blue-500',
-      past_due: 'text-red-500',
-      canceled: 'text-gray-500',
-      incomplete: 'text-orange-500',
-      unpaid: 'text-red-500',
-    };
-
+    const color = statusColors[status] || 'var(--text-muted)';
     return (
-      <span className={`inline-block w-2 h-2 rounded-full ${colors[status] || 'text-gray-500'}`}
-            style={{ backgroundColor: 'currentColor' }} />
+      <span
+        style={{
+          display: 'inline-block',
+          width: '0.5rem',
+          height: '0.5rem',
+          borderRadius: '50%',
+          backgroundColor: color,
+          boxShadow: status === 'active' ? `0 0 6px ${color}` : undefined,
+        }}
+      />
     );
   };
 
@@ -82,12 +311,13 @@ export function SubscriptionStatus({
   // Loading state
   if (loading && !subscription) {
     return (
-      <div className={`bg-white rounded-lg shadow-md p-6 ${className}`} data-testid="subscription-status">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-800">Subscription</h3>
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-kin-primary"></div>
+      <div className={className} style={cardStyle} data-testid="subscription-status">
+        <div style={headerRowStyle}>
+          <h3 style={headerTitleStyle}>Subscription</h3>
+          <div style={loadingSpinnerStyle} />
         </div>
-        <div className="text-center py-4 text-gray-500">Loading...</div>
+        <div style={centeredTextStyle}>Loading...</div>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
@@ -95,14 +325,13 @@ export function SubscriptionStatus({
   // Error state
   if (error) {
     return (
-      <div className={`bg-white rounded-lg shadow-md p-6 ${className}`} data-testid="subscription-status">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-800">Subscription</h3>
-          <span className="text-red-500">⚠️</span>
+      <div className={className} style={cardStyle} data-testid="subscription-status">
+        <div style={headerRowStyle}>
+          <h3 style={headerTitleStyle}>Subscription</h3>
         </div>
-        <div className="text-center py-4">
-          <p className="text-red-500 text-sm mb-2">{error}</p>
-          <button onClick={refresh} className="text-sm text-kin-primary hover:underline">
+        <div style={{ textAlign: 'center', padding: '1rem 0' }}>
+          <p style={errorTextStyle}>{error}</p>
+          <button onClick={refresh} style={retryBtnStyle}>
             Retry
           </button>
         </div>
@@ -110,39 +339,42 @@ export function SubscriptionStatus({
     );
   }
 
-  // No subscription (shouldn't happen with mock data)
+  // No subscription
   if (!subscription) {
     return (
-      <div className={`bg-white rounded-lg shadow-md p-6 ${className}`} data-testid="subscription-status">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-800">Subscription</h3>
+      <div className={className} style={cardStyle} data-testid="subscription-status">
+        <div style={headerRowStyle}>
+          <h3 style={headerTitleStyle}>Subscription</h3>
         </div>
-        <div className="text-center py-4">
-          <p className="text-gray-500 text-sm">No subscription found</p>
-        </div>
+        <div style={centeredTextStyle}>No subscription found</div>
       </div>
     );
   }
 
   return (
-    <div className={`bg-white rounded-lg shadow-md p-6 ${className}`} data-testid="subscription-status">
+    <div className={className} style={cardStyle} data-testid="subscription-status">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-800">Subscription</h3>
-        <div className="flex items-center space-x-2">
+      <div style={headerRowStyle}>
+        <h3 style={headerTitleStyle}>Subscription</h3>
+        <div style={statusRowStyle}>
           {getStatusIndicator(subscription.status)}
-          <span className="text-xs text-gray-500 capitalize">{subscription.status.replace('_', ' ')}</span>
+          <span style={statusLabelStyle}>
+            {subscription.status.replace('_', ' ')}
+          </span>
         </div>
       </div>
 
       {/* Tier Badge */}
-      <div className="flex items-center justify-between mb-4">
+      <div style={tierRowStyle}>
         {getTierBadge(subscription.tier)}
         {subscription.tier !== 'enterprise' && (
           <button
             onClick={() => upgrade('pro')}
             disabled={isUpgrading}
-            className="text-xs text-kin-primary hover:underline disabled:opacity-50"
+            style={{
+              ...upgradeBtnStyle,
+              opacity: isUpgrading ? 0.5 : 1,
+            }}
           >
             {isUpgrading ? 'Upgrading...' : 'Upgrade'}
           </button>
@@ -150,7 +382,7 @@ export function SubscriptionStatus({
       </div>
 
       {/* Usage Meters */}
-      <div className="space-y-3 mb-4">
+      <div style={metersWrapperStyle}>
         <UsageMeter
           label="Kin Companions"
           current={subscription.usage.kin_count}
@@ -181,28 +413,33 @@ export function SubscriptionStatus({
       </div>
 
       {/* Renewal Date */}
-      <div className="py-3 border-t border-gray-100">
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-gray-600">Renewal Date</span>
-          <span className="text-sm font-medium text-gray-800">
+      <div style={renewalSectionStyle}>
+        <div style={renewalRowStyle}>
+          <span style={renewalLabelStyle}>Renewal Date</span>
+          <span style={renewalValueStyle}>
             {formatRenewalDate(subscription.renewal_date)}
           </span>
         </div>
 
         {subscription.cancel_at_period_end && (
-          <div className="mt-2 p-2 bg-yellow-50 rounded border border-yellow-200">
-            <span className="text-xs text-yellow-800">
-              ⚠️ Subscription will cancel on {formatRenewalDate(subscription.renewal_date)}
+          <div style={cancelWarningStyle}>
+            <span style={cancelWarningTextStyle}>
+              Subscription will cancel on {formatRenewalDate(subscription.renewal_date)}
             </span>
           </div>
         )}
       </div>
 
       {/* Actions */}
-      <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+      <div style={actionsRowStyle}>
         <button
           onClick={() => setShowBillingHistory(true)}
-          className="text-xs text-gray-600 hover:text-gray-800"
+          onMouseEnter={() => setBillingHover(true)}
+          onMouseLeave={() => setBillingHover(false)}
+          style={{
+            ...billingHistoryBtnStyle,
+            color: billingHover ? 'var(--cyan)' : 'var(--text-muted)',
+          }}
         >
           Billing History
         </button>
@@ -211,7 +448,10 @@ export function SubscriptionStatus({
           <button
             onClick={() => cancel(false)}
             disabled={isCanceling}
-            className="text-xs text-red-500 hover:text-red-700 disabled:opacity-50"
+            style={{
+              ...cancelBtnStyle,
+              opacity: isCanceling ? 0.5 : 1,
+            }}
           >
             {isCanceling ? 'Canceling...' : 'Cancel Subscription'}
           </button>
@@ -220,15 +460,16 @@ export function SubscriptionStatus({
 
       {/* Billing History Modal */}
       {showBillingHistory && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full m-4">
+        <div style={modalOverlayStyle}>
+          <div style={modalContentStyle}>
             <BillingHistory onClose={() => setShowBillingHistory(false)} />
           </div>
         </div>
       )}
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
 
-import React from 'react';
 export default SubscriptionStatus;
