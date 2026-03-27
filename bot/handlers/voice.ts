@@ -6,6 +6,7 @@ import { Context, SessionFlavor, InputFile } from 'grammy';
 import type { FallbackHandler } from '../../inference/fallback-handler.js';
 import { conversationStore } from '../memory/conversation-store.js';
 import { buildCipherPrompt } from '../../inference/cipher-prompts.js';
+import { supervisedChat } from '../../inference/supervisor.js';
 import { getVoicePipeline, VoicePipelineError } from '../../voice/index.js';
 
 interface SessionData {
@@ -101,34 +102,11 @@ export async function handleVoice(
       { role: 'user' as const, content: transcription },
     ];
 
-    // Generate response with fallback
-    let response: string;
-    
-    try {
-      // Try local first
-      const { getOllamaClient, isLocalLlmAvailable } = await import('../../inference/local-llm.js');
-      const localAvailable = await isLocalLlmAvailable();
-      
-      if (localAvailable) {
-        const client = getOllamaClient();
-        const result = await client.chat({
-          messages,
-          model: 'llama3.2',
-          options: { temperature: 0.8 },
-        });
-        response = result.message.content;
-      } else {
-        throw new Error('Local unavailable');
-      }
-    } catch {
-      // Fallback to cloud
-      const fallbackResult = await fallback.executeWithFallback(
-        messages,
-        async () => { throw new Error('Need cloud fallback'); },
-        { taskType: 'simple' }
-      );
-      response = fallbackResult.content;
-    }
+    // Generate response via two-brain architecture (local + supervisor)
+    const result = await supervisedChat(messages, companionId, fallback, {
+      taskType: 'voice',
+    });
+    const response = result.content;
 
     // Store messages
     await conversationStore.addMessage(userId, 'user', transcription);

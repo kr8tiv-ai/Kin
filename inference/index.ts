@@ -89,6 +89,18 @@ export {
   type Message,
 } from './fallback-handler';
 
+// Supervisor
+export {
+  supervisedChat,
+  shouldEscalate,
+  isSupervisorConfigured,
+  getSupervisorInfo,
+  getSupervisorLog,
+  type SupervisedResult,
+  type SupervisorRoute,
+  type SupervisorOptions,
+} from './supervisor';
+
 // Metrics
 export {
   MetricsCollector,

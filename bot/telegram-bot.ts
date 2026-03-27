@@ -7,15 +7,17 @@
 import { Bot, GrammyError, HttpError, Context, session, SessionFlavor } from 'grammy';
 import { autoRetry } from '@grammyjs/auto-retry';
 import { ConversationFlavor, conversations, createConversation } from '@grammyjs/conversations';
-import { getOllamaClient, isLocalLlmAvailable } from '../inference/local-llm.js';
 import { buildCipherPrompt } from '../inference/cipher-prompts.js';
 import { FallbackHandler } from '../inference/fallback-handler.js';
+import { supervisedChat } from '../inference/supervisor.js';
 import { conversationStore, type ConversationMemory } from './memory/conversation-store.js';
 import { handleStart } from './handlers/start.js';
 import { handleHelp } from './handlers/help.js';
 import { handleStatus } from './handlers/status.js';
 import { handleReset } from './handlers/reset.js';
 import { handleHealth } from './handlers/health.js';
+import { handleSwitch } from './handlers/switch.js';
+import { handleCompanions } from './handlers/companions.js';
 import { handleVoice } from './handlers/voice.js';
 import { createSkillRouter, onReminderFired } from './skills/index.js';
 import type { SkillContext } from './skills/index.js';
@@ -125,6 +127,14 @@ export function createKINBot(config: BotConfig) {
     await handleHealth(ctx);
   });
 
+  bot.command('switch', async (ctx) => {
+    await handleSwitch(ctx, conversationStore);
+  });
+
+  bot.command('companions', async (ctx) => {
+    await handleCompanions(ctx);
+  });
+
   // ==========================================================================
   // Voice Handler
   // ==========================================================================
@@ -192,43 +202,12 @@ export function createKINBot(config: BotConfig) {
         { role: 'user' as const, content: message },
       ];
 
-      // Generate response with fallback
-      let response: string;
-      
-      // Check local availability
-      const localAvailable = await isLocalLlmAvailable();
-      
-      if (localAvailable) {
-        try {
-          const client = getOllamaClient();
-          const result = await client.chat({
-            messages,
-            model: 'llama3.2',
-            options: {
-              temperature: 0.8,
-              top_p: 0.9,
-            },
-          });
-          response = result.message.content;
-        } catch (localError) {
-          console.error('Local LLM error, using fallback:', localError);
-          // Use cloud fallback
-          const fallbackResult = await fallback.executeWithFallback(
-            messages,
-            async () => { throw localError; }, // Will trigger fallback
-            { taskType: 'simple' }
-          );
-          response = fallbackResult.content;
-        }
-      } else {
-        // No local available, use cloud directly
-        const fallbackResult = await fallback.executeWithFallback(
-          messages,
-          async () => { throw new Error('Local unavailable'); },
-          { taskType: 'simple' }
-        );
-        response = fallbackResult.content;
-      }
+      // Generate response via two-brain architecture (local + supervisor)
+      const companionId = ctx.session.companionId ?? 'cipher';
+      const result = await supervisedChat(messages, companionId, fallback, {
+        taskType: 'chat',
+      });
+      const response = result.content;
 
       // Store in conversation history
       await conversationStore.addMessage(userId, 'user', message);

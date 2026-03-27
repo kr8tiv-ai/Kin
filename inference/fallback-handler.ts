@@ -62,7 +62,8 @@ export type RoutingReason =
   | 'local_error'
   | 'local_overloaded'
   | 'user_requested'
-  | 'task_requires_cloud';
+  | 'task_requires_cloud'
+  | 'supervisor_escalation';
 
 export interface CostRecord {
   timestamp: string;
@@ -117,6 +118,7 @@ const DISCLOSURE_MESSAGES = {
   local_error: "❌ Local model error. Falling back to cloud ({{provider}}).",
   task_requires_cloud: "☁️ This task requires cloud capabilities. Using {{provider}}.",
   user_requested: "☁️ Using cloud model ({{provider}}) as requested.",
+  supervisor_escalation: "🎓 Escalating to supervisor ({{provider}}) for deeper analysis.",
 };
 
 // ============================================================================

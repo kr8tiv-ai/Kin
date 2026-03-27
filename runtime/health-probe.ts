@@ -9,6 +9,7 @@
 
 import { existsSync } from 'fs';
 import { isLocalLlmAvailable } from '../inference/local-llm.js';
+import { getSupervisorInfo } from '../inference/supervisor.js';
 import { isWhisperCppAvailable } from '../voice/local-stt.js';
 import { isXttsAvailable, isPiperAvailable } from '../voice/local-tts.js';
 
@@ -75,6 +76,23 @@ async function checkTts(): Promise<HealthStatus> {
   }
 }
 
+function checkSupervisor(): HealthStatus {
+  const info = getSupervisorInfo();
+  if (info.configured) {
+    const level = process.env.SUPERVISOR_ESCALATION ?? 'medium';
+    return {
+      name: 'supervisor',
+      status: 'ok',
+      detail: `${info.provider} configured (escalation: ${level})`,
+    };
+  }
+  return {
+    name: 'supervisor',
+    status: 'warn',
+    detail: 'No API key (local-only mode)',
+  };
+}
+
 function checkSearch(): HealthStatus {
   if (process.env.TAVILY_API_KEY) {
     return { name: 'search', status: 'ok', detail: 'Tavily configured' };
@@ -120,12 +138,13 @@ export async function checkPlatformHealth(): Promise<HealthStatus[]> {
   ]);
 
   // Synchronous checks run inline
+  const supervisor = checkSupervisor();
   const search = checkSearch();
   const database = checkDatabase();
   const tailscale = checkTailscale();
   const bot = checkBot();
 
-  return [llm, stt, tts, search, database, tailscale, bot];
+  return [llm, supervisor, stt, tts, search, database, tailscale, bot];
 }
 
 // ============================================================================
@@ -153,13 +172,14 @@ export function formatHealthForConsole(results: HealthStatus[]): string {
 
 /** Friendly names and emoji for each service */
 const FRIENDLY_MAP: Record<string, { emoji: string; label: string }> = {
-  llm:       { emoji: '\uD83E\uDDE0', label: 'Brain' },
-  stt:       { emoji: '\uD83C\uDF99\uFE0F', label: 'Ears' },
-  tts:       { emoji: '\uD83D\uDDE3\uFE0F', label: 'Voice' },
-  search:    { emoji: '\uD83D\uDD0D', label: 'Search' },
-  database:  { emoji: '\uD83D\uDCBE', label: 'Memory' },
-  tailscale: { emoji: '\uD83C\uDF10', label: 'Network' },
-  bot:       { emoji: '\uD83E\uDD16', label: 'Bot' },
+  llm:        { emoji: '\uD83E\uDDE0', label: 'Brain' },
+  supervisor: { emoji: '\uD83C\uDF93', label: 'Supervisor' },
+  stt:        { emoji: '\uD83C\uDF99\uFE0F', label: 'Ears' },
+  tts:        { emoji: '\uD83D\uDDE3\uFE0F', label: 'Voice' },
+  search:     { emoji: '\uD83D\uDD0D', label: 'Search' },
+  database:   { emoji: '\uD83D\uDCBE', label: 'Memory' },
+  tailscale:  { emoji: '\uD83C\uDF10', label: 'Network' },
+  bot:        { emoji: '\uD83E\uDD16', label: 'Bot' },
 };
 
 const STATUS_EMOJI: Record<HealthStatus['status'], string> = {
