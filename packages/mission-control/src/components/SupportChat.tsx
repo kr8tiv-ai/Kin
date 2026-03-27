@@ -78,23 +78,28 @@ export function SupportChat({
             align-items: center;
             gap: 8px;
             padding: 12px 20px;
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            background: var(--magenta);
             color: white;
             border: none;
-            border-radius: 30px;
+            border-radius: var(--radius-pill);
             cursor: pointer;
-            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+            box-shadow: 0 4px 20px rgba(255, 0, 170, 0.4);
             transition: all 0.3s ease;
             z-index: 1000;
+            font-family: var(--font-body);
           }
 
           .support-chat-button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 25px rgba(99, 102, 241, 0.5);
+            box-shadow: 0 6px 25px rgba(255, 0, 170, 0.5);
           }
 
           .chat-label {
+            font-family: var(--font-mono);
             font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-size: 12px;
           }
 
           @media (max-width: 640px) {
@@ -232,13 +237,15 @@ export function SupportChat({
           right: 24px;
           width: 380px;
           max-height: 600px;
-          background: var(--card-bg, #1a1a2e);
-          border-radius: 16px;
-          box-shadow: 0 8px 40px rgba(0, 0, 0, 0.3);
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-md);
+          box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
           display: flex;
           flex-direction: column;
           z-index: 1000;
           overflow: hidden;
+          font-family: var(--font-body);
         }
 
         @media (max-width: 420px) {
@@ -255,33 +262,36 @@ export function SupportChat({
           justify-content: space-between;
           align-items: center;
           padding: 16px 20px;
-          background: linear-gradient(135deg, #6366f1, #8b5cf6);
-          color: white;
+          background: var(--surface);
+          border-bottom: 1px solid var(--border);
+          color: var(--text);
         }
 
         .header-info h3 {
           margin: 0;
+          font-family: var(--font-display);
           font-size: 16px;
-          font-weight: 600;
+          font-weight: 800;
+          color: var(--text);
         }
 
         .status {
+          font-family: var(--font-mono);
           font-size: 12px;
-          opacity: 0.8;
+          color: var(--cyan);
         }
 
         .close-btn {
           background: transparent;
           border: none;
-          color: white;
+          color: var(--text-muted);
           cursor: pointer;
           padding: 4px;
-          opacity: 0.8;
-          transition: opacity 0.2s;
+          transition: color 0.2s;
         }
 
         .close-btn:hover {
-          opacity: 1;
+          color: var(--text);
         }
 
         .messages-container {
@@ -304,11 +314,14 @@ export function SupportChat({
 
         .welcome-message h4 {
           margin: 0 0 8px 0;
+          font-family: var(--font-display);
+          color: var(--text);
         }
 
         .welcome-message p {
-          color: var(--text-secondary, #9ca3af);
+          color: var(--text-muted);
           margin: 0 0 16px 0;
+          font-family: var(--font-body);
         }
 
         .quick-actions {
@@ -318,19 +331,20 @@ export function SupportChat({
         }
 
         .quick-actions button {
-          background: var(--input-bg, #0f0f1a);
-          border: 1px solid var(--border, #374151);
-          color: var(--text, #e5e7eb);
+          background: var(--bg);
+          border: 1px solid var(--border);
+          color: var(--text);
           padding: 10px 16px;
-          border-radius: 8px;
+          border-radius: var(--radius-sm);
           cursor: pointer;
+          font-family: var(--font-body);
           font-size: 13px;
           transition: all 0.2s;
         }
 
         .quick-actions button:hover {
-          background: var(--hover, #1f2937);
-          border-color: var(--primary, #6366f1);
+          background: var(--surface-hover);
+          border-color: var(--cyan);
         }
 
         .message {
@@ -350,36 +364,40 @@ export function SupportChat({
         .message-content {
           display: inline-block;
           padding: 10px 14px;
-          border-radius: 12px;
+          border-radius: var(--radius-sm);
           max-width: 85%;
           word-wrap: break-word;
+          font-family: var(--font-body);
+          font-size: 14px;
         }
 
         .message.user .message-content {
-          background: linear-gradient(135deg, #6366f1, #8b5cf6);
-          color: white;
+          background: var(--cyan);
+          color: #000;
           border-bottom-right-radius: 4px;
         }
 
         .message.assistant .message-content {
-          background: var(--input-bg, #0f0f1a);
+          background: var(--bg);
+          color: var(--text);
           border-bottom-left-radius: 4px;
         }
 
         .message.system .message-content {
-          background: rgba(251, 191, 36, 0.1);
-          color: var(--warning, #f59e0b);
+          background: rgba(255, 215, 0, 0.1);
+          color: var(--gold);
           font-size: 13px;
         }
 
         .message.system.error .message-content {
-          background: rgba(239, 68, 68, 0.1);
-          color: var(--error, #ef4444);
+          background: rgba(255, 0, 170, 0.1);
+          color: var(--magenta);
         }
 
         .message-time {
+          font-family: var(--font-mono);
           font-size: 10px;
-          color: var(--text-secondary, #9ca3af);
+          color: var(--text-muted);
           margin-top: 4px;
         }
 
@@ -392,7 +410,7 @@ export function SupportChat({
         .typing-indicator span {
           width: 8px;
           height: 8px;
-          background: var(--text-secondary, #9ca3af);
+          background: var(--text-muted);
           border-radius: 50%;
           animation: bounce 1.4s infinite ease-in-out;
         }
@@ -411,16 +429,17 @@ export function SupportChat({
           display: flex;
           gap: 6px;
           overflow-x: auto;
-          border-top: 1px solid var(--border, #374151);
+          border-top: 1px solid var(--border);
         }
 
         .suggested-btn {
           flex-shrink: 0;
-          background: var(--input-bg, #0f0f1a);
-          border: 1px solid var(--border, #374151);
-          color: var(--text, #e5e7eb);
+          background: var(--bg);
+          border: 1px solid var(--border);
+          color: var(--text);
           padding: 6px 12px;
-          border-radius: 16px;
+          border-radius: var(--radius-pill);
+          font-family: var(--font-body);
           font-size: 12px;
           cursor: pointer;
           white-space: nowrap;
@@ -428,31 +447,32 @@ export function SupportChat({
         }
 
         .suggested-btn:hover {
-          border-color: var(--primary, #6366f1);
+          border-color: var(--cyan);
         }
 
         .input-area {
           display: flex;
           gap: 8px;
           padding: 12px 16px;
-          border-top: 1px solid var(--border, #374151);
-          background: var(--card-bg, #1a1a2e);
+          border-top: 1px solid var(--border);
+          background: var(--surface);
         }
 
         .input-area input {
           flex: 1;
-          background: var(--input-bg, #0f0f1a);
-          border: 1px solid var(--border, #374151);
-          border-radius: 24px;
+          background: var(--bg);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-pill);
           padding: 10px 16px;
-          color: var(--text, #e5e7eb);
+          color: var(--text);
+          font-family: var(--font-body);
           font-size: 14px;
           outline: none;
           transition: border-color 0.2s;
         }
 
         .input-area input:focus {
-          border-color: var(--primary, #6366f1);
+          border-color: var(--cyan);
         }
 
         .send-btn, .escalate-btn {
@@ -468,8 +488,8 @@ export function SupportChat({
         }
 
         .send-btn {
-          background: linear-gradient(135deg, #6366f1, #8b5cf6);
-          color: white;
+          background: var(--cyan);
+          color: #000;
         }
 
         .send-btn:hover:not(:disabled) {
@@ -482,12 +502,12 @@ export function SupportChat({
         }
 
         .escalate-btn {
-          background: var(--input-bg, #0f0f1a);
-          border: 1px solid var(--border, #374151);
+          background: var(--bg);
+          border: 1px solid var(--border);
         }
 
         .escalate-btn:hover {
-          border-color: var(--warning, #f59e0b);
+          border-color: var(--gold);
         }
       `}</style>
     </div>
