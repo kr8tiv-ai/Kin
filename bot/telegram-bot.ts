@@ -21,7 +21,15 @@ import { handleCompanions } from './handlers/companions.js';
 import { handleVoice } from './handlers/voice.js';
 import { createSkillRouter, onReminderFired } from './skills/index.js';
 import type { SkillContext } from './skills/index.js';
-import { sanitizeInput } from './utils/sanitize.js';
+import { sanitizeInput, escapeMarkdown } from './utils/sanitize.js';
+
+// In-character error messages (Cipher personality)
+const CIPHER_ERROR_MESSAGES = [
+  "Hmm, my brain's a bit foggy right now. Give me a sec and try again? 🐙",
+  "Oops, I tripped over something in my code cave. Mind sending that again? 🐙",
+  "My tentacles got tangled up — one more time? 🐙",
+  "Something went sideways in my deep-sea circuits. Let's try that again! 🐙",
+];
 
 // ============================================================================
 // Types
@@ -213,14 +221,18 @@ export function createKINBot(config: BotConfig) {
       await conversationStore.addMessage(userId, 'user', message);
       await conversationStore.addMessage(userId, 'assistant', response);
 
-      // Send response
-      await ctx.reply(response);
+      // Send response (sanitize to prevent markdown injection from LLM output)
+      try {
+        await ctx.reply(response, { parse_mode: 'Markdown' });
+      } catch {
+        // If Markdown parsing fails, send as plain text
+        await ctx.reply(response);
+      }
 
     } catch (error) {
       console.error('Error handling message:', error);
-      await ctx.reply(
-        "Hey, I hit a snag processing that. Give me a moment and try again? 🐙"
-      );
+      const errorMsg = CIPHER_ERROR_MESSAGES[Math.floor(Math.random() * CIPHER_ERROR_MESSAGES.length)];
+      await ctx.reply(errorMsg!);
     }
   });
 
@@ -281,7 +293,16 @@ export async function startBot(config: BotConfig) {
 }
 
 // ============================================================================
-// Default Export
+// Auto-start when run directly
 // ============================================================================
+
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!token) {
+    console.error('TELEGRAM_BOT_TOKEN not set. Get one from @BotFather');
+    process.exit(1);
+  }
+  startBot({ token, usePolling: true });
+}
 
 export default createKINBot;

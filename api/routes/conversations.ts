@@ -3,6 +3,7 @@
  */
 
 import { FastifyPluginAsync } from 'fastify';
+import crypto from 'crypto';
 
 interface ConversationParams {
   conversationId: string;
@@ -55,6 +56,7 @@ const conversationRoutes: FastifyPluginAsync = async (fastify) => {
     async (request, reply) => {
       const { conversationId } = request.params;
       const { limit = 50, before } = request.query;
+      const boundedLimit = Math.min(Math.max(Number(limit) || 50, 1), 100);
       const userId = (request.user as { userId: string }).userId;
 
       // Verify ownership
@@ -79,7 +81,7 @@ const conversationRoutes: FastifyPluginAsync = async (fastify) => {
       }
 
       query += ' ORDER BY timestamp DESC LIMIT ?';
-      params.push(limit);
+      params.push(boundedLimit);
 
       const messages = fastify.context.db.prepare(query).all(...params) as any[];
 
@@ -104,7 +106,7 @@ const conversationRoutes: FastifyPluginAsync = async (fastify) => {
       const userId = (request.user as { userId: string }).userId;
       const { companionId, title } = request.body;
 
-      const id = `conv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const id = `conv-${crypto.randomUUID()}`;
       fastify.context.db.prepare(`
         INSERT INTO conversations (id, user_id, companion_id, title)
         VALUES (?, ?, ?, ?)

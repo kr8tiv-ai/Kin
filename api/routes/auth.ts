@@ -41,7 +41,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
       .update(checkString)
       .digest('hex');
 
-    if (hash !== expectedHash) {
+    if (!crypto.timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(expectedHash, 'hex'))) {
       reply.status(401);
       return { error: 'Invalid Telegram authentication' };
     }
@@ -59,7 +59,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
     `).get(telegramData.id) as any;
 
     if (!user) {
-      const userId = `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const userId = `user-${crypto.randomUUID()}`;
       fastify.context.db.prepare(`
         INSERT INTO users (id, telegram_id, first_name, last_name, username)
         VALUES (?, ?, ?, ?, ?)
@@ -76,12 +76,12 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
       `).get(userId) as any;
     }
 
-    // Generate JWT
+    // Generate JWT (expiry configured at server level)
     const token = fastify.jwt.sign({
       userId: user.id,
       telegramId: user.telegram_id,
       tier: user.tier,
-    }, { expiresIn: '7d' });
+    });
 
     return {
       token,
@@ -119,7 +119,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
         `).get(telegramId) as any;
 
         if (!user) {
-          const userId = `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          const userId = `user-${crypto.randomUUID()}`;
           fastify.context.db.prepare(`
             INSERT INTO users (id, telegram_id, first_name)
             VALUES (?, ?, ?)
@@ -134,7 +134,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
           userId: user.id,
           telegramId: user.telegram_id,
           tier: user.tier,
-        }, { expiresIn: '7d' });
+        });
 
         return { token, user };
       }

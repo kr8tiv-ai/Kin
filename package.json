@@ -9,7 +9,9 @@
     "dev:bot": "tsx watch bot/telegram-bot.ts",
     "build": "tsc",
     "start": "node dist/api/server.js",
-    "start:bot": "node dist/bot/telegram-bot.js",
+    "start:all": "tsx scripts/start.ts",
+    "start:api": "tsx scripts/start.ts api",
+    "start:bot": "tsx scripts/start.ts bot",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint . --ext .ts,.tsx",
@@ -21,6 +23,7 @@
   },
   "dependencies": {
     "@fastify/cors": "^10.0.1",
+    "@fastify/helmet": "^12.0.1",
     "@fastify/jwt": "^9.0.1",
     "@fastify/rate-limit": "^10.2.1",
     "@fastify/sensible": "^6.0.1",

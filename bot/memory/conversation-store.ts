@@ -8,6 +8,7 @@
  */
 
 import Database from 'better-sqlite3';
+import crypto from 'crypto';
 import path from 'path';
 import fs from 'fs';
 
@@ -87,7 +88,7 @@ class SQLiteConversationStore {
     companionId: string = 'cipher',
     metadata?: ConversationMemory['metadata']
   ): Promise<string> {
-    const id = `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const id = `msg-${crypto.randomUUID()}`;
     const timestamp = Date.now();
 
     const stmt = this.db.prepare(`
@@ -245,7 +246,7 @@ class InMemoryConversationStore {
     const key = this.getKey(userId, companionId);
     const messages = this.messages.get(key) ?? [];
 
-    const id = `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const id = `msg-${crypto.randomUUID()}`;
     const memory: ConversationMemory = {
       id,
       userId,

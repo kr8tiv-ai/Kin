@@ -7,6 +7,7 @@
 
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
+import helmet from '@fastify/helmet';
 import jwt from '@fastify/jwt';
 import rateLimit from '@fastify/rate-limit';
 import websocket from '@fastify/websocket';
@@ -58,13 +59,15 @@ export async function createServer(config: ApiConfig = {}) {
   
   const resolvedConfig: Required<ApiConfig> = {
     port: config.port ?? parseInt(process.env.PORT ?? '3000', 10),
-    host: config.host ?? process.env.HOST ?? '0.0.0.0',
+    host: config.host ?? process.env.HOST ?? '127.0.0.1',
     jwtSecret: config.jwtSecret ?? process.env.JWT_SECRET ?? (() => {
       if (environment === 'production') throw new Error('JWT_SECRET must be set in production');
       return 'kin-dev-secret-DO-NOT-USE-IN-PROD';
     })(),
     databasePath: config.databasePath ?? process.env.DATABASE_PATH ?? path.join(process.cwd(), 'data', 'kin.db'),
-    corsOrigins: config.corsOrigins ?? (environment === 'development' ? ['http://localhost:3000', 'http://localhost:5173'] : []),
+    corsOrigins: config.corsOrigins ?? (environment === 'development'
+      ? ['http://localhost:3000', 'http://localhost:5173']
+      : ['https://www.meetyourkin.com', 'https://meetyourkin.com']),
     rateLimitMax: config.rateLimitMax ?? 100,
     environment: environment as 'development' | 'production' | 'test',
   };
@@ -76,6 +79,7 @@ export async function createServer(config: ApiConfig = {}) {
   }
 
   const fastify = Fastify({
+    bodyLimit: 1024 * 1024, // 1MB max request body
     logger: {
       level: environment === 'development' ? 'debug' : 'info',
       transport: environment === 'development' ? {
@@ -109,24 +113,29 @@ export async function createServer(config: ApiConfig = {}) {
   // Error handling
   await fastify.register(sensible);
 
+  // Security headers
+  await fastify.register(helmet, {
+    contentSecurityPolicy: false, // API only, no HTML served
+  });
+
   // CORS
   await fastify.register(cors, {
     origin: resolvedConfig.corsOrigins,
     credentials: true,
   });
 
-  // JWT Authentication
+  // JWT Authentication (HS256, 2h expiry)
   await fastify.register(jwt, {
     secret: resolvedConfig.jwtSecret,
+    sign: { algorithm: 'HS256', expiresIn: '2h' },
+    verify: { algorithms: ['HS256'] },
   });
 
-  // Rate limiting
-  if (environment === 'production') {
-    await fastify.register(rateLimit, {
-      max: resolvedConfig.rateLimitMax,
-      timeWindow: '1 minute',
-    });
-  }
+  // Rate limiting (all environments — higher limit in dev)
+  await fastify.register(rateLimit, {
+    max: environment === 'production' ? resolvedConfig.rateLimitMax : 1000,
+    timeWindow: '1 minute',
+  });
 
   // WebSocket support
   await fastify.register(websocket);
@@ -147,8 +156,8 @@ export async function createServer(config: ApiConfig = {}) {
     protectedFastify.addHook('onRequest', async (request, reply) => {
       try {
         await request.jwtVerify();
-      } catch (err) {
-        reply.send(err);
+      } catch {
+        reply.status(401).send({ error: 'Unauthorized' });
       }
     });
 
@@ -166,10 +175,17 @@ export async function createServer(config: ApiConfig = {}) {
 
   fastify.register(async (wsFastify) => {
     wsFastify.get('/ws', { websocket: true }, (connection, request) => {
-      connection.socket.on('message', (message: string) => {
+      connection.socket.on('message', (raw: Buffer | string) => {
+        // Reject oversized messages
+        const message = raw.toString();
+        if (message.length > 4096) {
+          connection.socket.send(JSON.stringify({ type: 'error', message: 'Message too large' }));
+          return;
+        }
+
         // Parse message
         try {
-          const data = JSON.parse(message.toString());
+          const data = JSON.parse(message);
           
           // Handle different message types
           switch (data.type) {
@@ -216,7 +232,7 @@ export async function createServer(config: ApiConfig = {}) {
       request: {
         method: request.method,
         url: request.url,
-        headers: request.headers,
+        ip: request.ip,
       },
     });
 

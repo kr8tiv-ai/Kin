@@ -3,6 +3,7 @@
  */
 
 import { FastifyPluginAsync } from 'fastify';
+import crypto from 'crypto';
 
 interface TicketParams {
   ticketId: string;
@@ -43,7 +44,7 @@ const supportRoutes: FastifyPluginAsync = async (fastify) => {
       const userId = (request.user as { userId: string }).userId;
       const { title, description } = request.body;
 
-      const id = `feat-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const id = `feat-${crypto.randomUUID()}`;
 
       fastify.context.db.prepare(`
         INSERT INTO feature_requests (id, user_id, title, description)
@@ -78,7 +79,7 @@ const supportRoutes: FastifyPluginAsync = async (fastify) => {
       fastify.context.db.prepare(`
         INSERT INTO feature_votes (id, feature_id, user_id)
         VALUES (?, ?, ?)
-      `).run(`vote-${Date.now()}`, featureId, userId);
+      `).run(`vote-${crypto.randomUUID()}`, featureId, userId);
 
       // Update vote count
       fastify.context.db.prepare(`
@@ -138,7 +139,7 @@ const supportRoutes: FastifyPluginAsync = async (fastify) => {
       const userId = (request.user as { userId: string }).userId;
       const { subject, companionId, priority = 'normal' } = request.body;
 
-      const id = `tkt-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const id = `tkt-${crypto.randomUUID()}`;
 
       fastify.context.db.prepare(`
         INSERT INTO support_tickets (id, user_id, companion_id, subject, priority)

@@ -3,6 +3,7 @@
  */
 
 import { FastifyPluginAsync } from 'fastify';
+import crypto from 'crypto';
 
 interface NFTParams {
   mintAddress: string;
@@ -107,8 +108,8 @@ const nftRoutes: FastifyPluginAsync = async (fastify) => {
       // 3. Submit transaction
       // 4. Record mint on success
 
-      const mockMintAddress = `mock-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      const id = `nft-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const mockMintAddress = `mock-${crypto.randomUUID()}`;
+      const id = `nft-${crypto.randomUUID()}`;
 
       fastify.context.db.prepare(`
         INSERT INTO nft_ownership (id, user_id, companion_id, mint_address, owner_wallet)

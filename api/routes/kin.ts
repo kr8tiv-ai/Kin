@@ -3,6 +3,7 @@
  */
 
 import { FastifyPluginAsync } from 'fastify';
+import crypto from 'crypto';
 
 interface KinStatusParams {
   kinId: string;
@@ -18,7 +19,9 @@ const kinRoutes: FastifyPluginAsync = async (fastify) => {
   // Get all kin statuses for user
   fastify.get<{ Querystring: KinStatusQuery }>('/kin', async (request, reply) => {
     const userId = (request.user as { userId: string }).userId;
-    const { limit = 20, offset = 0, companionId } = request.query;
+    const { limit: rawLimit = 20, offset: rawOffset = 0, companionId } = request.query;
+    const limit = Math.min(Math.max(Number(rawLimit) || 20, 1), 100);
+    const offset = Math.max(Number(rawOffset) || 0, 0);
 
     let query = `
       SELECT * FROM kin_status_records 
@@ -168,7 +171,7 @@ const kinRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     // Claim companion
-    const id = `uc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const id = `uc-${crypto.randomUUID()}`;
     fastify.context.db.prepare(`
       INSERT INTO user_companions (id, user_id, companion_id)
       VALUES (?, ?, ?)

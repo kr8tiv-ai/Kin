@@ -3,6 +3,7 @@
  */
 
 import { FastifyPluginAsync } from 'fastify';
+import crypto from 'crypto';
 
 interface MemoryQuery {
   type?: 'personal' | 'preference' | 'context' | 'event';
@@ -13,7 +14,8 @@ const memoryRoutes: FastifyPluginAsync = async (fastify) => {
   // Get user's memories
   fastify.get<{ Querystring: MemoryQuery }>('/memories', async (request) => {
     const userId = (request.user as { userId: string }).userId;
-    const { type, limit = 100 } = request.query;
+    const { type, limit: rawLimit = 100 } = request.query;
+    const limit = Math.min(Math.max(Number(rawLimit) || 100, 1), 100);
 
     let query = `
       SELECT * FROM memories 
@@ -54,9 +56,13 @@ const memoryRoutes: FastifyPluginAsync = async (fastify) => {
     isTransferable?: boolean;
   } }>('/memories', async (request) => {
     const userId = (request.user as { userId: string }).userId;
-    const { companionId, type, content, importance = 0.5, isTransferable = false } = request.body;
+    const { companionId, type, content, importance: rawImportance = 0.5, isTransferable = false } = request.body;
+    const importance = Math.min(Math.max(Number(rawImportance) || 0.5, 0), 1);
+    if (!content || typeof content !== 'string' || content.length > 10000) {
+      return { error: 'Content required, max 10000 chars' };
+    }
 
-    const id = `mem-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const id = `mem-${crypto.randomUUID()}`;
     
     fastify.context.db.prepare(`
       INSERT INTO memories (id, user_id, companion_id, memory_type, content, importance, is_transferable)
