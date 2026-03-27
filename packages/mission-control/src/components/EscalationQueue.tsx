@@ -114,8 +114,9 @@ export function EscalationQueue({
       <style>{`
         .escalation-queue {
           padding: 16px;
-          background: var(--card-bg, #1a1a2e);
-          border-top: 1px solid var(--border, #374151);
+          background: var(--surface);
+          border-top: 1px solid var(--border);
+          font-family: var(--font-body);
         }
 
         .escalation-header {
@@ -131,8 +132,10 @@ export function EscalationQueue({
 
         .escalation-header h4 {
           margin: 0;
+          font-family: var(--font-display);
           font-size: 16px;
-          font-weight: 600;
+          font-weight: 800;
+          color: var(--text);
         }
 
         .queue-info {
@@ -146,30 +149,35 @@ export function EscalationQueue({
           display: flex;
           justify-content: space-between;
           padding: 8px 12px;
-          background: var(--input-bg, #0f0f1a);
-          border-radius: 8px;
+          background: var(--bg);
+          border-radius: var(--radius-sm);
         }
 
         .label {
-          color: var(--text-secondary, #9ca3af);
-          font-size: 13px;
+          font-family: var(--font-mono);
+          color: var(--text-muted);
+          font-size: 12px;
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
         }
 
         .value {
+          font-family: var(--font-display);
           font-weight: 600;
           font-size: 14px;
+          color: var(--text);
         }
 
         .value.status-queued {
-          color: var(--warning, #f59e0b);
+          color: var(--gold);
         }
 
         .value.status-assigned {
-          color: var(--info, #3b82f6);
+          color: var(--cyan);
         }
 
         .value.status-connected {
-          color: var(--success, #22c55e);
+          color: var(--cyan);
         }
 
         .agent-info {
@@ -177,8 +185,8 @@ export function EscalationQueue({
           align-items: center;
           gap: 12px;
           padding: 12px;
-          background: var(--input-bg, #0f0f1a);
-          border-radius: 8px;
+          background: var(--bg);
+          border-radius: var(--radius-sm);
         }
 
         .agent-avatar {
@@ -191,12 +199,15 @@ export function EscalationQueue({
         }
 
         .agent-name {
+          font-family: var(--font-body);
           font-weight: 600;
           font-size: 14px;
+          color: var(--text);
         }
 
         .agent-status {
-          color: var(--text-secondary, #9ca3af);
+          font-family: var(--font-mono);
+          color: var(--text-muted);
           font-size: 12px;
         }
 
@@ -206,7 +217,8 @@ export function EscalationQueue({
 
         .queue-message p {
           margin: 0;
-          color: var(--text-secondary, #9ca3af);
+          font-family: var(--font-body);
+          color: var(--text-muted);
           font-size: 13px;
           line-height: 1.5;
         }
@@ -218,7 +230,8 @@ export function EscalationQueue({
 
         .btn {
           padding: 10px 20px;
-          border-radius: 8px;
+          border-radius: var(--radius-sm);
+          font-family: var(--font-body);
           font-size: 14px;
           font-weight: 500;
           cursor: pointer;
@@ -228,12 +241,12 @@ export function EscalationQueue({
 
         .btn-secondary {
           background: transparent;
-          border: 1px solid var(--border, #374151);
-          color: var(--text, #e5e7eb);
+          border: 1px solid var(--border);
+          color: var(--text);
         }
 
         .btn-secondary:hover {
-          background: var(--hover, #1f2937);
+          background: var(--surface-hover);
         }
       `}</style>
     </div>
