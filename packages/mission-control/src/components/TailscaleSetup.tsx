@@ -172,8 +172,11 @@ export function TailscaleSetup({
 
       <style>{`
         .tailscale-setup {
-          background: var(--card-bg, #1a1a2e);
-          border-radius: 12px;
+          background: var(--glass-bg);
+          backdrop-filter: blur(var(--glass-blur));
+          -webkit-backdrop-filter: blur(var(--glass-blur));
+          border: 1px solid var(--border);
+          border-radius: var(--radius-md);
           padding: 24px;
           text-align: center;
         }
@@ -183,19 +186,20 @@ export function TailscaleSetup({
         }
 
         .setup-icon svg {
-          color: var(--primary, #6366f1);
+          color: var(--cyan);
         }
 
         .success-icon svg {
-          color: var(--success, #22c55e);
+          color: var(--cyan);
         }
 
         .error-icon svg {
-          color: var(--error, #ef4444);
+          color: var(--magenta);
         }
 
         .setup-description {
-          color: var(--text-secondary, #9ca3af);
+          font-family: var(--font-body);
+          color: var(--text-muted);
           margin-bottom: 20px;
         }
 
@@ -206,7 +210,7 @@ export function TailscaleSetup({
         .qr-container {
           background: white;
           padding: 16px;
-          border-radius: 8px;
+          border-radius: var(--radius-sm);
           display: inline-block;
           margin-bottom: 16px;
         }
@@ -222,35 +226,41 @@ export function TailscaleSetup({
 
         .auth-key-section label {
           display: block;
+          font-family: var(--font-mono);
           font-size: 12px;
-          color: var(--text-secondary, #9ca3af);
+          color: var(--text-muted);
           margin-bottom: 4px;
         }
 
         .auth-key-input {
           display: flex;
           gap: 8px;
-          background: var(--input-bg, #0f0f1a);
+          background: var(--bg);
+          border: 1px solid var(--border);
           border-radius: 6px;
           padding: 8px 12px;
         }
 
         .auth-key-input code {
           flex: 1;
+          font-family: var(--font-mono);
           font-size: 12px;
+          color: var(--cyan);
           overflow: hidden;
           text-overflow: ellipsis;
         }
 
         .setup-instructions {
           text-align: left;
-          background: var(--input-bg, #0f0f1a);
+          background: var(--bg);
+          border: 1px solid var(--border);
           padding: 16px;
-          border-radius: 8px;
+          border-radius: var(--radius-sm);
           margin-bottom: 16px;
         }
 
         .setup-instructions h4 {
+          font-family: var(--font-display);
           margin-bottom: 8px;
           font-size: 14px;
         }
@@ -258,7 +268,8 @@ export function TailscaleSetup({
         .setup-instructions ol {
           margin: 0;
           padding-left: 20px;
-          color: var(--text-secondary, #9ca3af);
+          font-family: var(--font-body);
+          color: var(--text-muted);
           font-size: 13px;
         }
 
@@ -274,7 +285,8 @@ export function TailscaleSetup({
 
         .btn {
           padding: 10px 20px;
-          border-radius: 6px;
+          border-radius: var(--radius-sm);
+          font-family: var(--font-body);
           font-weight: 500;
           cursor: pointer;
           transition: all 0.2s;
@@ -282,22 +294,23 @@ export function TailscaleSetup({
         }
 
         .btn-primary {
-          background: var(--primary, #6366f1);
+          background: var(--magenta);
           color: white;
         }
 
         .btn-primary:hover {
-          background: var(--primary-hover, #5558e3);
+          background: white;
+          color: black;
         }
 
         .btn-secondary {
           background: transparent;
-          border: 1px solid var(--border, #374151);
-          color: var(--text, #e5e7eb);
+          border: 1px solid var(--border);
+          color: var(--text);
         }
 
         .btn-secondary:hover {
-          background: var(--hover, #1f2937);
+          background: var(--surface-hover);
         }
 
         .btn-small {
@@ -311,7 +324,7 @@ export function TailscaleSetup({
         }
 
         .error-message {
-          color: var(--error, #ef4444);
+          color: var(--magenta);
           margin-bottom: 16px;
         }
       `}</style>
