@@ -1,0 +1,157 @@
+/**
+ * KIN Design System — meetyourkin.com alignment
+ *
+ * Source: github.com/kr8tiv-io/kin-by-kr8tiv
+ * All tokens extracted from the live meetyourkin.com CSS custom properties.
+ */
+
+/* ─── Google Fonts ─── */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;800&family=Plus+Jakarta+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+/* ─── Design Tokens ─── */
+:root {
+  /* Backgrounds */
+  --bg: #000000;
+  --surface: #0A0A0A;
+  --surface-hover: #141414;
+
+  /* Text */
+  --text: #ffffff;
+  --text-muted: rgba(255, 255, 255, 0.7);
+
+  /* Borders */
+  --border: rgba(255, 255, 255, 0.1);
+
+  /* Triple Accent Palette */
+  --cyan: #00f0ff;
+  --magenta: #ff00aa;
+  --gold: #ffd700;
+
+  /* Accent Glows (used in box-shadow, backgrounds) */
+  --cyan-glow: rgba(0, 240, 255, 0.1);
+  --cyan-glow-strong: rgba(0, 240, 255, 0.4);
+  --magenta-glow: rgba(255, 0, 170, 0.08);
+  --magenta-glow-strong: rgba(255, 0, 170, 0.4);
+  --gold-glow: rgba(255, 184, 0, 0.08);
+  --gold-glow-strong: rgba(255, 184, 0, 0.3);
+
+  /* Glass */
+  --glass-bg: rgba(255, 255, 255, 0.02);
+  --glass-blur: 20px;
+
+  /* Typography */
+  --font-display: 'Outfit', sans-serif;
+  --font-body: 'Plus Jakarta Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Spacing (consistent with meetyourkin.com section padding) */
+  --space-xs: 0.5rem;
+  --space-sm: 1rem;
+  --space-md: 1.5rem;
+  --space-lg: 2.5rem;
+  --space-xl: 4rem;
+
+  /* Radii */
+  --radius-sm: 12px;
+  --radius-md: 20px;
+  --radius-lg: 24px;
+  --radius-pill: 100px;
+}
+
+/* ─── Light Mode ─── */
+.light-mode {
+  --bg: #EAE8E3;
+  --surface: #F5F4F1;
+  --surface-hover: #FFFFFF;
+  --text: #0F0F0F;
+  --text-muted: rgba(15, 15, 15, 0.7);
+  --border: rgba(15, 15, 15, 0.1);
+  --glass-bg: rgba(0, 0, 0, 0.02);
+}
+
+/* ─── Base Reset ─── */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  overflow-x: hidden;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.6;
+}
+
+/* ─── Typography ─── */
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: var(--text);
+}
+
+h1 { font-size: clamp(2.5rem, 5vw, 4rem); }
+h2 { font-size: clamp(1.8rem, 3vw, 2.5rem); }
+h3 { font-size: clamp(1.2rem, 2vw, 1.5rem); }
+h4 { font-size: 1.1rem; }
+
+p {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+/* ─── Section Headers (gold accent, meetyourkin.com pattern) ─── */
+.section-header {
+  font-family: var(--font-display);
+  font-weight: 800;
+  color: var(--gold);
+  letter-spacing: -0.04em;
+}
+
+/* ─── Mono Labels (JetBrains Mono uppercase, meetyourkin.com pattern) ─── */
+.mono-label {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* ─── Selection ─── */
+::selection {
+  background: rgba(0, 240, 255, 0.2);
+  color: var(--text);
+}
+
+/* ─── Focus Ring ─── */
+:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}

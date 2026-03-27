@@ -12,3 +12,5 @@ export type { UseDriftStatusState, UseDriftStatusOptions } from './useDriftStatu
 
 export { useGLB, clearGLBCache, preloadGLB } from './useGLB';
 export type { GLBModel, UseGLBState, UseGLBOptions } from './useGLB';
+
+export { useKinAnimations, useLenisScroll, useScrollReveal, useCardStagger } from './useScrollAnimations';

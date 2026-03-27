@@ -44,8 +44,8 @@ function LoadingSpinner(): React.ReactElement {
         style={{
           width: '32px',
           height: '32px',
-          border: '2px solid rgba(255, 255, 255, 0.1)',
-          borderTopColor: 'rgba(99, 102, 241, 0.8)',
+          border: '2px solid var(--border, rgba(255,255,255,0.1))',
+          borderTopColor: 'var(--cyan, #00f0ff)',
           borderRadius: '50%',
           animation: 'glb-viewer-spin 0.8s linear infinite',
         }}
@@ -73,8 +73,8 @@ function WebGLUnsupported(): React.ReactElement {
         width: '100%',
         height: '100%',
         minHeight: '160px',
-        background: 'linear-gradient(180deg, rgba(40, 40, 55, 0.6) 0%, rgba(25, 25, 35, 0.8) 100%)',
-        borderRadius: '8px',
+        background: 'var(--surface, #0A0A0A)',
+        borderRadius: 'var(--radius-sm, 12px)',
         padding: '16px',
       }}
     >
@@ -83,7 +83,7 @@ function WebGLUnsupported(): React.ReactElement {
         height="32"
         viewBox="0 0 24 24"
         fill="none"
-        stroke="rgba(245, 158, 11, 0.8)"
+        stroke="var(--gold, #ffd700)"
         strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -95,11 +95,13 @@ function WebGLUnsupported(): React.ReactElement {
       </svg>
       <span
         style={{
-          fontFamily: '"Inter", system-ui, sans-serif',
-          fontSize: '12px',
+          fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)",
+          fontSize: '11px',
           fontWeight: 500,
-          color: 'rgba(255, 255, 255, 0.5)',
+          color: 'var(--text-muted, rgba(255,255,255,0.7))',
           textAlign: 'center',
+          textTransform: 'uppercase' as const,
+          letterSpacing: '0.1em',
         }}
       >
         WebGL not supported

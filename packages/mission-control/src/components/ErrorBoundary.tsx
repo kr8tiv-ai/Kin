@@ -50,8 +50,9 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
             width: '100%',
             height: '100%',
             minHeight: '160px',
-            background: 'linear-gradient(180deg, rgba(40, 40, 55, 0.6) 0%, rgba(25, 25, 35, 0.8) 100%)',
-            borderRadius: '8px',
+            background: 'var(--surface, #0A0A0A)',
+            borderRadius: 'var(--radius-sm, 12px)',
+            border: '1px solid rgba(255, 0, 170, 0.2)',
             padding: '16px',
           }}
         >
@@ -60,7 +61,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
             height="32"
             viewBox="0 0 24 24"
             fill="none"
-            stroke="rgba(239, 68, 68, 0.8)"
+            stroke="var(--magenta, #ff00aa)"
             strokeWidth="1.5"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -72,10 +73,10 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
           </svg>
           <span
             style={{
-              fontFamily: '"Inter", system-ui, sans-serif',
+              fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
               fontSize: '13px',
               fontWeight: 500,
-              color: 'rgba(255, 255, 255, 0.6)',
+              color: 'var(--text-muted, rgba(255,255,255,0.7))',
               textAlign: 'center',
             }}
           >
@@ -84,14 +85,15 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
           {import.meta.env?.DEV && this.state.error && (
             <span
               style={{
-                fontFamily: '"SF Mono", "Fira Code", monospace',
+                fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)",
                 fontSize: '10px',
-                color: 'rgba(255, 255, 255, 0.3)',
+                color: 'var(--text-muted, rgba(255,255,255,0.7))',
                 marginTop: '4px',
                 maxWidth: '140px',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
+                opacity: 0.5,
               }}
             >
               {this.state.error.message}

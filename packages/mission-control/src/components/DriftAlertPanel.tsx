@@ -46,14 +46,14 @@ function formatRelativeTime(timestamp: string): string {
 function getSeverityColor(severity: DriftSeverity): string {
   switch (severity) {
     case 'critical':
-      return '#dc2626'; // red-600
+      return '#ff00aa'; // var(--magenta)
     case 'high':
-      return '#ea580c'; // orange-600
+      return '#ff6b35'; // orange accent
     case 'medium':
-      return '#ca8a04'; // yellow-600
+      return '#ffd700'; // var(--gold)
     case 'low':
     default:
-      return '#6b7280'; // gray-500
+      return 'rgba(255,255,255,0.5)'; // var(--text-muted)
   }
 }
 
@@ -63,14 +63,14 @@ function getSeverityColor(severity: DriftSeverity): string {
 function getSeverityBgColor(severity: DriftSeverity): string {
   switch (severity) {
     case 'critical':
-      return '#fef2f2'; // red-50
+      return 'rgba(255,0,170,0.15)'; // magenta @ 0.15
     case 'high':
-      return '#fff7ed'; // orange-50
+      return 'rgba(255,107,53,0.15)'; // orange @ 0.15
     case 'medium':
-      return '#fefce8'; // yellow-50
+      return 'rgba(255,215,0,0.15)'; // gold @ 0.15
     case 'low':
     default:
-      return '#f9fafb'; // gray-50
+      return 'rgba(255,255,255,0.05)'; // neutral @ 0.05
   }
 }
 
@@ -105,6 +105,7 @@ const SeverityBadge: React.FC<SeverityBadgeProps> = ({ severity }) => {
         borderRadius: '0.25rem',
         fontSize: '0.75rem',
         fontWeight: 600,
+        fontFamily: "'JetBrains Mono', var(--font-mono, monospace)",
         textTransform: 'uppercase',
         letterSpacing: '0.05em',
         backgroundColor: bgColor,
@@ -126,7 +127,7 @@ interface DriftScoreDisplayProps {
 
 const DriftScoreDisplay: React.FC<DriftScoreDisplayProps> = ({ driftScore, threshold }) => {
   const isOverThreshold = driftScore > threshold;
-  const scoreColor = isOverThreshold ? getSeverityColor('critical') : '#16a34a'; // green-600
+  const scoreColor = isOverThreshold ? getSeverityColor('critical') : '#00f0ff'; // var(--cyan)
 
   return (
     <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.25rem' }}>
@@ -134,12 +135,13 @@ const DriftScoreDisplay: React.FC<DriftScoreDisplayProps> = ({ driftScore, thres
         style={{
           fontSize: '1.125rem',
           fontWeight: 600,
+          fontFamily: "'JetBrains Mono', var(--font-mono, monospace)",
           color: scoreColor,
         }}
       >
         {formatDriftScore(driftScore)}
       </span>
-      <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+      <span style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.7)', fontFamily: "'Plus Jakarta Sans', var(--font-body, sans-serif)" }}>
         / {formatDriftScore(threshold)} threshold
       </span>
     </div>
@@ -171,11 +173,11 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert, onAcknowledge, acknowledgi
   return (
     <div
       style={{
-        border: '1px solid #e5e7eb',
+        border: '1px solid rgba(255,255,255,0.1)',
         borderRadius: '0.5rem',
         padding: '1rem',
-        backgroundColor: alert.acknowledged ? '#f9fafb' : '#ffffff',
-        opacity: alert.acknowledged ? 0.7 : 1,
+        backgroundColor: '#0A0A0A',
+        opacity: alert.acknowledged ? 0.5 : 1,
       }}
     >
       {/* Header: Kin name + Severity badge + Time */}
@@ -188,12 +190,12 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert, onAcknowledge, acknowledgi
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <span style={{ fontSize: '1rem', fontWeight: 600, color: '#111827' }}>
+          <span style={{ fontSize: '1rem', fontWeight: 600, fontFamily: "'Outfit', var(--font-display, sans-serif)", color: '#ffffff' }}>
             {alert.kin_name}
           </span>
           <SeverityBadge severity={alert.severity} />
         </div>
-        <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+        <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)', fontFamily: "'JetBrains Mono', var(--font-mono, monospace)" }}>
           {formatRelativeTime(alert.timestamp)}
         </span>
       </div>
@@ -205,28 +207,29 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert, onAcknowledge, acknowledgi
 
       {/* Deviant metrics */}
       <div style={{ marginBottom: '0.75rem' }}>
-        <span style={{ fontSize: '0.75rem', fontWeight: 500, color: '#374151' }}>
+        <span style={{ fontSize: '0.75rem', fontWeight: 500, color: 'rgba(255,255,255,0.7)', fontFamily: "'Plus Jakarta Sans', var(--font-body, sans-serif)" }}>
           Deviant metrics:{' '}
         </span>
-        <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+        <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)', fontFamily: "'Plus Jakarta Sans', var(--font-body, sans-serif)" }}>
           {alert.details.deviant_metrics.map(m => m.replace(/_/g, ' ')).join(', ')}
         </span>
       </div>
 
       {/* Trend indicator */}
       <div style={{ marginBottom: '0.75rem' }}>
-        <span style={{ fontSize: '0.75rem', fontWeight: 500, color: '#374151' }}>
+        <span style={{ fontSize: '0.75rem', fontWeight: 500, color: 'rgba(255,255,255,0.7)', fontFamily: "'Plus Jakarta Sans', var(--font-body, sans-serif)" }}>
           Trend:{' '}
         </span>
         <span
           style={{
             fontSize: '0.75rem',
+            fontFamily: "'Plus Jakarta Sans', var(--font-body, sans-serif)",
             color:
               alert.details.trend === 'increasing'
-                ? '#dc2626'
+                ? '#ff00aa'
                 : alert.details.trend === 'decreasing'
-                  ? '#16a34a'
-                  : '#6b7280',
+                  ? '#00f0ff'
+                  : 'rgba(255,255,255,0.7)',
           }}
         >
           {alert.details.trend}
@@ -237,7 +240,7 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert, onAcknowledge, acknowledgi
       <div
         style={{
           padding: '0.75rem',
-          backgroundColor: '#f3f4f6',
+          backgroundColor: 'rgba(255,255,255,0.03)',
           borderRadius: '0.375rem',
           marginBottom: '0.75rem',
         }}
@@ -245,7 +248,8 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert, onAcknowledge, acknowledgi
         <p
           style={{
             fontSize: '0.875rem',
-            color: '#374151',
+            color: 'rgba(255,255,255,0.7)',
+            fontFamily: "'Plus Jakarta Sans', var(--font-body, sans-serif)",
             margin: 0,
             lineHeight: 1.5,
           }}
@@ -257,8 +261,8 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert, onAcknowledge, acknowledgi
       {/* Acknowledgment section */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
         {alert.acknowledged ? (
-          <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>
-            ✓ Acknowledged {alert.acknowledged_at ? formatRelativeTime(alert.acknowledged_at) : ''}
+          <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)', fontFamily: "'Plus Jakarta Sans', var(--font-body, sans-serif)" }}>
+            Acknowledged {alert.acknowledged_at ? formatRelativeTime(alert.acknowledged_at) : ''}
           </span>
         ) : (
           <>
@@ -269,8 +273,9 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert, onAcknowledge, acknowledgi
                 padding: '0.375rem 0.75rem',
                 fontSize: '0.75rem',
                 fontWeight: 500,
+                fontFamily: "'Plus Jakarta Sans', var(--font-body, sans-serif)",
                 color: '#ffffff',
-                backgroundColor: isAcknowledging ? '#9ca3af' : '#2563eb',
+                backgroundColor: isAcknowledging ? 'rgba(255,255,255,0.2)' : '#00f0ff',
                 border: 'none',
                 borderRadius: '0.375rem',
                 cursor: isAcknowledging ? 'not-allowed' : 'pointer',
@@ -280,7 +285,7 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert, onAcknowledge, acknowledgi
               {isAcknowledging ? 'Acknowledging...' : 'Acknowledge'}
             </button>
             {ackError && (
-              <span style={{ fontSize: '0.75rem', color: '#dc2626' }}>{ackError}</span>
+              <span style={{ fontSize: '0.75rem', color: '#ff00aa' }}>{ackError}</span>
             )}
           </>
         )}
@@ -401,14 +406,15 @@ export const DriftAlertPanel: React.FC<DriftAlertPanelProps> = ({
         style={{
           padding: '2rem',
           textAlign: 'center',
-          color: '#6b7280',
+          backgroundColor: '#000000',
+          color: 'rgba(255,255,255,0.7)',
           ...style,
         }}
       >
         <div style={{ marginBottom: '0.5rem' }}>
-          <span style={{ fontSize: '1.5rem' }}>⏳</span>
+          <span style={{ fontSize: '1.5rem' }}>...</span>
         </div>
-        <p style={{ margin: 0, fontSize: '0.875rem' }}>Loading drift alerts...</p>
+        <p style={{ margin: 0, fontSize: '0.875rem', fontFamily: "'Plus Jakarta Sans', var(--font-body, sans-serif)" }}>Loading drift alerts...</p>
       </div>
     );
   }
@@ -421,14 +427,15 @@ export const DriftAlertPanel: React.FC<DriftAlertPanelProps> = ({
         style={{
           padding: '2rem',
           textAlign: 'center',
-          color: '#dc2626',
+          backgroundColor: '#000000',
+          color: '#ff00aa',
           ...style,
         }}
       >
         <div style={{ marginBottom: '0.5rem' }}>
-          <span style={{ fontSize: '1.5rem' }}>⚠️</span>
+          <span style={{ fontSize: '1.5rem' }}>!</span>
         </div>
-        <p style={{ margin: 0, fontSize: '0.875rem', marginBottom: '1rem' }}>
+        <p style={{ margin: 0, fontSize: '0.875rem', marginBottom: '1rem', fontFamily: "'Plus Jakarta Sans', var(--font-body, sans-serif)" }}>
           Failed to load drift alerts
         </p>
         <button
@@ -437,8 +444,9 @@ export const DriftAlertPanel: React.FC<DriftAlertPanelProps> = ({
             padding: '0.5rem 1rem',
             fontSize: '0.875rem',
             fontWeight: 500,
+            fontFamily: "'Plus Jakarta Sans', var(--font-body, sans-serif)",
             color: '#ffffff',
-            backgroundColor: '#2563eb',
+            backgroundColor: '#00f0ff',
             border: 'none',
             borderRadius: '0.375rem',
             cursor: 'pointer',
@@ -458,14 +466,15 @@ export const DriftAlertPanel: React.FC<DriftAlertPanelProps> = ({
         style={{
           padding: '2rem',
           textAlign: 'center',
-          color: '#6b7280',
+          backgroundColor: '#000000',
+          color: 'rgba(255,255,255,0.7)',
           ...style,
         }}
       >
         <div style={{ marginBottom: '0.5rem' }}>
-          <span style={{ fontSize: '1.5rem' }}>✓</span>
+          <span style={{ fontSize: '1.5rem', color: '#00f0ff' }}>OK</span>
         </div>
-        <p style={{ margin: 0, fontSize: '0.875rem' }}>
+        <p style={{ margin: 0, fontSize: '0.875rem', fontFamily: "'Plus Jakarta Sans', var(--font-body, sans-serif)" }}>
           {unacknowledgedOnly
             ? 'No unacknowledged drift alerts'
             : 'No drift alerts'}
@@ -485,12 +494,12 @@ export const DriftAlertPanel: React.FC<DriftAlertPanelProps> = ({
           alignItems: 'center',
           marginBottom: '1rem',
           padding: '0.75rem',
-          backgroundColor: '#f9fafb',
+          backgroundColor: '#0A0A0A',
           borderRadius: '0.5rem',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#111827' }}>
+          <span style={{ fontSize: '0.875rem', fontWeight: 800, fontFamily: "'Outfit', var(--font-display, sans-serif)", color: '#ffffff' }}>
             Drift Alerts
           </span>
           {severityCounts.critical > 0 && (
@@ -498,6 +507,7 @@ export const DriftAlertPanel: React.FC<DriftAlertPanelProps> = ({
               style={{
                 fontSize: '0.75rem',
                 fontWeight: 500,
+                fontFamily: "'JetBrains Mono', var(--font-mono, monospace)",
                 color: getSeverityColor('critical'),
               }}
             >
@@ -509,6 +519,7 @@ export const DriftAlertPanel: React.FC<DriftAlertPanelProps> = ({
               style={{
                 fontSize: '0.75rem',
                 fontWeight: 500,
+                fontFamily: "'JetBrains Mono', var(--font-mono, monospace)",
                 color: getSeverityColor('high'),
               }}
             >
@@ -523,9 +534,10 @@ export const DriftAlertPanel: React.FC<DriftAlertPanelProps> = ({
             padding: '0.25rem 0.5rem',
             fontSize: '0.75rem',
             fontWeight: 500,
-            color: '#374151',
+            fontFamily: "'Plus Jakarta Sans', var(--font-body, sans-serif)",
+            color: 'rgba(255,255,255,0.7)',
             backgroundColor: 'transparent',
-            border: '1px solid #d1d5db',
+            border: '1px solid rgba(255,255,255,0.1)',
             borderRadius: '0.25rem',
             cursor: loading ? 'not-allowed' : 'pointer',
             opacity: loading ? 0.5 : 1,
@@ -554,7 +566,8 @@ export const DriftAlertPanel: React.FC<DriftAlertPanelProps> = ({
             marginTop: '0.75rem',
             textAlign: 'center',
             fontSize: '0.75rem',
-            color: '#6b7280',
+            fontFamily: "'Plus Jakarta Sans', var(--font-body, sans-serif)",
+            color: 'rgba(255,255,255,0.7)',
           }}
         >
           Showing {maxAlerts} of {alerts.length} alerts

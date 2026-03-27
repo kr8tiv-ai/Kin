@@ -21,13 +21,13 @@ import type { KinDriftScore, DriftHealthStatus } from '../types/drift';
  */
 function getStatusColor(driftScore: number): string {
   if (driftScore < 0.15) {
-    return '#16a34a'; // green-600
+    return '#00f0ff'; // var(--cyan)
   } else if (driftScore < 0.25) {
-    return '#ca8a04'; // yellow-600
+    return '#ffd700'; // var(--gold)
   } else if (driftScore < 0.35) {
-    return '#ea580c'; // orange-600
+    return '#ff6b35'; // orange accent
   } else {
-    return '#dc2626'; // red-600
+    return '#ff00aa'; // var(--magenta)
   }
 }
 
@@ -36,13 +36,13 @@ function getStatusColor(driftScore: number): string {
  */
 function getStatusBgColor(driftScore: number): string {
   if (driftScore < 0.15) {
-    return '#f0fdf4'; // green-50
+    return 'rgba(0,240,255,0.15)'; // cyan @ 0.15
   } else if (driftScore < 0.25) {
-    return '#fefce8'; // yellow-50
+    return 'rgba(255,215,0,0.15)'; // gold @ 0.15
   } else if (driftScore < 0.35) {
-    return '#fff7ed'; // orange-50
+    return 'rgba(255,107,53,0.15)'; // orange @ 0.15
   } else {
-    return '#fef2f2'; // red-50
+    return 'rgba(255,0,170,0.15)'; // magenta @ 0.15
   }
 }
 
@@ -52,13 +52,13 @@ function getStatusBgColor(driftScore: number): string {
 function getOverallHealthColor(health: DriftHealthStatus): string {
   switch (health) {
     case 'stable':
-      return '#16a34a'; // green-600
+      return '#00f0ff'; // var(--cyan)
     case 'warning':
-      return '#ca8a04'; // yellow-600
+      return '#ffd700'; // var(--gold)
     case 'critical':
-      return '#dc2626'; // red-600
+      return '#ff00aa'; // var(--magenta)
     default:
-      return '#6b7280'; // gray-500
+      return 'rgba(255,255,255,0.7)'; // var(--text-muted)
   }
 }
 
@@ -91,13 +91,13 @@ const KinScoreCard: React.FC<KinScoreCardProps> = ({ kin }) => {
         alignItems: 'center',
         justifyContent: 'space-between',
         padding: '0.75rem',
-        backgroundColor: bgColor,
+        backgroundColor: '#0A0A0A',
         borderRadius: '0.375rem',
         borderLeft: `3px solid ${color}`,
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-        <span style={{ fontSize: '0.875rem', fontWeight: 500, color: '#111827' }}>
+        <span style={{ fontSize: '0.875rem', fontWeight: 500, fontFamily: "'Outfit', var(--font-display, sans-serif)", color: '#ffffff' }}>
           {kin.kin_name}
         </span>
         <span
@@ -107,6 +107,7 @@ const KinScoreCard: React.FC<KinScoreCardProps> = ({ kin }) => {
             borderRadius: '0.25rem',
             backgroundColor: color,
             color: '#ffffff',
+            fontFamily: "'JetBrains Mono', var(--font-mono, monospace)",
             textTransform: 'uppercase',
             letterSpacing: '0.05em',
             fontWeight: 600,
@@ -119,6 +120,7 @@ const KinScoreCard: React.FC<KinScoreCardProps> = ({ kin }) => {
         style={{
           fontSize: '1.125rem',
           fontWeight: 600,
+          fontFamily: "'JetBrains Mono', var(--font-mono, monospace)",
           color,
         }}
       >
@@ -151,7 +153,7 @@ const HealthIndicator: React.FC<HealthIndicatorProps> = ({
         alignItems: 'center',
         gap: '1rem',
         padding: '1rem',
-        backgroundColor: '#f9fafb',
+        backgroundColor: '#0A0A0A',
         borderRadius: '0.5rem',
         marginBottom: '1rem',
       }}
@@ -172,16 +174,16 @@ const HealthIndicator: React.FC<HealthIndicatorProps> = ({
             boxShadow: `0 0 0 3px ${color}33`,
           }}
         />
-        <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#111827' }}>
+        <span style={{ fontSize: '0.875rem', fontWeight: 800, fontFamily: "'Outfit', var(--font-display, sans-serif)", color: '#ffffff' }}>
           System: {health.toUpperCase()}
         </span>
       </div>
       <div style={{ display: 'flex', gap: '1rem', marginLeft: 'auto' }}>
-        <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+        <span style={{ fontSize: '0.75rem', fontFamily: "'JetBrains Mono', var(--font-mono, monospace)", color: 'rgba(255,255,255,0.7)' }}>
           {alertCount} alerts (24h)
         </span>
         {criticalCount > 0 && (
-          <span style={{ fontSize: '0.75rem', color: '#dc2626', fontWeight: 500 }}>
+          <span style={{ fontSize: '0.75rem', fontFamily: "'JetBrains Mono', var(--font-mono, monospace)", color: '#ff00aa', fontWeight: 500 }}>
             {criticalCount} critical
           </span>
         )}
@@ -251,14 +253,15 @@ export const DriftStatusWidget: React.FC<DriftStatusWidgetProps> = ({
         style={{
           padding: '2rem',
           textAlign: 'center',
-          color: '#6b7280',
+          backgroundColor: '#000000',
+          color: 'rgba(255,255,255,0.7)',
           ...style,
         }}
       >
         <div style={{ marginBottom: '0.5rem' }}>
-          <span style={{ fontSize: '1.5rem' }}>⏳</span>
+          <span style={{ fontSize: '1.5rem' }}>...</span>
         </div>
-        <p style={{ margin: 0, fontSize: '0.875rem' }}>Loading drift status...</p>
+        <p style={{ margin: 0, fontSize: '0.875rem', fontFamily: "'Plus Jakarta Sans', var(--font-body, sans-serif)" }}>Loading drift status...</p>
       </div>
     );
   }
@@ -271,14 +274,15 @@ export const DriftStatusWidget: React.FC<DriftStatusWidgetProps> = ({
         style={{
           padding: '2rem',
           textAlign: 'center',
-          color: '#dc2626',
+          backgroundColor: '#000000',
+          color: '#ff00aa',
           ...style,
         }}
       >
         <div style={{ marginBottom: '0.5rem' }}>
-          <span style={{ fontSize: '1.5rem' }}>⚠️</span>
+          <span style={{ fontSize: '1.5rem' }}>!</span>
         </div>
-        <p style={{ margin: 0, fontSize: '0.875rem', marginBottom: '1rem' }}>
+        <p style={{ margin: 0, fontSize: '0.875rem', marginBottom: '1rem', fontFamily: "'Plus Jakarta Sans', var(--font-body, sans-serif)" }}>
           Failed to load drift status
         </p>
         <button
@@ -287,8 +291,9 @@ export const DriftStatusWidget: React.FC<DriftStatusWidgetProps> = ({
             padding: '0.5rem 1rem',
             fontSize: '0.875rem',
             fontWeight: 500,
+            fontFamily: "'Plus Jakarta Sans', var(--font-body, sans-serif)",
             color: '#ffffff',
-            backgroundColor: '#2563eb',
+            backgroundColor: '#00f0ff',
             border: 'none',
             borderRadius: '0.375rem',
             cursor: 'pointer',
@@ -308,14 +313,15 @@ export const DriftStatusWidget: React.FC<DriftStatusWidgetProps> = ({
         style={{
           padding: '2rem',
           textAlign: 'center',
-          color: '#6b7280',
+          backgroundColor: '#000000',
+          color: 'rgba(255,255,255,0.7)',
           ...style,
         }}
       >
         <div style={{ marginBottom: '0.5rem' }}>
-          <span style={{ fontSize: '1.5rem' }}>📊</span>
+          <span style={{ fontSize: '1.5rem' }}>--</span>
         </div>
-        <p style={{ margin: 0, fontSize: '0.875rem' }}>No Kin processes monitored</p>
+        <p style={{ margin: 0, fontSize: '0.875rem', fontFamily: "'Plus Jakarta Sans', var(--font-body, sans-serif)" }}>No Kin processes monitored</p>
       </div>
     );
   }
@@ -333,7 +339,7 @@ export const DriftStatusWidget: React.FC<DriftStatusWidgetProps> = ({
             marginBottom: '0.75rem',
           }}
         >
-          <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#111827' }}>
+          <span style={{ fontSize: '0.875rem', fontWeight: 800, fontFamily: "'Outfit', var(--font-display, sans-serif)", color: '#ffffff' }}>
             Drift Status
           </span>
           <button
@@ -343,9 +349,10 @@ export const DriftStatusWidget: React.FC<DriftStatusWidgetProps> = ({
               padding: '0.25rem 0.5rem',
               fontSize: '0.75rem',
               fontWeight: 500,
-              color: '#374151',
+              fontFamily: "'Plus Jakarta Sans', var(--font-body, sans-serif)",
+              color: 'rgba(255,255,255,0.7)',
               backgroundColor: 'transparent',
-              border: '1px solid #d1d5db',
+              border: '1px solid rgba(255,255,255,0.1)',
               borderRadius: '0.25rem',
               cursor: loading ? 'not-allowed' : 'pointer',
               opacity: loading ? 0.5 : 1,
@@ -376,7 +383,8 @@ export const DriftStatusWidget: React.FC<DriftStatusWidgetProps> = ({
           marginTop: '0.75rem',
           textAlign: 'right',
           fontSize: '0.75rem',
-          color: '#9ca3af',
+          fontFamily: "'JetBrains Mono', var(--font-mono, monospace)",
+          color: 'rgba(255,255,255,0.7)',
         }}
       >
         Updated: {new Date(status.timestamp).toLocaleTimeString()}

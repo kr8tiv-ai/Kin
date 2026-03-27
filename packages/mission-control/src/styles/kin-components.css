@@ -1,0 +1,494 @@
+/**
+ * KIN Component Styles — meetyourkin.com patterns
+ *
+ * Glass cards, solid cards, CTAs, neon effects, grain overlay,
+ * gradient text, animations. All patterns extracted from
+ * github.com/kr8tiv-io/kin-by-kr8tiv source.
+ */
+
+/* ═══════════════════════════════════════════
+   CARDS
+   ═══════════════════════════════════════════ */
+
+/* Glass Card — primary component pattern */
+.kin-glass-card {
+  position: relative;
+  background: var(--glass-bg);
+  border: none;
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  overflow: hidden;
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
+}
+
+.kin-glass-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 60px var(--cyan-glow);
+}
+
+/* Glass card accent variants */
+.kin-glass-card--magenta:hover {
+  box-shadow: 0 20px 60px var(--magenta-glow);
+}
+
+.kin-glass-card--gold:hover {
+  box-shadow: 0 20px 60px var(--gold-glow);
+}
+
+/* Solid Card — surface variant */
+.kin-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  transition: all 0.4s;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+.kin-card:hover {
+  transform: translateY(-10px);
+  border-color: var(--cyan);
+  box-shadow: 0 10px 30px rgba(0, 240, 255, 0.05);
+}
+
+/* ═══════════════════════════════════════════
+   BUTTONS
+   ═══════════════════════════════════════════ */
+
+/* CTA Outline (cyan) */
+.kin-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 2rem;
+  border: 1px solid var(--cyan);
+  border-radius: var(--radius-pill);
+  color: var(--cyan);
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  text-decoration: none;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.4s ease;
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.1);
+}
+
+.kin-cta:hover {
+  background: var(--cyan);
+  color: #000;
+  box-shadow: 0 0 40px var(--cyan-glow-strong);
+}
+
+/* CTA Primary (magenta filled) */
+.kin-cta--primary {
+  background: var(--magenta);
+  color: #fff;
+  border-color: var(--magenta);
+  box-shadow: 0 0 20px rgba(255, 0, 170, 0.2);
+}
+
+.kin-cta--primary:hover {
+  background: #fff;
+  color: #000;
+  border-color: #fff;
+  box-shadow: 0 0 40px rgba(255, 255, 255, 0.5);
+}
+
+/* CTA Small */
+.kin-cta--sm {
+  padding: 0.5rem 1.25rem;
+  font-size: 0.8rem;
+}
+
+/* ═══════════════════════════════════════════
+   STATUS BADGES
+   ═══════════════════════════════════════════ */
+
+.kin-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.kin-badge--cyan {
+  background: rgba(0, 240, 255, 0.15);
+  color: var(--cyan);
+  border: 1px solid rgba(0, 240, 255, 0.2);
+}
+
+.kin-badge--magenta {
+  background: rgba(255, 0, 170, 0.15);
+  color: var(--magenta);
+  border: 1px solid rgba(255, 0, 170, 0.2);
+}
+
+.kin-badge--gold {
+  background: rgba(255, 215, 0, 0.15);
+  color: var(--gold);
+  border: 1px solid rgba(255, 215, 0, 0.2);
+}
+
+/* Pulse dot inside badges */
+.kin-pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  animation: kin-pulse 2s ease-in-out infinite;
+}
+
+.kin-pulse-dot--cyan {
+  background: var(--cyan);
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.4);
+}
+
+.kin-pulse-dot--magenta {
+  background: var(--magenta);
+  box-shadow: 0 0 8px rgba(255, 0, 170, 0.4);
+}
+
+.kin-pulse-dot--gold {
+  background: var(--gold);
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+}
+
+/* ═══════════════════════════════════════════
+   NEON EFFECTS
+   ═══════════════════════════════════════════ */
+
+.kin-neon {
+  text-shadow: 0 0 40px var(--cyan), 0 0 80px var(--magenta);
+}
+
+.light-mode .kin-neon {
+  text-shadow: none;
+}
+
+.kin-neon--cyan {
+  text-shadow: 0 0 40px var(--cyan), 0 0 80px rgba(0, 240, 255, 0.3);
+}
+
+.kin-neon--magenta {
+  text-shadow: 0 0 50px var(--magenta), 0 0 100px rgba(255, 0, 170, 0.4);
+}
+
+/* ═══════════════════════════════════════════
+   GRADIENT TEXT
+   ═══════════════════════════════════════════ */
+
+.kin-gradient-text {
+  background: linear-gradient(135deg, var(--gold), #fff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.kin-gradient-text--cyan {
+  background: linear-gradient(135deg, var(--cyan), #fff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.kin-gradient-text--magenta {
+  background: linear-gradient(135deg, var(--magenta), #fff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ═══════════════════════════════════════════
+   GRAIN OVERLAY
+   ═══════════════════════════════════════════ */
+
+.kin-grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0.04;
+  pointer-events: none;
+  z-index: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ═══════════════════════════════════════════
+   PROGRESS BAR
+   ═══════════════════════════════════════════ */
+
+.kin-progress {
+  width: 100%;
+  height: 6px;
+  background: var(--surface);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.kin-progress__fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.6s ease;
+  background: linear-gradient(90deg, var(--cyan), rgba(0, 240, 255, 0.6));
+  box-shadow: 0 0 10px var(--cyan-glow);
+}
+
+.kin-progress__fill--magenta {
+  background: linear-gradient(90deg, var(--magenta), rgba(255, 0, 170, 0.6));
+  box-shadow: 0 0 10px var(--magenta-glow);
+}
+
+.kin-progress__fill--gold {
+  background: linear-gradient(90deg, var(--gold), rgba(255, 215, 0, 0.6));
+  box-shadow: 0 0 10px var(--gold-glow);
+}
+
+/* ═══════════════════════════════════════════
+   TABLE
+   ═══════════════════════════════════════════ */
+
+.kin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-body);
+}
+
+.kin-table th {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  text-align: left;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.kin-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.kin-table tr:hover td {
+  background: var(--surface-hover);
+}
+
+/* ═══════════════════════════════════════════
+   GRID LAYOUTS
+   ═══════════════════════════════════════════ */
+
+.kin-grid {
+  display: grid;
+  gap: var(--space-md);
+}
+
+.kin-grid--2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.kin-grid--3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.kin-grid--auto {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+/* Dashboard layout: 3 cols main + 1 col sidebar */
+.kin-dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 320px;
+  gap: var(--space-md);
+}
+
+@media (max-width: 1024px) {
+  .kin-grid--2,
+  .kin-grid--3 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .kin-dashboard-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .kin-grid--2,
+  .kin-grid--3,
+  .kin-grid--auto {
+    grid-template-columns: 1fr;
+  }
+  .kin-dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   ANIMATIONS
+   ═══════════════════════════════════════════ */
+
+@keyframes kin-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.15);
+  }
+}
+
+@keyframes kin-float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-15px);
+  }
+}
+
+@keyframes kin-pulse-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 20px rgba(0, 240, 255, 0.1));
+  }
+  50% {
+    filter: drop-shadow(0 0 40px rgba(255, 0, 170, 0.2));
+  }
+}
+
+@keyframes kin-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(25px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Scroll reveal — applied to elements that fade in */
+.kin-reveal {
+  animation: kin-fade-in 0.7s ease-out both;
+}
+
+/* Float + glow for 3D models */
+.kin-living {
+  animation: kin-float 6s ease-in-out infinite, kin-pulse-glow 4s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════
+   MODE TOGGLE
+   ═══════════════════════════════════════════ */
+
+.kin-mode-toggle {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 9999;
+  background: rgba(15, 15, 15, 0.4);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-pill);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+.light-mode .kin-mode-toggle {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+/* ═══════════════════════════════════════════
+   NAVIGATION
+   ═══════════════════════════════════════════ */
+
+.kin-nav {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  padding: 1.5rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 100;
+  mix-blend-mode: difference;
+  color: #fff;
+}
+
+.kin-nav__logo {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.5rem;
+  color: var(--gold);
+  text-decoration: none;
+}
+
+.kin-nav__links {
+  display: flex;
+  gap: 2rem;
+  list-style: none;
+}
+
+.kin-nav__link {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text);
+  text-decoration: none;
+  transition: color 0.3s;
+}
+
+.kin-nav__link:hover {
+  color: var(--cyan);
+}
+
+@media (max-width: 768px) {
+  .kin-nav__links {
+    display: none;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   UTILITY CLASSES
+   ═══════════════════════════════════════════ */
+
+.kin-text-cyan { color: var(--cyan); }
+.kin-text-magenta { color: var(--magenta); }
+.kin-text-gold { color: var(--gold); }
+.kin-text-muted { color: var(--text-muted); }
+
+.kin-bg-surface { background: var(--surface); }
+.kin-bg-glass { background: var(--glass-bg); }
+
+.kin-border { border: 1px solid var(--border); }
+.kin-border-cyan { border-color: var(--cyan); }
+.kin-border-magenta { border-color: var(--magenta); }
+.kin-border-gold { border-color: var(--gold); }
+
+/* Tabular numbers for metrics/timestamps */
+.kin-tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
