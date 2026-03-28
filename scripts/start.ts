@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
  * KIN Platform Startup Script
- * Validates environment and starts the platform
+ * Validates environment, starts the platform, and optionally wires
+ * the Telegram bot into the Fastify server via webhook mode.
  */
 
 import { existsSync, mkdirSync, readFileSync } from 'fs';
@@ -79,23 +80,87 @@ if (!existsSync(dbPath)) {
 
 console.log('\n✅ Startup checks passed\n');
 
-// Start the appropriate service
+// ============================================================================
+// Service startup
+// ============================================================================
+
 const mode = process.argv[2] || 'all';
 
 if (mode === 'api') {
+  // API-only: no bot, no health watcher
   console.log('Starting API server...');
-  import('../api/server.js');
+  const { startServer } = await import('../api/server.js');
+  await startServer();
+
 } else if (mode === 'bot') {
-  console.log('Starting Telegram bot...');
-  import('../bot/telegram-bot.js');
+  // Bot-only: polling mode, no API server
+  console.log('Starting Telegram bot (polling mode)...');
+  const { startBot } = await import('../bot/telegram-bot.js');
+  await startBot({
+    token: process.env.TELEGRAM_BOT_TOKEN!,
+    usePolling: true,
+  });
+
 } else {
+  // "all" mode: start API + bot + health watcher
   console.log('Starting all services...\n');
 
-  // Start API
-  import('../api/server.js');
+  const webhookUrl = process.env.TELEGRAM_WEBHOOK_URL;
+  const webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
+  const isWebhookMode = !!webhookUrl;
 
-  // Start bot after a short delay
-  setTimeout(() => {
-    import('../bot/telegram-bot.js');
-  }, 1000);
+  if (isWebhookMode) {
+    // ── Webhook mode ──────────────────────────────────────────────────────
+    // 1. Create the bot (do NOT start polling)
+    // 2. Register webhook with Telegram
+    // 3. Pass bot to the Fastify server so it mounts the webhook route
+    console.log(`Webhook mode: ${webhookUrl}`);
+
+    const { createKINBot } = await import('../bot/telegram-bot.js');
+    const bot = createKINBot({ token: process.env.TELEGRAM_BOT_TOKEN! });
+
+    // Tell Telegram where to send updates
+    await bot.api.setWebhook(webhookUrl, {
+      allowed_updates: ['message', 'edited_message', 'callback_query'],
+      ...(webhookSecret ? { secret_token: webhookSecret } : {}),
+    });
+    console.log(`✓ Telegram webhook set to ${webhookUrl}`);
+
+    // Start API with the bot wired in
+    const { startServer } = await import('../api/server.js');
+    await startServer({
+      bot: bot as any,
+      telegramWebhookSecret: webhookSecret,
+    });
+
+  } else {
+    // ── Polling mode (development) ────────────────────────────────────────
+    // 1. Start API server first
+    // 2. Start bot in long-polling mode
+    console.log('Polling mode (no TELEGRAM_WEBHOOK_URL set)');
+
+    const { startServer } = await import('../api/server.js');
+    await startServer();
+
+    const { startBot } = await import('../bot/telegram-bot.js');
+    await startBot({
+      token: process.env.TELEGRAM_BOT_TOKEN!,
+      usePolling: true,
+    });
+  }
+
+  // ── Health watcher ────────────────────────────────────────────────────
+  // Start after bot + API are up so the first probe reflects real state.
+  try {
+    const { startHealthWatcher } = await import('../runtime/health-watcher.js');
+    startHealthWatcher({
+      intervalMs: parseInt(process.env.HEALTH_INTERVAL_MS ?? '60000', 10),
+      slackWebhookUrl: process.env.SLACK_WEBHOOK_URL,
+      telegramBotToken: process.env.TELEGRAM_BOT_TOKEN,
+      telegramChatId: process.env.ALERT_CHAT_ID,
+    });
+    console.log('✓ Health watcher started');
+  } catch (err) {
+    console.warn('⚠ Health watcher failed to start:', err);
+  }
 }

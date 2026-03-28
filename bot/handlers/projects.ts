@@ -8,11 +8,16 @@
  * - Delete or deploy projects
  *
  * Project status flow:
- *   draft → in_progress → preview → deployed
+ *   draft -> in_progress -> preview -> deployed
  *   (any status can be archived)
+ *
+ * Storage: SQLite via the shared db/connection module.
+ * The `projects` table schema is defined in db/schema.sql.
  */
 
 import { Context, SessionFlavor, InlineKeyboard } from 'grammy';
+import { deploy, type GeneratedFile } from '../../website/pipeline.js';
+import { getDb } from '../../db/connection.js';
 
 // ============================================================================
 // Types
@@ -43,6 +48,7 @@ export interface Project {
   updatedAt: Date;
   previewUrl?: string;
   deployedUrl?: string;
+  deploymentId?: string;
 }
 
 // ============================================================================
@@ -66,40 +72,199 @@ const STATUS_LABEL: Record<ProjectStatus, string> = {
 };
 
 // ============================================================================
-// In-memory project store
-// (In production: replace with Vercel Postgres / Marketplace DB)
+// DB row <-> Project mapping
 // ============================================================================
 
-const projectStore = new Map<string, Project[]>();
+/** Shape of a row returned by SELECT on the projects table. */
+interface ProjectRow {
+  id: string;
+  user_id: string;
+  name: string;
+  description: string | null;
+  status: string;
+  files: string | null;
+  preview_url: string | null;
+  deploy_url: string | null;
+  deploy_config: string | null;
+  created_at: number;
+  updated_at: number;
+}
+
+/** Convert a raw SQLite row into the bot-side Project interface. */
+function rowToProject(row: ProjectRow): Project {
+  // deploymentId is stored inside deploy_config JSON if present
+  let deploymentId: string | undefined;
+  if (row.deploy_config) {
+    try {
+      const cfg = JSON.parse(row.deploy_config);
+      deploymentId = cfg.deploymentId;
+    } catch { /* ignore malformed JSON */ }
+  }
+
+  return {
+    id: row.id,
+    userId: row.user_id,
+    name: row.name,
+    description: row.description ?? '',
+    status: row.status as ProjectStatus,
+    createdAt: new Date(row.created_at),
+    updatedAt: new Date(row.updated_at),
+    previewUrl: row.preview_url ?? undefined,
+    deployedUrl: row.deploy_url ?? undefined,
+    deploymentId,
+  };
+}
+
+// ============================================================================
+// SQLite-backed project store
+// ============================================================================
+
+const DEFAULT_COMPANION = 'cipher';
+
+/** Select columns shared by all queries (avoids repeating the list). */
+const SELECT_COLS = `id, user_id, name, description, status, files,
+                     preview_url, deploy_url, deploy_config,
+                     created_at, updated_at`;
 
 function getUserProjects(userId: string): Project[] {
-  return projectStore.get(userId) ?? [];
+  const db = getDb();
+  const rows = db
+    .prepare(`SELECT ${SELECT_COLS} FROM projects WHERE user_id = ? ORDER BY updated_at DESC`)
+    .all(userId) as ProjectRow[];
+  return rows.map(rowToProject);
 }
 
 function getProjectById(userId: string, projectId: string): Project | undefined {
-  return getUserProjects(userId).find((p) => p.id === projectId);
+  const db = getDb();
+  const row = db
+    .prepare(`SELECT ${SELECT_COLS} FROM projects WHERE id = ? AND user_id = ?`)
+    .get(projectId, userId) as ProjectRow | undefined;
+  return row ? rowToProject(row) : undefined;
 }
 
 function saveProject(project: Project): void {
-  const list = getUserProjects(project.userId);
-  const idx = list.findIndex((p) => p.id === project.id);
-  if (idx >= 0) {
-    list[idx] = project;
-  } else {
-    list.push(project);
-  }
-  projectStore.set(project.userId, list);
+  const db = getDb();
+  const now = project.updatedAt.getTime();
+
+  // Build deploy_config JSON to persist deploymentId
+  const deployConfig = project.deploymentId
+    ? JSON.stringify({ deploymentId: project.deploymentId })
+    : null;
+
+  // Upsert: INSERT OR UPDATE on conflict(id).
+  db.prepare(
+    `INSERT INTO projects (id, user_id, companion_id, name, description, status,
+                           preview_url, deploy_url, deploy_config,
+                           created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(id) DO UPDATE SET
+       name          = excluded.name,
+       description   = excluded.description,
+       status        = excluded.status,
+       preview_url   = excluded.preview_url,
+       deploy_url    = excluded.deploy_url,
+       deploy_config = excluded.deploy_config,
+       updated_at    = excluded.updated_at`,
+  ).run(
+    project.id,
+    project.userId,
+    DEFAULT_COMPANION,
+    project.name,
+    project.description,
+    project.status,
+    project.previewUrl ?? null,
+    project.deployedUrl ?? null,
+    deployConfig,
+    project.createdAt.getTime(),
+    now,
+  );
 }
 
 function deleteProjectById(userId: string, projectId: string): boolean {
-  const list = getUserProjects(userId);
-  const nextList = list.filter((p) => p.id !== projectId);
-  projectStore.set(userId, nextList);
-  return nextList.length < list.length;
+  const db = getDb();
+  const result = db
+    .prepare('DELETE FROM projects WHERE id = ? AND user_id = ?')
+    .run(projectId, userId);
+  return result.changes > 0;
 }
 
 function generateProjectId(): string {
   return `proj-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+// ============================================================================
+// Generated file store (stored in the `files` JSON column)
+// ============================================================================
+
+/**
+ * Save generated files for a project and create/update the project record.
+ * Called by the build handler after generateWebsite() completes.
+ *
+ * If `existingProjectId` is provided the existing project is updated instead
+ * of creating a new one (used during iteration).
+ *
+ * Returns the project ID.
+ */
+export function saveProjectWithFiles(
+  userId: string,
+  description: string,
+  files: GeneratedFile[],
+  existingProjectId?: string,
+): string {
+  const db = getDb();
+  const filesJson = JSON.stringify(files);
+  const now = Date.now();
+
+  if (existingProjectId) {
+    // Try to update existing project
+    const existing = db
+      .prepare(`SELECT id FROM projects WHERE id = ? AND user_id = ?`)
+      .get(existingProjectId, userId) as { id: string } | undefined;
+
+    if (existing) {
+      db.prepare(
+        `UPDATE projects
+         SET status = 'in_progress', files = ?, updated_at = ?
+         WHERE id = ? AND user_id = ?`,
+      ).run(filesJson, now, existingProjectId, userId);
+      return existingProjectId;
+    }
+    // Fallback: create new if not found (fall through)
+  }
+
+  // Create a new project record
+  const projectId = generateProjectId();
+  const rawName = description.split(/[.!?\n]/)[0]?.trim() ?? description;
+  const name = rawName.length > 40 ? rawName.slice(0, 37) + '...' : rawName;
+
+  db.prepare(
+    `INSERT INTO projects (id, user_id, companion_id, name, description, status, files, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, 'in_progress', ?, ?, ?)`,
+  ).run(projectId, userId, DEFAULT_COMPANION, name, description.slice(0, 1000), filesJson, now, now);
+
+  return projectId;
+}
+
+/**
+ * Retrieve the generated files for a project.
+ * Returns undefined if no files are stored for the given project.
+ */
+export function getProjectFiles(
+  userId: string,
+  projectId: string,
+): GeneratedFile[] | undefined {
+  const db = getDb();
+  const row = db
+    .prepare('SELECT files FROM projects WHERE id = ? AND user_id = ?')
+    .get(projectId, userId) as { files: string | null } | undefined;
+
+  if (!row || !row.files) return undefined;
+
+  try {
+    return JSON.parse(row.files) as GeneratedFile[];
+  } catch {
+    return undefined;
+  }
 }
 
 // ============================================================================
@@ -258,21 +423,21 @@ export async function handleProjectCallback(
     return;
   }
 
-  // ── Back to list ───────────────────────────────────────────────────────────
+  // -- Back to list --------------------------------------------------------
   if (data === 'project:list') {
     await ctx.answerCallbackQuery();
     await handleProjects(ctx);
     return;
   }
 
-  // ── New project ────────────────────────────────────────────────────────────
+  // -- New project ---------------------------------------------------------
   if (data === 'project:new') {
     await ctx.answerCallbackQuery();
     await handleNewProject(ctx);
     return;
   }
 
-  // ── View project ───────────────────────────────────────────────────────────
+  // -- View project --------------------------------------------------------
   if (data.startsWith('project:view:')) {
     const projectId = data.slice('project:view:'.length);
     const project = getProjectById(userId, projectId);
@@ -312,7 +477,7 @@ export async function handleProjectCallback(
     return;
   }
 
-  // ── Delete project ─────────────────────────────────────────────────────────
+  // -- Delete project ------------------------------------------------------
   if (data.startsWith('project:delete:')) {
     const projectId = data.slice('project:delete:'.length);
     const project = getProjectById(userId, projectId);
@@ -357,7 +522,7 @@ export async function handleProjectCallback(
     return;
   }
 
-  // ── Deploy project ─────────────────────────────────────────────────────────
+  // -- Deploy project ------------------------------------------------------
   if (data.startsWith('project:deploy:')) {
     const projectId = data.slice('project:deploy:'.length);
     const project = getProjectById(userId, projectId);
@@ -367,23 +532,47 @@ export async function handleProjectCallback(
       return;
     }
 
+    // Check for generated files
+    const files = getProjectFiles(userId, projectId);
+    if (!files || files.length === 0) {
+      await ctx.answerCallbackQuery({ text: 'No files to deploy — build first.' });
+      await ctx.reply(
+        "This project doesn't have any generated files yet. Use *🎨 Build a Website* to generate code first, then deploy.",
+        { parse_mode: 'Markdown' },
+      );
+      return;
+    }
+
     await ctx.answerCallbackQuery({ text: '🚀 Deployment started!' });
+    await ctx.reply('🚀 *Deploying to Vercel...*', { parse_mode: 'Markdown' });
+    await ctx.api.sendChatAction(ctx.chat!.id, 'typing');
 
-    // Simulate deployment: update status to deployed
-    project.status = 'deployed';
-    project.updatedAt = new Date();
-    project.deployedUrl = `https://${project.id}.meetyourkin.com`;
-    saveProject(project);
+    try {
+      const { url, deploymentId } = await deploy(files, 'vercel', {
+        projectId: `kin-${projectId}`,
+      });
 
-    const keyboard = new InlineKeyboard()
-      .url('🌐 Open Live Site', project.deployedUrl!)
-      .row()
-      .text('📋 All Projects', 'project:list');
+      project.status = 'deployed';
+      project.updatedAt = new Date();
+      project.deployedUrl = url;
+      project.deploymentId = deploymentId;
+      saveProject(project);
 
-    await ctx.reply(
-      `🚀 *${project.name}* is LIVE!\n\nYour site has been deployed to:\n${project.deployedUrl}\n\n_Heads up: DNS changes can take a few minutes to propagate. Refresh if you get a 404._ 🐙`,
-      { parse_mode: 'Markdown', reply_markup: keyboard },
-    );
+      const keyboard = new InlineKeyboard()
+        .url('🌐 Open Live Site', url)
+        .row()
+        .text('📋 All Projects', 'project:list');
+
+      await ctx.reply(
+        `🚀 *${project.name}* is LIVE!\n\n*URL:* ${url}\n*Deployment ID:* \`${deploymentId}\`\n\n_Heads up: DNS changes can take a few minutes to propagate. Refresh if you get a 404._ 🐙`,
+        { parse_mode: 'Markdown', reply_markup: keyboard },
+      );
+    } catch (error) {
+      console.error('[projects] Deploy failed:', error);
+      await ctx.reply(
+        '❌ Deployment failed. Check that VERCEL_TOKEN is configured and try again.',
+      );
+    }
     return;
   }
 

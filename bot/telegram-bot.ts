@@ -21,6 +21,7 @@ import { handleCompanions } from './handlers/companions.js';
 import { handleSupport, handleSupportCallback } from './handlers/support.js';
 import { handleOnboarding, advanceOnboardingToGoal, handleOnboardingCallback, isAwaitingName } from './handlers/onboarding.js';
 import { handleProjects, handleNewProject, createProject, handleProjectCallback } from './handlers/projects.js';
+import { handleBuild, handleIterate, handleBuildCallback, enterBuildMode, isAwaitingBuild, isAwaitingIterate } from './handlers/build.js';
 import { handleExport } from './handlers/export.js';
 import { handleProgress, handleProgressCallback, recordActivity } from './handlers/progress.js';
 import { handleCustomize, handleCustomizeCallback, handleCustomizePendingInput } from './handlers/customize.js';
@@ -237,8 +238,10 @@ export function createKINBot(config: BotConfig) {
 
     if (data === 'suggest:build') {
       await ctx.answerCallbackQuery();
+      const buildUserId = ctx.from?.id.toString() ?? 'unknown';
+      enterBuildMode(buildUserId);
       await ctx.reply(
-        "🎨 *Let's build something!*\n\nDescribe what you want — a portfolio, a landing page, a blog — and I'll design it with you.\n\nWhat are we making?",
+        "🎨 *Let's build something!*\n\nDescribe what you want — a portfolio, a landing page, a blog — and I'll generate the code for you.\n\nWhat are we making?",
         { parse_mode: 'Markdown' },
       );
       return;
@@ -261,6 +264,12 @@ export function createKINBot(config: BotConfig) {
     // Onboarding buttons
     if (data.startsWith('onboard:')) {
       await handleOnboardingCallback(ctx, data, conversationStore);
+      return;
+    }
+
+    // Build pipeline buttons (deploy, iterate, save)
+    if (data.startsWith('build:')) {
+      await handleBuildCallback(ctx, data, fallback);
       return;
     }
 
@@ -322,8 +331,9 @@ export function createKINBot(config: BotConfig) {
         await ctx.reply("I'm all ears! What's on your mind? 🐙");
       },
       '🎨 Build a Website': async () => {
+        enterBuildMode(userId);
         await ctx.reply(
-          "🎨 *Let's build something!*\n\nDescribe what you want — a portfolio, a landing page, a blog — and I'll design it with you.\n\nWhat are we making?",
+          "🎨 *Let's build something!*\n\nDescribe what you want — a portfolio, a landing page, a blog — and I'll generate the code for you.\n\nWhat are we making?",
           { parse_mode: 'Markdown' },
         );
       },
@@ -357,6 +367,18 @@ export function createKINBot(config: BotConfig) {
 
     // Intercept customization pending input (nickname, personality notes)
     if (await handleCustomizePendingInput(ctx, message)) {
+      return;
+    }
+
+    // Intercept build mode — user is describing what they want built
+    if (isAwaitingBuild(userId)) {
+      await handleBuild(ctx as any, message, fallback);
+      return;
+    }
+
+    // Intercept iterate mode — user is refining a previous build
+    if (isAwaitingIterate(userId)) {
+      await handleIterate(ctx as any, message, fallback);
       return;
     }
 

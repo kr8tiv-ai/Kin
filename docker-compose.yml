@@ -1,0 +1,39 @@
+version: "3.8"
+
+services:
+  kin:
+    build: .
+    container_name: kin-platform
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    volumes:
+      - kin-data:/app/data
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - HOST=0.0.0.0
+      - DATABASE_PATH=/app/data/kin.db
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health/live"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # Optional: local LLM via Ollama (comment out if using cloud-only)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: kin-ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-models:/root/.ollama
+    profiles:
+      - local-llm
+
+volumes:
+  kin-data:
+  ollama-models:

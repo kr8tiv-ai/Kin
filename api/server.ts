@@ -16,6 +16,8 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
 
+import type { Bot } from 'grammy';
+
 // Route imports
 import healthRoutes from './routes/health.js';
 import kinRoutes from './routes/kin.js';
@@ -28,6 +30,7 @@ import billingRoutes from './routes/billing.js';
 import projectRoutes from './routes/projects.js';
 import referralRoutes from './routes/referral.js';
 import adminRoutes from './routes/admin.js';
+import telegramWebhookRoutes from './routes/telegram-webhook.js';
 
 // ============================================================================
 // Types
@@ -41,11 +44,18 @@ export interface ApiConfig {
   corsOrigins?: string[];
   rateLimitMax?: number;
   environment?: 'development' | 'production' | 'test';
+  /** When provided, the Telegram webhook route is mounted at /telegram/webhook. */
+  bot?: Bot;
+  /** Optional secret for Telegram webhook header verification. */
+  telegramWebhookSecret?: string;
 }
+
+/** The resolved config stored on the Fastify instance excludes runtime-only fields. */
+type ResolvedConfig = Required<Omit<ApiConfig, 'bot' | 'telegramWebhookSecret'>>;
 
 export interface AppContext {
   db: InstanceType<typeof Database>;
-  config: Required<ApiConfig>;
+  config: ResolvedConfig;
 }
 
 declare module 'fastify' {
@@ -61,7 +71,7 @@ declare module 'fastify' {
 export async function createServer(config: ApiConfig = {}) {
   const environment = config.environment ?? process.env.NODE_ENV ?? 'development';
   
-  const resolvedConfig: Required<ApiConfig> = {
+  const resolvedConfig: ResolvedConfig = {
     port: config.port ?? parseInt(process.env.PORT ?? '3000', 10),
     host: config.host ?? process.env.HOST ?? '127.0.0.1',
     jwtSecret: config.jwtSecret ?? process.env.JWT_SECRET ?? (() => {
@@ -153,6 +163,15 @@ export async function createServer(config: ApiConfig = {}) {
 
   // Authentication routes (no auth required)
   await fastify.register(authRoutes);
+
+  // Telegram webhook (no JWT — Telegram authenticates via secret token)
+  if (config.bot) {
+    await fastify.register(telegramWebhookRoutes, {
+      bot: config.bot,
+      secretToken: config.telegramWebhookSecret,
+    });
+    fastify.log.info('Telegram webhook route registered at POST /telegram/webhook');
+  }
 
   // Protected routes
   await fastify.register(async (protectedFastify) => {
