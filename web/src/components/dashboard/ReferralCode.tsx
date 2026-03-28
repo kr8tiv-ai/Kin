@@ -4,9 +4,10 @@
 // ReferralCode — Large code display with copy and share buttons.
 // ============================================================================
 
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { Button } from '@/components/ui/Button';
+import { useToast } from '@/providers/ToastProvider';
 
 interface ReferralCodeProps {
   code: string;
@@ -15,28 +16,26 @@ interface ReferralCodeProps {
 const SHARE_BASE_URL = 'https://meetyourkin.com';
 
 export function ReferralCode({ code }: ReferralCodeProps) {
-  const [copied, setCopied] = useState(false);
+  const { success } = useToast();
   const shareUrl = `${SHARE_BASE_URL}?ref=${code}`;
 
   const copyCode = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(code);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      success('Referral code copied!');
     } catch {
       // Fallback: select text
     }
-  }, [code]);
+  }, [code, success]);
 
   const copyLink = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(shareUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      success('Share link copied!');
     } catch {
       // Fallback
     }
-  }, [shareUrl]);
+  }, [shareUrl, success]);
 
   const shareTwitter = useCallback(() => {
     const text = encodeURIComponent(
@@ -73,7 +72,7 @@ export function ReferralCode({ code }: ReferralCodeProps) {
           </span>
         </div>
         <Button variant="outline" onClick={copyCode} className="shrink-0">
-          {copied ? 'Copied!' : 'Copy'}
+          Copy
         </Button>
       </div>
 

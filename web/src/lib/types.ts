@@ -10,6 +10,16 @@ export interface User {
   lastName?: string;
   tier: 'free' | 'pro' | 'enterprise';
   createdAt: string;
+  onboardingComplete?: boolean;
+}
+
+export interface UserPreferences {
+  displayName: string | null;
+  experienceLevel: 'beginner' | 'intermediate' | 'advanced';
+  goals: string[];
+  language: string;
+  tone: 'friendly' | 'professional' | 'casual' | 'technical';
+  onboardingComplete: boolean;
 }
 
 export interface Companion {

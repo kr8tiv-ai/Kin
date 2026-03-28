@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Outfit, Plus_Jakarta_Sans, JetBrains_Mono } from 'next/font/google';
 import { AuthProvider } from '@/providers/AuthProvider';
+import { ToastProvider } from '@/providers/ToastProvider';
 import './globals.css';
 
 const outfit = Outfit({
@@ -39,7 +40,9 @@ export default function RootLayout({
     >
       <body className="font-body">
         <AuthProvider>
-          {children}
+          <ToastProvider>
+            {children}
+          </ToastProvider>
         </AuthProvider>
         <div className="grain-overlay" aria-hidden="true" />
       </body>

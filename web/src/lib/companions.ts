@@ -12,6 +12,10 @@ export interface CompanionData {
   color: 'cyan' | 'magenta' | 'gold';
   description: string;
   images: string[];
+  /** Path to GLB 3D model (e.g., '/models/cipher.glb') */
+  glbUrl: string;
+  /** Set true once the GLB file is placed in public/models/ */
+  modelReady: boolean;
 }
 
 const COLOR_MAP: Record<string, string> = {
@@ -36,6 +40,8 @@ export const COMPANIONS: Record<string, CompanionData> = {
       '/creatures/cipher-3.jpg',
       '/creatures/cipher-4.jpg',
     ],
+    glbUrl: '/models/cipher.glb',
+    modelReady: false,
   },
 
   mischief: {
@@ -53,6 +59,8 @@ export const COMPANIONS: Record<string, CompanionData> = {
       '/creatures/mischief-3.jpg',
       '/creatures/mischief-4.jpg',
     ],
+    glbUrl: '/models/mischief.glb',
+    modelReady: false,
   },
 
   vortex: {
@@ -70,6 +78,8 @@ export const COMPANIONS: Record<string, CompanionData> = {
       '/creatures/vortex-3.jpg',
       '/creatures/vortex-4.jpg',
     ],
+    glbUrl: '/models/vortex.glb',
+    modelReady: false,
   },
 
   forge: {
@@ -87,6 +97,8 @@ export const COMPANIONS: Record<string, CompanionData> = {
       '/creatures/forge-3.jpg',
       '/creatures/forge-4.jpg',
     ],
+    glbUrl: '/models/forge.glb',
+    modelReady: false,
   },
 
   aether: {
@@ -104,6 +116,8 @@ export const COMPANIONS: Record<string, CompanionData> = {
       '/creatures/aether-3.jpg',
       '/creatures/aether-4.jpg',
     ],
+    glbUrl: '/models/aether.glb',
+    modelReady: false,
   },
 
   catalyst: {
@@ -121,6 +135,8 @@ export const COMPANIONS: Record<string, CompanionData> = {
       '/creatures/catalyst-3.jpg',
       '/creatures/catalyst-4.jpg',
     ],
+    glbUrl: '/models/catalyst.glb',
+    modelReady: false,
   },
 };
 

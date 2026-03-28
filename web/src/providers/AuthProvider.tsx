@@ -28,6 +28,7 @@ interface AuthState {
   token: string | null;
   loading: boolean;
   error: string | null;
+  onboardingComplete: boolean;
 }
 
 interface AuthContextValue extends AuthState {
@@ -45,6 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     token: null,
     loading: true,
     error: null,
+    onboardingComplete: false,
   });
 
   // On mount, check for an existing token and verify it
@@ -55,33 +57,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const storedToken = getAuthToken();
 
       if (!storedToken) {
-        setState({ user: null, token: null, loading: false, error: null });
+        setState({ user: null, token: null, loading: false, error: null, onboardingComplete: false });
         return;
       }
 
       // Check expiration locally first
       if (isTokenExpired(storedToken)) {
         clearAuthToken();
-        setState({ user: null, token: null, loading: false, error: null });
+        setState({ user: null, token: null, loading: false, error: null, onboardingComplete: false });
         return;
       }
 
       try {
         // Verify with the backend
-        const verifyResponse = await kinApi.get<{ user: User }>('/auth/verify');
+        const verifyResponse = await kinApi.get<{ user: User; valid: boolean }>('/auth/verify');
         if (cancelled) return;
+
+        if (!verifyResponse.valid || !verifyResponse.user) {
+          clearAuthToken();
+          setState({ user: null, token: null, loading: false, error: null, onboardingComplete: false });
+          return;
+        }
 
         setState({
           user: verifyResponse.user,
           token: storedToken,
           loading: false,
           error: null,
+          onboardingComplete: verifyResponse.user.onboardingComplete ?? false,
         });
       } catch {
         if (cancelled) return;
         // Token invalid on the server side — clear it
         clearAuthToken();
-        setState({ user: null, token: null, loading: false, error: null });
+        setState({ user: null, token: null, loading: false, error: null, onboardingComplete: false });
       }
     }
 
@@ -93,12 +102,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback((token: string, user: User) => {
     setAuthToken(token);
-    setState({ user, token, loading: false, error: null });
+    setState({ user, token, loading: false, error: null, onboardingComplete: user.onboardingComplete ?? false });
   }, []);
 
   const logout = useCallback(() => {
     clearAuthToken();
-    setState({ user: null, token: null, loading: false, error: null });
+    setState({ user: null, token: null, loading: false, error: null, onboardingComplete: false });
     router.push('/login');
   }, [router]);
 

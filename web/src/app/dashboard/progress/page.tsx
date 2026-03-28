@@ -11,6 +11,7 @@ import { BadgeGrid } from '@/components/dashboard/BadgeGrid';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { formatDate } from '@/lib/utils';
 
 export default function ProgressPage() {
@@ -56,6 +57,33 @@ export default function ProgressPage() {
   const streakDays = progress?.streakDays ?? 0;
   const badges = progress?.badges ?? [];
   const joinedAt = progress?.joinedAt;
+
+  // Fresh user with no activity
+  if (level <= 1 && xp === 0 && totalMessages === 0) {
+    return (
+      <div className="space-y-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <h1 className="font-display text-3xl font-bold tracking-tight text-white">
+            Your Progress
+          </h1>
+          <p className="mt-1 text-text-muted">
+            Track your level, streaks, and badge collection.
+          </p>
+        </motion.div>
+        <EmptyState
+          icon="🚀"
+          title="Your journey starts here"
+          description="Start chatting with your companion to earn XP, level up, and unlock badges. Every message counts!"
+          actionLabel="Start Chatting"
+          actionHref="https://t.me/kin_by_kr8tiv_bot"
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

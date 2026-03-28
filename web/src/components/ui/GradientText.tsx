@@ -1,10 +1,10 @@
 import { cn } from '@/lib/utils';
-import { type ElementType, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 
 interface GradientTextProps {
   children: ReactNode;
   gradient?: 'cyan' | 'magenta' | 'gold' | 'rainbow';
-  as?: ElementType;
+  as?: 'span' | 'p' | 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'div';
   className?: string;
 }
 
@@ -18,9 +18,10 @@ const gradientStyles: Record<string, string> = {
 export function GradientText({
   children,
   gradient = 'cyan',
-  as: Tag = 'span',
+  as = 'span',
   className,
 }: GradientTextProps) {
+  const Tag = as;
   return (
     <Tag
       className={cn(

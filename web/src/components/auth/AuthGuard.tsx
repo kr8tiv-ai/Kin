@@ -2,10 +2,11 @@
 
 // ============================================================================
 // Auth Guard — Protects dashboard routes from unauthenticated access.
+// Also redirects users who haven't completed onboarding.
 // ============================================================================
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/providers/AuthProvider';
 
 interface AuthGuardProps {
@@ -13,14 +14,30 @@ interface AuthGuardProps {
 }
 
 export function AuthGuard({ children }: AuthGuardProps) {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, onboardingComplete } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
-    if (!loading && !isAuthenticated) {
+    if (loading) return;
+
+    if (!isAuthenticated) {
       router.push('/login');
+      return;
     }
-  }, [loading, isAuthenticated, router]);
+
+    // Redirect to onboarding if not complete and not already on /onboard
+    if (!onboardingComplete && !pathname.startsWith('/onboard')) {
+      router.push('/onboard');
+      return;
+    }
+
+    // If on /onboard but already completed onboarding, go to dashboard
+    if (onboardingComplete && pathname.startsWith('/onboard')) {
+      router.push('/dashboard');
+      return;
+    }
+  }, [loading, isAuthenticated, onboardingComplete, pathname, router]);
 
   // Full-page loading skeleton while checking auth
   if (loading) {
@@ -28,7 +45,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
       <div className="flex min-h-screen items-center justify-center bg-bg">
         <div className="flex flex-col items-center gap-4">
           <div className="flex items-center gap-2 animate-pulse">
-            <span className="text-4xl">🐙</span>
+            <span className="text-4xl">&#x1F419;</span>
             <span
               className="font-display text-3xl font-bold text-cyan"
               style={{
@@ -52,6 +69,16 @@ export function AuthGuard({ children }: AuthGuardProps) {
 
   // Not authenticated — return nothing (redirect is in flight)
   if (!isAuthenticated) {
+    return null;
+  }
+
+  // Waiting for onboarding redirect
+  if (!onboardingComplete && !pathname.startsWith('/onboard')) {
+    return null;
+  }
+
+  // On onboarding page but already complete — waiting for redirect
+  if (onboardingComplete && pathname.startsWith('/onboard')) {
     return null;
   }
 

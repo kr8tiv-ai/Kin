@@ -100,7 +100,34 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get('/auth/verify', async (request) => {
     try {
       const decoded = await request.jwtVerify() as { userId: string };
-      return { valid: true, userId: decoded.userId };
+
+      const user = fastify.context.db.prepare(`
+        SELECT * FROM users WHERE id = ?
+      `).get(decoded.userId) as any;
+
+      if (!user) {
+        return { valid: false };
+      }
+
+      // Check onboarding status
+      const prefs = fastify.context.db.prepare(`
+        SELECT onboarding_complete FROM user_preferences WHERE user_id = ?
+      `).get(decoded.userId) as any;
+
+      return {
+        valid: true,
+        userId: decoded.userId,
+        user: {
+          id: user.id,
+          telegramId: user.telegram_id,
+          username: user.username,
+          firstName: user.first_name,
+          lastName: user.last_name,
+          tier: user.tier,
+          createdAt: new Date(user.created_at).toISOString(),
+          onboardingComplete: prefs?.onboarding_complete === 1,
+        },
+      };
     } catch {
       return { valid: false };
     }

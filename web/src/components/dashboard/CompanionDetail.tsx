@@ -4,8 +4,8 @@
 // CompanionDetail — Large companion card with image, info, and color accent.
 // ============================================================================
 
-import Image from 'next/image';
 import { motion } from 'framer-motion';
+import { CompanionViewer } from '@/components/3d/CompanionViewer';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { Badge } from '@/components/ui/Badge';
 import type { CompanionData } from '@/lib/companions';
@@ -51,7 +51,7 @@ export function CompanionDetail({ companion, stats }: CompanionDetailProps) {
         />
 
         <div className="relative flex flex-col items-center gap-6 md:flex-row md:items-start">
-          {/* Companion Image */}
+          {/* Companion Viewer (3D or 2D fallback) */}
           <div
             className="relative h-56 w-56 shrink-0 overflow-hidden rounded-2xl border-2"
             style={{
@@ -59,13 +59,12 @@ export function CompanionDetail({ companion, stats }: CompanionDetailProps) {
               boxShadow: `0 0 60px ${color}33`,
             }}
           >
-            <Image
-              src={companion.images[0]}
+            <CompanionViewer
+              glbUrl={companion.glbUrl}
+              fallbackImage={companion.images[0]}
               alt={companion.name}
-              fill
-              className="object-cover"
-              sizes="224px"
-              priority
+              modelReady={companion.modelReady}
+              className="h-full w-full"
             />
           </div>
 

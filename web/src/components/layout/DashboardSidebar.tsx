@@ -18,6 +18,7 @@ const TIER_COLORS: Record<string, string> = {
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Overview', icon: '\uD83C\uDFE0' },
   { href: '/dashboard/companion', label: 'My Companion', icon: '\uD83D\uDC19' },
+  { href: '/dashboard/collection', label: 'Collection', icon: '\u2728' },
   { href: '/dashboard/projects', label: 'Projects', icon: '\uD83D\uDCC1' },
   { href: '/dashboard/progress', label: 'Progress', icon: '\uD83D\uDCCA' },
   { href: '/dashboard/billing', label: 'Billing', icon: '\uD83D\uDCB3' },
