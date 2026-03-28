@@ -1,0 +1,250 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+@theme {
+  --color-bg: #000000;
+  --color-surface: #0A0A0A;
+  --color-surface-hover: #141414;
+  --color-cyan: #00f0ff;
+  --color-magenta: #ff00aa;
+  --color-gold: #ffd700;
+  --color-border: rgba(255,255,255,0.1);
+  --color-text: #ffffff;
+  --color-text-muted: rgba(255,255,255,0.7);
+
+  --font-display: 'Outfit', sans-serif;
+  --font-body: 'Plus Jakarta Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  --radius-sm: 12px;
+  --radius-md: 20px;
+  --radius-lg: 24px;
+  --radius-pill: 100px;
+}
+
+:root {
+  /* Core colors */
+  --bg: #000000;
+  --surface: #0A0A0A;
+  --surface-hover: #141414;
+  --cyan: #00f0ff;
+  --magenta: #ff00aa;
+  --gold: #ffd700;
+  --border: rgba(255,255,255,0.1);
+  --text: #ffffff;
+  --text-muted: rgba(255,255,255,0.7);
+
+  /* Glass */
+  --glass-bg: rgba(255,255,255,0.02);
+  --glass-blur: 20px;
+
+  /* Fonts */
+  --font-display: 'Outfit', sans-serif;
+  --font-body: 'Plus Jakarta Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Spacing scale */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+  --space-3xl: 64px;
+  --space-4xl: 96px;
+
+  /* Border radii */
+  --radius-sm: 12px;
+  --radius-md: 20px;
+  --radius-lg: 24px;
+  --radius-pill: 100px;
+
+  /* Glow effects */
+  --glow-cyan: 0 0 30px rgba(0,240,255,0.3);
+  --glow-magenta: 0 0 30px rgba(255,0,170,0.3);
+  --glow-gold: 0 0 30px rgba(255,215,0,0.3);
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+}
+
+/* Glass card component */
+@utility glass-card {
+  background: rgba(255,255,255,0.02);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 20px;
+  padding: 2rem;
+  border: 1px solid rgba(255,255,255,0.1);
+  transition: all 0.3s ease;
+}
+
+.glass-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 60px rgba(0,240,255,0.1);
+}
+
+/* Primary button */
+@utility btn-primary {
+  background-color: var(--magenta);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-pill);
+  font-weight: 600;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: none;
+}
+
+.btn-primary:hover {
+  box-shadow: 0 0 30px rgba(255,0,170,0.4);
+}
+
+/* Outline button */
+@utility btn-outline {
+  border: 1px solid var(--cyan);
+  color: var(--cyan);
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-pill);
+  font-weight: 600;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  background: transparent;
+}
+
+.btn-outline:hover {
+  background: rgba(0,240,255,0.1);
+}
+
+/* Badges */
+@utility badge-cyan {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  background: rgba(0,240,255,0.1);
+  color: var(--cyan);
+  border: 1px solid rgba(0,240,255,0.2);
+}
+
+@utility badge-magenta {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  background: rgba(255,0,170,0.1);
+  color: var(--magenta);
+  border: 1px solid rgba(255,0,170,0.2);
+}
+
+@utility badge-gold {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  background: rgba(255,215,0,0.1);
+  color: var(--gold);
+  border: 1px solid rgba(255,215,0,0.2);
+}
+
+/* Gradient text */
+@utility gradient-text-cyan {
+  background: linear-gradient(135deg, #00f0ff, #00a8ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+@utility gradient-text-magenta {
+  background: linear-gradient(135deg, #ff00aa, #ff6edf);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+@utility gradient-text-gold {
+  background: linear-gradient(135deg, #ffd700, #ffaa00);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Neon glow text */
+@utility neon-cyan {
+  text-shadow:
+    0 0 7px rgba(0,240,255,0.6),
+    0 0 20px rgba(0,240,255,0.4),
+    0 0 40px rgba(0,240,255,0.2);
+}
+
+@utility neon-magenta {
+  text-shadow:
+    0 0 7px rgba(255,0,170,0.6),
+    0 0 20px rgba(255,0,170,0.4),
+    0 0 40px rgba(255,0,170,0.2);
+}
+
+/* Grain overlay */
+@utility grain-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.04;
+  z-index: 9999;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0A0A0A;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.15);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.25);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.15) #0A0A0A;
+}
+
+/* Selection styling */
+::selection {
+  background-color: rgba(0,240,255,0.3);
+  color: #ffffff;
+}
+
+::-moz-selection {
+  background-color: rgba(0,240,255,0.3);
+  color: #ffffff;
+}

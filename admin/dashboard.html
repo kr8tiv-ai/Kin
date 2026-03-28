@@ -53,6 +53,9 @@
       <div id="login-error" class="error-text" style="display:none"></div>
       <input type="password" id="token-input" placeholder="JWT Token" />
       <button onclick="login()">Sign In</button>
+      <div style="margin-top:16px;border-top:1px solid #333;padding-top:16px">
+        <button onclick="demoMode()" style="background:#1f2937;width:100%">Preview with Demo Data</button>
+      </div>
     </div>
   </div>
 
@@ -153,6 +156,50 @@
 
         document.getElementById('last-updated').textContent = new Date().toLocaleTimeString();
       } catch (e) { console.error('Dashboard load error:', e); }
+    }
+
+    function demoMode() {
+      document.getElementById('login-screen').classList.add('hidden');
+      document.getElementById('dashboard').style.display = 'block';
+      // Mock data
+      document.getElementById('stat-users').textContent = '47';
+      document.getElementById('stat-active').textContent = '12';
+      document.getElementById('stat-messages').textContent = '1,284';
+      document.getElementById('stat-projects').textContent = '8';
+      document.getElementById('stat-pro').textContent = '3';
+      document.getElementById('stat-companions').textContent = '6';
+      document.getElementById('users-table').innerHTML = [
+        { firstName: 'Matt', tier: 'enterprise', messageCount: 312, online: true },
+        { firstName: 'Sarah', tier: 'pro', messageCount: 189, online: true },
+        { firstName: 'Alex', tier: 'pro', messageCount: 94, online: false },
+        { firstName: 'Jordan', tier: 'free', messageCount: 67, online: true },
+        { firstName: 'Riley', tier: 'free', messageCount: 41, online: false },
+        { firstName: 'Casey', tier: 'pro', messageCount: 38, online: false },
+        { firstName: 'Morgan', tier: 'free', messageCount: 22, online: false },
+      ].map(u => `<tr>
+        <td>${u.firstName}</td>
+        <td><span class="badge badge-${u.tier}">${u.tier}</span></td>
+        <td>${u.messageCount}</td>
+        <td>${new Date(Date.now() - Math.random()*86400000*3).toLocaleDateString()}</td>
+        <td><span class="badge ${u.online ? 'badge-online' : 'badge-offline'}">${u.online ? 'Online' : 'Offline'}</span></td>
+      </tr>`).join('');
+      document.getElementById('companion-stats').innerHTML = [
+        { emoji: '🐙', name: 'Cipher', usageCount: 47 },
+        { emoji: '🦊', name: 'Vex', usageCount: 12 },
+        { emoji: '🐉', name: 'Ignis', usageCount: 8 },
+        { emoji: '🦋', name: 'Lyra', usageCount: 5 },
+        { emoji: '🐺', name: 'Fenrik', usageCount: 3 },
+        { emoji: '🦉', name: 'Sage', usageCount: 2 },
+      ].map(c => `<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid #1a1a24">
+        <span style="font-size:20px">${c.emoji}</span>
+        <span style="width:100px;font-weight:500">${c.name}</span>
+        <div style="flex:1;background:#1a1a24;height:20px;border-radius:4px;overflow:hidden">
+          <div style="background:#7c3aed;height:100%;width:${Math.min(100,(c.usageCount/47)*100)}%;border-radius:4px"></div>
+        </div>
+        <span style="font-size:12px;color:#6b7280">${c.usageCount} users</span>
+      </div>`).join('');
+      document.getElementById('errors-table').innerHTML = '<tr><td colspan="3" style="color:#6b7280;text-align:center">No recent errors</td></tr>';
+      document.getElementById('last-updated').textContent = new Date().toLocaleTimeString() + ' (demo)';
     }
 
     // Auto-login if token exists

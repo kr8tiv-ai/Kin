@@ -29,6 +29,7 @@ import supportRoutes from './routes/support.js';
 import billingRoutes from './routes/billing.js';
 import projectRoutes from './routes/projects.js';
 import referralRoutes from './routes/referral.js';
+import progressRoutes from './routes/progress.js';
 import adminRoutes from './routes/admin.js';
 import telegramWebhookRoutes from './routes/telegram-webhook.js';
 
@@ -80,7 +81,7 @@ export async function createServer(config: ApiConfig = {}) {
     })(),
     databasePath: config.databasePath ?? process.env.DATABASE_PATH ?? path.join(process.cwd(), 'data', 'kin.db'),
     corsOrigins: config.corsOrigins ?? (environment === 'development'
-      ? ['http://localhost:3000', 'http://localhost:5173']
+      ? ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:5173']
       : ['https://www.meetyourkin.com', 'https://meetyourkin.com']),
     rateLimitMax: config.rateLimitMax ?? 100,
     environment: environment as 'development' | 'production' | 'test',
@@ -193,6 +194,7 @@ export async function createServer(config: ApiConfig = {}) {
     await protectedFastify.register(billingRoutes);
     await protectedFastify.register(projectRoutes);
     await protectedFastify.register(referralRoutes);
+    await protectedFastify.register(progressRoutes);
     await protectedFastify.register(adminRoutes);
   });
 
