@@ -248,3 +248,37 @@ body {
   background-color: rgba(0,240,255,0.3);
   color: #ffffff;
 }
+
+/* ============================================================================
+   Premium Animations
+   ============================================================================ */
+
+/* Floating animation */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-15px); }
+}
+
+/* Pulse glow animation */
+@keyframes pulse-glow {
+  0%, 100% { filter: drop-shadow(0 0 20px rgba(0,240,255,0.1)); }
+  50% { filter: drop-shadow(0 0 40px rgba(255,0,170,0.2)); }
+}
+
+/* Marquee animation */
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* Gradient orb */
+@keyframes orb-float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -30px) scale(1.05); }
+  66% { transform: translate(-20px, 20px) scale(0.95); }
+}
+
+/* Smooth scroll */
+html {
+  scroll-behavior: smooth;
+}
