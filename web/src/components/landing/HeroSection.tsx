@@ -2,7 +2,8 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { motion, useScroll, useTransform } from 'framer-motion';
+import { useRef } from 'react';
 
 const container = {
   hidden: {},
@@ -17,21 +18,96 @@ const fadeUp = {
 };
 
 export function HeroSection() {
+  const sectionRef = useRef<HTMLElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: sectionRef,
+    offset: ['start start', 'end start'],
+  });
+
+  // Parallax: background image shifts down slowly as user scrolls
+  const bgY = useTransform(scrollYProgress, [0, 1], ['0%', '20%']);
+
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Background Image */}
-      <div className="absolute inset-0">
+    <section ref={sectionRef} className="relative min-h-screen flex items-center justify-center overflow-hidden">
+      {/* Background Image with parallax */}
+      <motion.div className="absolute inset-0" style={{ y: bgY }}>
         <Image
           src="/creatures/cipher-1.jpg"
           alt=""
           fill
-          className="object-cover object-center"
+          className="object-cover object-center scale-110"
           priority
           sizes="100vw"
         />
-        {/* Gradient overlays */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black" />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-black/60" />
+        {/* Darker gradient overlays for dramatic effect */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/60 to-black" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-transparent to-black/70" />
+        <div className="absolute inset-0 bg-black/20" />
+      </motion.div>
+
+      {/* Animated gradient orbs */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {/* Large cyan orb - top left */}
+        <div
+          className="absolute -top-20 -left-20 w-[400px] h-[400px] rounded-full opacity-15"
+          style={{
+            background: 'radial-gradient(circle, rgba(0,240,255,0.4) 0%, transparent 70%)',
+            filter: 'blur(120px)',
+            animation: 'orb-float 8s ease-in-out infinite',
+          }}
+        />
+        {/* Large magenta orb - bottom right */}
+        <div
+          className="absolute -bottom-20 -right-20 w-[350px] h-[350px] rounded-full opacity-[0.12]"
+          style={{
+            background: 'radial-gradient(circle, rgba(255,0,170,0.4) 0%, transparent 70%)',
+            filter: 'blur(100px)',
+            animation: 'orb-float 10s ease-in-out infinite 2s',
+          }}
+        />
+        {/* Small gold orb - center right */}
+        <div
+          className="absolute top-1/3 right-1/4 w-[200px] h-[200px] rounded-full opacity-10"
+          style={{
+            background: 'radial-gradient(circle, rgba(255,215,0,0.4) 0%, transparent 70%)',
+            filter: 'blur(80px)',
+            animation: 'orb-float 12s ease-in-out infinite 4s',
+          }}
+        />
+      </div>
+
+      {/* Floating companion images flanking hero */}
+      <div className="absolute inset-0 pointer-events-none">
+        {/* Left companion */}
+        <div
+          className="hidden md:block absolute left-6 lg:left-12 top-1/2 -translate-y-1/2 w-48 lg:w-64 h-48 lg:h-64 opacity-20"
+          style={{ animation: 'float 6s ease-in-out infinite' }}
+        >
+          <Image
+            src="/creatures/cipher-2.jpg"
+            alt=""
+            fill
+            className="object-cover rounded-2xl"
+            style={{ filter: 'blur(1px)' }}
+            sizes="256px"
+          />
+          <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-black/40 via-transparent to-black/60" />
+        </div>
+        {/* Right companion */}
+        <div
+          className="hidden md:block absolute right-6 lg:right-12 top-1/2 -translate-y-1/2 w-48 lg:w-64 h-48 lg:h-64 opacity-20"
+          style={{ animation: 'float 6s ease-in-out infinite 2s' }}
+        >
+          <Image
+            src="/creatures/forge-2.jpg"
+            alt=""
+            fill
+            className="object-cover rounded-2xl"
+            style={{ filter: 'blur(1px)' }}
+            sizes="256px"
+          />
+          <div className="absolute inset-0 rounded-2xl bg-gradient-to-l from-black/40 via-transparent to-black/60" />
+        </div>
       </div>
 
       {/* Content */}
