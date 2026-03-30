@@ -278,6 +278,76 @@ body {
   66% { transform: translate(-20px, 20px) scale(0.95); }
 }
 
+/* GSAP-inspired entrance animations */
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slide-in-left {
+  from { opacity: 0; transform: translateX(-40px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(40px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes neon-pulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(0,240,255,0.2), 0 0 40px rgba(0,240,255,0.1); }
+  50% { box-shadow: 0 0 30px rgba(0,240,255,0.4), 0 0 60px rgba(0,240,255,0.2); }
+}
+
+/* Neon border glow — matches KIN NFT site */
+@utility neon-border-cyan {
+  border: 1px solid rgba(0,240,255,0.3);
+  box-shadow: 0 0 20px rgba(0,240,255,0.15), inset 0 0 20px rgba(0,240,255,0.05);
+  animation: neon-pulse 3s ease-in-out infinite;
+}
+
+@utility neon-border-magenta {
+  border: 1px solid rgba(255,0,170,0.3);
+  box-shadow: 0 0 20px rgba(255,0,170,0.15), inset 0 0 20px rgba(255,0,170,0.05);
+}
+
+@utility neon-border-gold {
+  border: 1px solid rgba(255,215,0,0.3);
+  box-shadow: 0 0 20px rgba(255,215,0,0.15), inset 0 0 20px rgba(255,215,0,0.05);
+}
+
+/* Glass panel — matches KIN NFT site's 425px card width */
+@utility glass-panel {
+  background: rgba(255,255,255,0.02);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 20px;
+  padding: 30px;
+  max-width: 425px;
+  border: 1px solid rgba(255,255,255,0.06);
+  box-shadow: 0 0 2px 2px rgba(0,0,0,0.2);
+}
+
+/* Chat typing indicator dots */
+.typing-dot {
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: typing-bounce 1.2s ease-in-out infinite;
+}
+
+@keyframes typing-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
+
 /* Smooth scroll */
 html {
   scroll-behavior: smooth;

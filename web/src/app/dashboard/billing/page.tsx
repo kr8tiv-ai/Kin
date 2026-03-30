@@ -7,6 +7,8 @@
 import { motion } from 'framer-motion';
 import { useAuth } from '@/providers/AuthProvider';
 import { useBilling } from '@/hooks/useBilling';
+import { useToast } from '@/providers/ToastProvider';
+import { track } from '@/lib/analytics';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -46,6 +48,7 @@ export default function BillingPage() {
     openPortal,
     openingPortal,
   } = useBilling();
+  const { success: toastSuccess, error: toastError } = useToast();
 
   const currentPlan = billing?.plan ?? user?.tier ?? 'free';
   const limits = getPlanLimits(currentPlan);
@@ -121,7 +124,13 @@ export default function BillingPage() {
           </div>
           <div className="flex gap-3">
             {isFree && (
-              <Button onClick={() => checkout()} disabled={checkingOut}>
+              <Button
+                onClick={() => {
+                  track('upgrade_clicked', { from: currentPlan });
+                  checkout().catch(() => toastError('Checkout failed. Please try again.'));
+                }}
+                disabled={checkingOut}
+              >
                 {checkingOut ? 'Redirecting...' : 'Upgrade to Pro'}
               </Button>
             )}
@@ -145,17 +154,17 @@ export default function BillingPage() {
         </h2>
         <UsageMeter
           label="Messages Today"
-          current={32}
+          current={billing?.usage?.messagesToday ?? 0}
           max={isEnterprise ? null : limits.messagesPerDay}
         />
         <UsageMeter
           label="Active Companions"
-          current={1}
+          current={billing?.usage?.activeCompanions ?? 1}
           max={isEnterprise ? null : limits.companions}
         />
         <UsageMeter
           label="API Calls"
-          current={142}
+          current={billing?.usage?.apiCalls ?? 0}
           max={isEnterprise ? null : 500}
         />
       </GlassCard>

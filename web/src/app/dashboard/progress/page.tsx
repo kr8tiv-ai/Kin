@@ -79,7 +79,7 @@ export default function ProgressPage() {
           title="Your journey starts here"
           description="Start chatting with your companion to earn XP, level up, and unlock badges. Every message counts!"
           actionLabel="Start Chatting"
-          actionHref="https://t.me/kin_by_kr8tiv_bot"
+          actionHref="https://t.me/KinCompanionBot"
         />
       </div>
     );

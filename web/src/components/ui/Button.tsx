@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
 interface ButtonProps {
@@ -50,20 +51,24 @@ export function Button({
 
   if (href && !disabled) {
     return (
-      <Link href={href} className={classes} onClick={onClick}>
-        {children}
-      </Link>
+      <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+        <Link href={href} className={classes} onClick={onClick}>
+          {children}
+        </Link>
+      </motion.div>
     );
   }
 
   return (
-    <button
+    <motion.button
       type={type}
       className={classes}
       onClick={onClick}
       disabled={disabled}
+      whileHover={disabled ? undefined : { scale: 1.03 }}
+      whileTap={disabled ? undefined : { scale: 0.97 }}
     >
       {children}
-    </button>
+    </motion.button>
   );
 }

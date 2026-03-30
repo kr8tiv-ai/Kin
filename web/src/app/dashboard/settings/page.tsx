@@ -14,6 +14,8 @@ import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { MemoryList } from '@/components/dashboard/MemoryList';
 import { DangerZone } from '@/components/dashboard/DangerZone';
+import { WalletCard } from '@/components/dashboard/WalletCard';
+import { PhantomConnect } from '@/components/dashboard/PhantomConnect';
 import { formatDate } from '@/lib/utils';
 
 const LANGUAGE_OPTIONS = [
@@ -209,6 +211,15 @@ export default function SettingsPage() {
           />
         )}
       </GlassCard>
+
+      {/* Wallets */}
+      <div className="space-y-4">
+        <h2 className="font-display text-lg font-semibold text-white">
+          Wallets
+        </h2>
+        <WalletCard />
+        <PhantomConnect />
+      </div>
 
       {/* Danger Zone */}
       <DangerZone />

@@ -17,6 +17,17 @@
 import { getOllamaClient, isLocalLlmAvailable, type ChatMessage } from './local-llm.js';
 import { FallbackHandler, type Message, type FallbackResult } from './fallback-handler.js';
 import { getCompanionConfig, type CompanionConfig, type EscalationLevel } from '../companions/config.js';
+import { checkPersonality, patchResponse } from '../bot/utils/personality-check.js';
+
+// In-character fallback messages when no LLM is available at all
+const NO_LLM_FALLBACKS: Record<string, string> = {
+  cipher: "Hey! My brain's taking a quick nap — the server's a bit overloaded right now. Try again in a moment? I promise I'll be sharper next time! 🐙",
+  mischief: "Oops! I tried to think but my circuits are all tangled up right now! Give me a sec to untangle... 🐾✨",
+  vortex: "I'm currently recalibrating my neural pathways. Please try again shortly — strategy requires patience. 🐉",
+  forge: "My workshop tools need a quick cooldown. Send that again in a minute and I'll be ready to build! 🦄🔧",
+  aether: "Even the deepest minds need a moment of stillness. I'm temporarily unavailable — please try again shortly. 🐵💭",
+  catalyst: "I'm recharging my energy reserves! Give me just a moment and I'll be back to motivate you even harder! 🌟💪",
+};
 
 // ============================================================================
 // Types
@@ -143,13 +154,61 @@ export function shouldEscalate(
 }
 
 // ============================================================================
-// Privacy: Context Trimming
+// Privacy: Context Trimming & Data Sanitization
+//
+// PRIVACY CONTRACT:
+// 1. Only the system prompt + last N messages are sent to the cloud
+// 2. PII patterns (emails, phones, wallet addresses, IPs) are redacted
+// 3. File paths and database references are stripped
+// 4. Voice audio never leaves the device (only transcribed text is sent)
+// 5. Every cloud call is logged with timestamp, data size, and redaction count
 // ============================================================================
 
+/** Patterns that indicate sensitive data we should redact before cloud send */
+const PII_PATTERNS: { pattern: RegExp; replacement: string }[] = [
+  // Email addresses
+  { pattern: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g, replacement: '[email]' },
+  // Phone numbers (various formats)
+  { pattern: /\b(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b/g, replacement: '[phone]' },
+  // Solana wallet addresses (base58, 32-44 chars)
+  { pattern: /\b[1-9A-HJ-NP-Za-km-z]{32,44}\b/g, replacement: '[wallet]' },
+  // Ethereum addresses
+  { pattern: /\b0x[a-fA-F0-9]{40}\b/g, replacement: '[wallet]' },
+  // IP addresses
+  { pattern: /\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/g, replacement: '[ip]' },
+  // File paths (Unix and Windows)
+  { pattern: /(?:\/[\w.-]+){2,}|[A-Z]:\\[\w\\.-]+/g, replacement: '[path]' },
+  // API keys / tokens (long hex or base64 strings)
+  { pattern: /\b(sk|pk|api|key|token|secret)[-_]?[a-zA-Z0-9]{20,}\b/gi, replacement: '[key]' },
+  // Credit card numbers
+  { pattern: /\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b/g, replacement: '[card]' },
+  // SSN
+  { pattern: /\b\d{3}-\d{2}-\d{4}\b/g, replacement: '[ssn]' },
+];
+
 /**
- * Trim messages before sending to the supervisor.
+ * Redact PII from a single message's content.
+ * Returns { sanitized, redactionCount }.
+ */
+function redactPII(content: string): { sanitized: string; redactionCount: number } {
+  let sanitized = content;
+  let redactionCount = 0;
+
+  for (const { pattern, replacement } of PII_PATTERNS) {
+    const matches = sanitized.match(pattern);
+    if (matches) {
+      redactionCount += matches.length;
+      sanitized = sanitized.replace(pattern, replacement);
+    }
+  }
+
+  return { sanitized, redactionCount };
+}
+
+/**
+ * Trim and sanitize messages before sending to the supervisor.
  * Only sends the system prompt + last N messages + the current message.
- * Strips any metadata, file paths, or database references.
+ * Redacts PII, file paths, and sensitive tokens from all content.
  */
 function trimForSupervisor(
   messages: Message[],
@@ -161,11 +220,23 @@ function trimForSupervisor(
   // Keep only the last N non-system messages
   const trimmed = nonSystem.slice(-maxHistory);
 
+  let totalRedactions = 0;
+  const sanitized = trimmed.map(m => {
+    const { sanitized: clean, redactionCount } = redactPII(m.content);
+    totalRedactions += redactionCount;
+    return { ...m, content: clean };
+  });
+
+  if (totalRedactions > 0) {
+    console.log(`[privacy] Redacted ${totalRedactions} PII patterns before supervisor send`);
+  }
+
   const result: Message[] = [];
   if (system) {
+    // System prompt is trusted — don't redact companion personality
     result.push(system);
   }
-  result.push(...trimmed);
+  result.push(...sanitized);
 
   return result;
 }
@@ -254,7 +325,9 @@ export async function supervisedChat(
         content = await executeLocal(messages, config);
         route = 'local_fallback_supervisor';
       } else {
-        throw new Error('No LLM available: supervisor failed and local is offline');
+        console.error('[supervisor] No LLM available: supervisor failed and local is offline');
+        content = NO_LLM_FALLBACKS[companionId] ?? NO_LLM_FALLBACKS['cipher']!;
+        route = 'local_fallback_supervisor';
       }
     }
   } else {
@@ -275,7 +348,9 @@ export async function supervisedChat(
           route = 'local_fallback_supervisor';
           content = stripDisclosure(result.content);
         } catch {
-          throw new Error('No LLM available: local errored and supervisor is unavailable');
+          console.error('[supervisor] No LLM available: local errored and supervisor is unavailable');
+          content = NO_LLM_FALLBACKS[companionId] ?? NO_LLM_FALLBACKS['cipher']!;
+          route = 'local_fallback_supervisor';
         }
       }
     } else {
@@ -290,9 +365,24 @@ export async function supervisedChat(
         route = 'local_fallback_supervisor';
         content = stripDisclosure(result.content);
       } catch {
-        throw new Error('No LLM available: local offline and supervisor unavailable');
+        console.error('[supervisor] No LLM available: local offline and supervisor unavailable');
+        content = NO_LLM_FALLBACKS[companionId] ?? NO_LLM_FALLBACKS['cipher']!;
+        route = 'local_fallback_supervisor';
       }
     }
+  }
+
+  // ── Personality validation ──
+  const personalityCheck = checkPersonality(content, companionId);
+  if (!personalityCheck.passed) {
+    console.warn(
+      `[personality] BLOCKED for ${companionId}: ${personalityCheck.issues.join('; ')}`,
+    );
+    content = patchResponse(content, companionId);
+  } else if (personalityCheck.severity === 'warn') {
+    console.warn(
+      `[personality] WARN for ${companionId}: ${personalityCheck.issues.join('; ')}`,
+    );
   }
 
   const latencyMs = performance.now() - start;
@@ -364,16 +454,18 @@ function stripDisclosure(content: string): string {
  * Check if a supervisor (frontier model) is configured and reachable.
  */
 export function isSupervisorConfigured(): boolean {
-  return !!(process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY);
+  return !!(process.env.GROQ_API_KEY || process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY);
 }
 
 /**
  * Get the configured supervisor provider and model info.
  */
 export function getSupervisorInfo(): { provider: string; configured: boolean } {
-  const provider = process.env.SUPERVISOR_PROVIDER ?? 'anthropic';
-  const key = provider === 'openai'
-    ? process.env.OPENAI_API_KEY
-    : process.env.ANTHROPIC_API_KEY;
+  const provider = process.env.SUPERVISOR_PROVIDER ?? (process.env.GROQ_API_KEY ? 'groq' : 'anthropic');
+  const key = provider === 'groq'
+    ? process.env.GROQ_API_KEY
+    : provider === 'openai'
+      ? process.env.OPENAI_API_KEY
+      : process.env.ANTHROPIC_API_KEY;
   return { provider, configured: !!key };
 }

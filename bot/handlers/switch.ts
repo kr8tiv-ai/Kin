@@ -1,12 +1,13 @@
 /**
  * Switch Handler - Handles /switch command
  *
- * Companion switching requires a paid plan. Free users only get Cipher.
- * This handler shows the upgrade prompt instead of allowing free switches.
+ * Each companion is a unique NFT. Users don't "switch" — they collect.
+ * This handler shows the user's current companion and invites them to
+ * mint additional Genesis Six companions for their special abilities.
  */
 
 import { Context, SessionFlavor, InlineKeyboard } from 'grammy';
-import { getCompanionConfig, getCompanionIds, COMPANION_CONFIGS } from '../../companions/config.js';
+import { getCompanionIds, COMPANION_CONFIGS } from '../../companions/config.js';
 import type { conversationStore } from '../memory/conversation-store.js';
 
 interface SessionData {
@@ -29,24 +30,26 @@ export async function handleSwitch(
   const lines = getCompanionIds().map((id) => {
     const c = COMPANION_CONFIGS[id]!;
     if (id === current) {
-      return `${c.emoji} *${c.name}* — ${c.species} ✅`;
+      return `${c.emoji} *${c.name}* — ${c.species} ✅ _yours_`;
     }
-    return `🔒 *${c.name}* — ${c.species}`;
+    return `✨ *${c.name}* — ${c.species}\n   _${c.tagline}_`;
   });
 
-  const upgradeKeyboard = new InlineKeyboard()
-    .text('⬆️ Unlock More Companions', 'upgrade:show');
+  const mintKeyboard = new InlineKeyboard()
+    .url('🎨 Mint a Companion NFT', 'https://meetyourkin.com/companions');
 
   const msg = [
-    `You're currently chatting with ${currentConfig?.emoji ?? '🐙'} *${currentConfig?.name ?? 'Cipher'}*`,
+    `${currentConfig?.emoji ?? '🐙'} *${currentConfig?.name ?? 'Cipher'}* is your companion`,
+    '',
+    '🐙 *The Genesis Six*',
     '',
     ...lines,
     '',
-    '_Each companion is a specialized AI model._',
-    '_Upgrade your plan to unlock new companions!_',
+    '_Each companion is a unique NFT with special abilities._',
+    '_Mint a new Genesis KIN to unlock their powers!_',
   ].join('\n');
 
-  await ctx.reply(msg, { parse_mode: 'Markdown', reply_markup: upgradeKeyboard });
+  await ctx.reply(msg, { parse_mode: 'Markdown', reply_markup: mintKeyboard });
 }
 
 export default handleSwitch;

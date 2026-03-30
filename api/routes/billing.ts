@@ -9,6 +9,7 @@
 
 import { FastifyPluginAsync } from 'fastify';
 import crypto from 'crypto';
+import { mintCompanionNFT } from '../lib/solana-mint.js';
 
 // ---------------------------------------------------------------------------
 // Lightweight Stripe HTTP helpers (no SDK dependency)
@@ -125,6 +126,16 @@ interface PortalBody {
   returnUrl?: string;
 }
 
+interface MintCheckoutBody {
+  companionId: string;
+  walletAddress: string;
+  successUrl?: string;
+  cancelUrl?: string;
+}
+
+// Companion mint price in cents (USD)
+const COMPANION_MINT_PRICE_CENTS = 999; // $9.99
+
 // ---------------------------------------------------------------------------
 // Plugin
 // ---------------------------------------------------------------------------
@@ -149,6 +160,28 @@ const billingRoutes: FastifyPluginAsync = async (fastify) => {
       WHERE user_id = ?
     `).get(userId) as any;
 
+    // Compute live usage stats
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const messagesToday = (fastify.context.db.prepare(`
+      SELECT COUNT(*) as count FROM messages m
+      JOIN conversations c ON c.id = m.conversation_id
+      WHERE c.user_id = ? AND m.role = 'user' AND m.created_at >= datetime(?, 'unixepoch')
+    `).get(userId, Math.floor(todayStart.getTime() / 1000)) as any)?.count ?? 0;
+
+    const activeCompanions = (fastify.context.db.prepare(`
+      SELECT COUNT(DISTINCT companion_id) as count FROM user_companions WHERE user_id = ?
+    `).get(userId) as any)?.count ?? 1;
+
+    const apiCalls = (fastify.context.db.prepare(`
+      SELECT COUNT(*) as count FROM messages m
+      JOIN conversations c ON c.id = m.conversation_id
+      WHERE c.user_id = ? AND m.role = 'assistant'
+    `).get(userId) as any)?.count ?? 0;
+
+    const usage = { messagesToday, activeCompanions, apiCalls };
+
     if (!sub) {
       return {
         plan: 'free',
@@ -157,6 +190,7 @@ const billingRoutes: FastifyPluginAsync = async (fastify) => {
         currentPeriodEnd: null,
         cancelAtPeriodEnd: false,
         stripeSubscriptionId: null,
+        usage,
       };
     }
 
@@ -171,6 +205,7 @@ const billingRoutes: FastifyPluginAsync = async (fastify) => {
         : null,
       cancelAtPeriodEnd: sub.cancel_at_period_end === 1,
       stripeSubscriptionId: sub.stripe_subscription_id ?? null,
+      usage,
     };
   });
 
@@ -289,6 +324,43 @@ const billingRoutes: FastifyPluginAsync = async (fastify) => {
           const customerId: string = session.customer ?? '';
           const subscriptionId: string = session.subscription ?? '';
 
+          // ── Handle companion mint payments ──
+          if (session.metadata?.type === 'companion_mint') {
+            const mintCompanionId: string = session.metadata.companion_id ?? '';
+            const mintWallet: string = session.metadata.wallet_address ?? '';
+
+            if (kinUserId && mintCompanionId && mintWallet) {
+              try {
+                // Attempt real Candy Machine mint (falls back to mock if CM not deployed)
+                const mintResult = await mintCompanionNFT(mintCompanionId, mintWallet);
+                const mintId = `nft-${crypto.randomUUID()}`;
+
+                db.prepare(`
+                  INSERT INTO nft_ownership (id, user_id, companion_id, mint_address, owner_wallet, metadata_uri)
+                  VALUES (?, ?, ?, ?, ?, ?)
+                `).run(mintId, kinUserId, mintCompanionId, mintResult.mintAddress, mintWallet, null);
+
+                // Auto-claim companion if not already claimed
+                const alreadyClaimed = db.prepare(`
+                  SELECT 1 FROM user_companions WHERE user_id = ? AND companion_id = ?
+                `).get(kinUserId, mintCompanionId);
+
+                if (!alreadyClaimed) {
+                  const ucId = `uc-${crypto.randomUUID()}`;
+                  db.prepare(`
+                    INSERT INTO user_companions (id, user_id, companion_id, nft_mint_address)
+                    VALUES (?, ?, ?, ?)
+                  `).run(ucId, kinUserId, mintCompanionId, mintResult.mintAddress);
+                }
+
+                console.log(`[Mint] Companion ${mintCompanionId} minted (${mintResult.source}) for user ${kinUserId} → ${mintResult.mintAddress.slice(0, 12)}...`);
+              } catch (mintErr) {
+                console.error('[Mint] Failed to mint companion:', mintErr);
+              }
+            }
+            break;
+          }
+
           if (!kinUserId || !subscriptionId) break;
 
           // Fetch the subscription to get period dates and plan
@@ -389,6 +461,86 @@ const billingRoutes: FastifyPluginAsync = async (fastify) => {
       return { received: true };
     },
   );
+
+  // -------------------------------------------------------------------------
+  // POST /billing/mint-checkout — One-time payment to mint companion NFT
+  //
+  // Creates a Stripe checkout session for a one-time companion mint.
+  // On payment success, webhook mints NFT to the user's auto-generated wallet.
+  // Users don't need crypto knowledge — they just pay and get their companion.
+  // -------------------------------------------------------------------------
+  fastify.post<{ Body: MintCheckoutBody }>('/billing/mint-checkout', async (request, reply) => {
+    const key = stripeKey();
+    if (!key) {
+      return { url: null, message: 'Payments coming soon' };
+    }
+
+    const userId = (request.user as { userId: string }).userId;
+    const {
+      companionId,
+      walletAddress,
+      successUrl = 'https://www.meetyourkin.com/dashboard?minted=true',
+      cancelUrl = 'https://www.meetyourkin.com/companions',
+    } = request.body ?? {};
+
+    if (!companionId || !walletAddress) {
+      reply.status(400);
+      return { error: 'companionId and walletAddress are required' };
+    }
+
+    // Check if companion already minted by this user
+    const existing = fastify.context.db.prepare(`
+      SELECT 1 FROM nft_ownership WHERE user_id = ? AND companion_id = ?
+    `).get(userId, companionId);
+
+    if (existing) {
+      reply.status(409);
+      return { error: 'You already own this companion' };
+    }
+
+    // Get or create Stripe customer
+    const user = fastify.context.db.prepare(`
+      SELECT id, first_name, last_name, stripe_customer_id FROM users WHERE id = ?
+    `).get(userId) as any;
+
+    if (!user) {
+      reply.status(404);
+      return { error: 'User not found' };
+    }
+
+    let customerId: string = user.stripe_customer_id ?? '';
+
+    if (!customerId) {
+      const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ');
+      const customer = await stripePost('/customers', {
+        name: fullName,
+        'metadata[kin_user_id]': userId,
+      }, key);
+      customerId = customer.id as string;
+      fastify.context.db.prepare(`
+        UPDATE users SET stripe_customer_id = ? WHERE id = ?
+      `).run(customerId, userId);
+    }
+
+    // Create one-time payment checkout session
+    const session = await stripePost('/checkout/sessions', {
+      mode: 'payment',
+      customer: customerId,
+      'line_items[0][price_data][currency]': 'usd',
+      'line_items[0][price_data][product_data][name]': `KIN Companion — ${companionId.charAt(0).toUpperCase() + companionId.slice(1)}`,
+      'line_items[0][price_data][product_data][description]': 'Your AI companion NFT. Yours forever.',
+      'line_items[0][price_data][unit_amount]': COMPANION_MINT_PRICE_CENTS,
+      'line_items[0][quantity]': 1,
+      success_url: successUrl,
+      cancel_url: cancelUrl,
+      'metadata[kin_user_id]': userId,
+      'metadata[companion_id]': companionId,
+      'metadata[wallet_address]': walletAddress,
+      'metadata[type]': 'companion_mint',
+    }, key);
+
+    return { url: session.url as string };
+  });
 
   // -------------------------------------------------------------------------
   // POST /billing/portal

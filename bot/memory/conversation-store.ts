@@ -73,11 +73,21 @@ class SQLiteConversationStore {
         metadata TEXT
       );
 
-      CREATE INDEX IF NOT EXISTS idx_user_companion 
+      CREATE INDEX IF NOT EXISTS idx_user_companion
         ON conversations(user_id, companion_id);
-      
-      CREATE INDEX IF NOT EXISTS idx_timestamp 
+
+      CREATE INDEX IF NOT EXISTS idx_timestamp
         ON conversations(timestamp);
+
+      CREATE TABLE IF NOT EXISTS memories (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        content TEXT NOT NULL,
+        created_at INTEGER NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_memories_user
+        ON memories(user_id);
     `);
   }
 
@@ -185,6 +195,25 @@ class SQLiteConversationStore {
     `);
     const result = stmt.get(userId, companionId) as { count: number };
     return result.count;
+  }
+
+  async getMemories(userId: string): Promise<string[]> {
+    const stmt = this.db.prepare(`
+      SELECT content FROM memories
+      WHERE user_id = ?
+      ORDER BY created_at DESC
+      LIMIT 20
+    `);
+    const rows = stmt.all(userId) as Array<{ content: string }>;
+    return rows.map((r) => r.content);
+  }
+
+  async addMemory(userId: string, content: string): Promise<void> {
+    const id = `mem-${crypto.randomUUID()}`;
+    this.db.prepare(`
+      INSERT INTO memories (id, user_id, content, created_at)
+      VALUES (?, ?, ?, ?)
+    `).run(id, userId, content, Date.now());
   }
 
   private cleanupOldMessages(userId: string, companionId: string): void {
@@ -307,8 +336,21 @@ class InMemoryConversationStore {
     return this.messages.get(key)?.length ?? 0;
   }
 
+  private memoryStore = new Map<string, string[]>();
+
+  async getMemories(userId: string): Promise<string[]> {
+    return this.memoryStore.get(userId) ?? [];
+  }
+
+  async addMemory(userId: string, content: string): Promise<void> {
+    const memories = this.memoryStore.get(userId) ?? [];
+    memories.push(content);
+    this.memoryStore.set(userId, memories);
+  }
+
   close(): void {
     this.messages.clear();
+    this.memoryStore.clear();
   }
 }
 
@@ -332,16 +374,20 @@ export function getConversationStore(config?: ConversationStoreConfig) {
 
 // Export a default instance for convenience
 export const conversationStore = {
-  addMessage: async (...args: Parameters<SQLiteConversationStore['addMessage']>) => 
+  addMessage: async (...args: Parameters<SQLiteConversationStore['addMessage']>) =>
     getConversationStore().addMessage(...args),
-  getHistory: async (...args: Parameters<SQLiteConversationStore['getHistory']>) => 
+  getHistory: async (...args: Parameters<SQLiteConversationStore['getHistory']>) =>
     getConversationStore().getHistory(...args),
-  getRecentMessages: async (...args: Parameters<SQLiteConversationStore['getRecentMessages']>) => 
+  getRecentMessages: async (...args: Parameters<SQLiteConversationStore['getRecentMessages']>) =>
     getConversationStore().getRecentMessages(...args),
-  clearHistory: async (...args: Parameters<SQLiteConversationStore['clearHistory']>) => 
+  clearHistory: async (...args: Parameters<SQLiteConversationStore['clearHistory']>) =>
     getConversationStore().clearHistory(...args),
-  getMessageCount: async (...args: Parameters<SQLiteConversationStore['getMessageCount']>) => 
+  getMessageCount: async (...args: Parameters<SQLiteConversationStore['getMessageCount']>) =>
     getConversationStore().getMessageCount(...args),
+  getMemories: async (userId: string) =>
+    getConversationStore().getMemories(userId),
+  addMemory: async (userId: string, content: string) =>
+    getConversationStore().addMemory(userId, content),
   close: () => getConversationStore().close(),
 };
 

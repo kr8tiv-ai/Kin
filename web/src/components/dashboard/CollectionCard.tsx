@@ -10,16 +10,41 @@ import { CompanionViewer } from '@/components/3d/CompanionViewer';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { Badge } from '@/components/ui/Badge';
 import { formatRelativeTime } from '@/lib/utils';
+import { TIER_COLORS } from '@/lib/design-tokens';
 import type { CollectionItem } from '@/hooks/useCollection';
+
+type CompanionTier = 'egg' | 'hatchling' | 'elder';
+
+const TIER_LABELS: Record<CompanionTier, string> = {
+  egg: 'Egg',
+  hatchling: 'Hatchling',
+  elder: 'Elder',
+};
+
+const TIER_BADGE_COLORS: Record<CompanionTier, 'gold' | 'cyan' | 'magenta'> = {
+  egg: 'gold',
+  hatchling: 'cyan',
+  elder: 'magenta',
+};
+
+const TIER_NEON_CLASS: Record<CompanionTier, string> = {
+  egg: 'neon-border-gold',
+  hatchling: 'neon-border-cyan',
+  elder: 'neon-border-magenta',
+};
 
 interface CollectionCardProps {
   item: CollectionItem;
   index: number;
   onClick: () => void;
+  tier?: CompanionTier;
+  claimed?: number;
+  total?: number;
 }
 
-export function CollectionCard({ item, index, onClick }: CollectionCardProps) {
+export function CollectionCard({ item, index, onClick, tier = 'hatchling', claimed, total }: CollectionCardProps) {
   const { companionData, claimedAt, isActive } = item;
+  const tierConfig = TIER_COLORS[tier];
 
   return (
     <motion.div
@@ -35,7 +60,7 @@ export function CollectionCard({ item, index, onClick }: CollectionCardProps) {
         <GlassCard
           hover
           glow={companionData.color}
-          className="overflow-hidden"
+          className={`overflow-hidden ${TIER_NEON_CLASS[tier]}`}
         >
           {/* Companion Viewer */}
           <div className="relative h-52 w-full">
@@ -53,6 +78,11 @@ export function CollectionCard({ item, index, onClick }: CollectionCardProps) {
                 <Badge color="cyan">Active</Badge>
               </div>
             )}
+
+            {/* Tier badge */}
+            <div className="absolute bottom-3 left-3">
+              <Badge color={TIER_BADGE_COLORS[tier]}>{TIER_LABELS[tier]}</Badge>
+            </div>
 
             {/* Genesis badge */}
             <div className="absolute top-3 right-3">
@@ -81,6 +111,26 @@ export function CollectionCard({ item, index, onClick }: CollectionCardProps) {
             <p className="mt-1 text-sm text-text-muted line-clamp-1">
               {companionData.tagline}
             </p>
+
+            {claimed != null && total != null && (
+              <div className="mt-2 flex items-center gap-2">
+                <div className="flex-1 h-1 rounded-full bg-white/10 overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{
+                      width: `${(claimed / total) * 100}%`,
+                      backgroundColor: tierConfig.accent,
+                    }}
+                  />
+                </div>
+                <span
+                  className="text-xs font-mono whitespace-nowrap"
+                  style={{ color: tierConfig.accent }}
+                >
+                  {claimed} / {total} claimed
+                </span>
+              </div>
+            )}
 
             <p className="mt-3 text-xs text-white/40">
               Claimed {formatRelativeTime(claimedAt)}

@@ -70,7 +70,7 @@ export function CollectionDetail({
     };
   }, [conversations, companionId, claimedAt]);
 
-  const telegramBotUrl = 'https://t.me/kin_companion_bot';
+  const telegramBotUrl = 'https://t.me/KinCompanionBot';
 
   return (
     <Modal

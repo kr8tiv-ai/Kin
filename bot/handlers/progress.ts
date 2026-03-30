@@ -11,6 +11,7 @@
  */
 
 import { Context, SessionFlavor, InlineKeyboard } from 'grammy';
+import { getConversationStore } from '../memory/conversation-store.js';
 
 // ============================================================================
 // Types
@@ -227,30 +228,98 @@ function computeEarnedBadgeIds(
 }
 
 // ============================================================================
-// In-memory progress store
-// (In production: replace with Vercel Postgres / Marketplace DB)
+// SQLite-backed progress store (persists across restarts)
 // ============================================================================
 
-const progressStore = new Map<string, UserProgress>();
+let progressTableReady = false;
+
+function ensureProgressTable(): void {
+  if (progressTableReady) return;
+  const store = getConversationStore() as any;
+  if (store.db) {
+    store.db.exec(`
+      CREATE TABLE IF NOT EXISTS user_progress (
+        user_id TEXT PRIMARY KEY,
+        total_messages INTEGER NOT NULL DEFAULT 0,
+        current_streak INTEGER NOT NULL DEFAULT 0,
+        longest_streak INTEGER NOT NULL DEFAULT 0,
+        last_active_date TEXT NOT NULL DEFAULT '',
+        xp INTEGER NOT NULL DEFAULT 0,
+        earned_badge_ids TEXT NOT NULL DEFAULT '[]'
+      );
+    `);
+    progressTableReady = true;
+  }
+}
+
+const progressCache = new Map<string, UserProgress>();
 
 export function getOrCreateProgress(userId: string): UserProgress {
-  if (!progressStore.has(userId)) {
-    progressStore.set(userId, {
-      userId,
-      totalMessages: 0,
-      currentStreak: 0,
-      longestStreak: 0,
-      lastActiveDate: '',
-      xp: 0,
-      earnedBadgeIds: [],
-    });
+  // Check cache first
+  if (progressCache.has(userId)) return progressCache.get(userId)!;
+
+  // Try loading from SQLite
+  ensureProgressTable();
+  const store = getConversationStore() as any;
+  if (store.db) {
+    const row = store.db.prepare(`SELECT * FROM user_progress WHERE user_id = ?`).get(userId) as any;
+    if (row) {
+      const progress: UserProgress = {
+        userId: row.user_id,
+        totalMessages: row.total_messages,
+        currentStreak: row.current_streak,
+        longestStreak: row.longest_streak,
+        lastActiveDate: row.last_active_date,
+        xp: row.xp,
+        earnedBadgeIds: JSON.parse(row.earned_badge_ids || '[]'),
+      };
+      progressCache.set(userId, progress);
+      return progress;
+    }
   }
-  return progressStore.get(userId)!;
+
+  const fresh: UserProgress = {
+    userId,
+    totalMessages: 0,
+    currentStreak: 0,
+    longestStreak: 0,
+    lastActiveDate: '',
+    xp: 0,
+    earnedBadgeIds: [],
+  };
+  progressCache.set(userId, fresh);
+  return fresh;
+}
+
+function saveProgress(progress: UserProgress): void {
+  ensureProgressTable();
+  const store = getConversationStore() as any;
+  if (store.db) {
+    store.db.prepare(`
+      INSERT INTO user_progress (user_id, total_messages, current_streak, longest_streak, last_active_date, xp, earned_badge_ids)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(user_id) DO UPDATE SET
+        total_messages = excluded.total_messages,
+        current_streak = excluded.current_streak,
+        longest_streak = excluded.longest_streak,
+        last_active_date = excluded.last_active_date,
+        xp = excluded.xp,
+        earned_badge_ids = excluded.earned_badge_ids
+    `).run(
+      progress.userId,
+      progress.totalMessages,
+      progress.currentStreak,
+      progress.longestStreak,
+      progress.lastActiveDate,
+      progress.xp,
+      JSON.stringify(progress.earnedBadgeIds),
+    );
+  }
 }
 
 /**
  * Call this every time the user sends a message to update XP, streak, etc.
- * XP gain: +10 per user message.
+ * XP gain: +10 per user message. Persisted to SQLite.
  */
 export function recordActivity(userId: string): UserProgress {
   const progress = getOrCreateProgress(userId);
@@ -273,7 +342,8 @@ export function recordActivity(userId: string): UserProgress {
     level,
   );
 
-  progressStore.set(userId, progress);
+  progressCache.set(userId, progress);
+  saveProgress(progress);
   return progress;
 }
 

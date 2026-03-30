@@ -1,8 +1,8 @@
 /**
  * Companions Handler - Shows the Genesis Six roster
  *
- * Companions beyond Cipher are premium models that must be purchased.
- * This handler showcases all companions but does NOT allow free switching.
+ * Each companion is a unique NFT with special abilities.
+ * Users collect companions by minting — no free switching.
  */
 
 import { Context, SessionFlavor, InlineKeyboard } from 'grammy';
@@ -24,26 +24,28 @@ export async function handleCompanions(ctx: BotContext) {
   const lines = getCompanionIds().map((id) => {
     const c = COMPANION_CONFIGS[id]!;
     if (id === current) {
-      return `${c.emoji} *${c.name}* — ${c.species} ✅\n   ${c.tagline}`;
+      return `${c.emoji} *${c.name}* — ${c.species} ✅ _yours_\n   ${c.tagline}`;
     }
-    return `🔒 *${c.name}* — ${c.species}\n   ${c.tagline}`;
+    return `✨ *${c.name}* — ${c.species}\n   ${c.tagline}`;
   });
 
-  const upgradeKeyboard = new InlineKeyboard()
-    .text('⬆️ Unlock More Companions', 'upgrade:show');
+  const mintKeyboard = new InlineKeyboard()
+    .url('🎨 Mint a Companion', 'https://meetyourkin.com/companions')
+    .row()
+    .url('🌐 View Collection', 'https://meetyourkin.com/dashboard');
 
   const msg = [
     '🐙 *The Genesis Six*',
     '',
     ...lines,
     '',
-    `_Currently talking to:_ *${COMPANION_CONFIGS[current]?.name ?? 'Cipher'}*`,
+    `_Your companion:_ *${COMPANION_CONFIGS[current]?.name ?? 'Cipher'}*`,
     '',
-    '_Each companion has a unique personality and specialty._',
-    '_Upgrade your plan to unlock new companions!_',
+    '_Each Genesis KIN is a unique NFT with special abilities._',
+    '_Mint a new companion to unlock their powers!_',
   ].join('\n');
 
-  await ctx.reply(msg, { parse_mode: 'Markdown', reply_markup: upgradeKeyboard });
+  await ctx.reply(msg, { parse_mode: 'Markdown', reply_markup: mintKeyboard });
 }
 
 export default handleCompanions;

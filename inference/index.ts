@@ -58,7 +58,7 @@ export {
   type StreamCallback,
 } from './local-llm';
 
-// Cipher Prompts
+// Cipher Prompts (legacy — kept for backward compatibility)
 export {
   CIPHER_SYSTEM_PROMPT,
   CIPHER_SYSTEM_PROMPT_SHORT,
@@ -74,6 +74,14 @@ export {
   type TaskContext,
   type FewShotExample,
 } from './cipher-prompts';
+
+// Companion Prompts (all 6 archetypes)
+export {
+  COMPANION_SYSTEM_PROMPTS,
+  COMPANION_SHORT_PROMPTS,
+  buildCompanionPrompt,
+  getAvailableCompanions,
+} from './companion-prompts';
 
 // Fallback Handler
 export {

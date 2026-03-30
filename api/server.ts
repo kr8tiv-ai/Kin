@@ -33,6 +33,7 @@ import progressRoutes from './routes/progress.js';
 import adminRoutes from './routes/admin.js';
 import preferencesRoutes from './routes/preferences.js';
 import telegramWebhookRoutes from './routes/telegram-webhook.js';
+import chatRoutes from './routes/chat.js';
 
 // ============================================================================
 // Types
@@ -198,6 +199,7 @@ export async function createServer(config: ApiConfig = {}) {
     await protectedFastify.register(progressRoutes);
     await protectedFastify.register(preferencesRoutes);
     await protectedFastify.register(adminRoutes);
+    await protectedFastify.register(chatRoutes);
   });
 
   // ==========================================================================

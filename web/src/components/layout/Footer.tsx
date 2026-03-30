@@ -6,6 +6,7 @@ const FOOTER_LINKS = [
   { href: '/pricing', label: 'Pricing' },
   { href: '/terms', label: 'Terms' },
   { href: '/privacy', label: 'Privacy' },
+  { href: 'https://bags.fm', label: 'Bags.fm', external: true },
 ];
 
 const SOCIAL_LINKS = [
@@ -69,12 +70,23 @@ export function Footer() {
             <ul className="space-y-3">
               {FOOTER_LINKS.map((link) => (
                 <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    className="text-sm text-white/50 transition-colors duration-200 hover:text-white/80"
-                  >
-                    {link.label}
-                  </Link>
+                  {'external' in link && link.external ? (
+                    <a
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-white/50 transition-colors duration-200 hover:text-white/80"
+                    >
+                      {link.label}
+                    </a>
+                  ) : (
+                    <Link
+                      href={link.href}
+                      className="text-sm text-white/50 transition-colors duration-200 hover:text-white/80"
+                    >
+                      {link.label}
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>
@@ -128,6 +140,14 @@ export function Footer() {
             &copy; {new Date().getFullYear()} KIN. All rights reserved.
           </p>
           <StatusBadge />
+          <a
+            href="https://bags.fm"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 rounded-full bg-magenta/10 border border-magenta/20 px-3 py-1 text-xs font-mono text-magenta transition-all duration-200 hover:bg-magenta/20"
+          >
+            Built on Bags
+          </a>
           <p className="text-xs text-white/30">
             Built by{' '}
             <span className="text-white/50 font-medium">KR8TIV</span>

@@ -2,6 +2,7 @@
 
 // ============================================================================
 // StepChooseCompanion — Onboarding Step 2: Pick your companion.
+// Enhanced with strength bars and staggered animations.
 // ============================================================================
 
 import { motion } from 'framer-motion';
@@ -25,6 +26,56 @@ const COLOR_BORDER: Record<string, string> = {
   gold: 'border-gold shadow-[0_0_20px_rgba(255,215,0,0.25)]',
 };
 
+const COLOR_ACCENT: Record<string, string> = {
+  cyan: '#00f0ff',
+  magenta: '#ff00aa',
+  gold: '#ffd700',
+};
+
+// Companion strengths for the personality-quiz feel
+const STRENGTHS: Record<string, { label: string; value: number }[]> = {
+  cipher: [
+    { label: 'Creativity', value: 95 },
+    { label: 'Technical', value: 85 },
+    { label: 'Communication', value: 70 },
+  ],
+  mischief: [
+    { label: 'Social', value: 95 },
+    { label: 'Creativity', value: 80 },
+    { label: 'Energy', value: 90 },
+  ],
+  vortex: [
+    { label: 'Strategy', value: 95 },
+    { label: 'Analytics', value: 90 },
+    { label: 'Communication', value: 85 },
+  ],
+  forge: [
+    { label: 'Technical', value: 98 },
+    { label: 'Precision', value: 95 },
+    { label: 'Problem Solving', value: 90 },
+  ],
+  aether: [
+    { label: 'Creativity', value: 98 },
+    { label: 'Language', value: 95 },
+    { label: 'Empathy', value: 85 },
+  ],
+  catalyst: [
+    { label: 'Organization', value: 95 },
+    { label: 'Motivation', value: 90 },
+    { label: 'Analytical', value: 85 },
+  ],
+};
+
+const container = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.06, delayChildren: 0.1 } },
+};
+
+const cardVariant = {
+  hidden: { opacity: 0, y: 20, scale: 0.95 },
+  show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.35 } },
+};
+
 export function StepChooseCompanion({
   selectedId,
   onSelect,
@@ -32,6 +83,7 @@ export function StepChooseCompanion({
   onBack,
 }: StepChooseCompanionProps) {
   const selectedCompanion = selectedId ? getCompanion(selectedId) : null;
+  const strengths = selectedId ? STRENGTHS[selectedId] : null;
 
   return (
     <motion.div
@@ -48,16 +100,24 @@ export function StepChooseCompanion({
         Each companion has unique strengths. Pick the one that fits your needs.
       </p>
 
-      {/* Companion grid */}
-      <div className="mb-8 grid w-full grid-cols-2 gap-3 sm:grid-cols-3">
+      {/* Companion grid with staggered animations */}
+      <motion.div
+        variants={container}
+        initial="hidden"
+        animate="show"
+        className="mb-8 grid w-full grid-cols-2 gap-3 sm:grid-cols-3"
+      >
         {COMPANION_LIST.map((companion) => {
           const isSelected = selectedId === companion.id;
 
           return (
-            <button
+            <motion.button
               key={companion.id}
+              variants={cardVariant}
               type="button"
               onClick={() => onSelect(companion.id)}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
               className={cn(
                 'group relative overflow-hidden rounded-xl border bg-white/[0.02] p-0 text-left transition-all duration-300',
                 isSelected
@@ -110,14 +170,15 @@ export function StepChooseCompanion({
                   </svg>
                 </motion.div>
               )}
-            </button>
+            </motion.button>
           );
         })}
-      </div>
+      </motion.div>
 
-      {/* Selected companion detail */}
+      {/* Selected companion detail with strengths */}
       {selectedCompanion && (
         <motion.div
+          key={selectedCompanion.id}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           className="mb-8 w-full"
@@ -144,6 +205,27 @@ export function StepChooseCompanion({
                 </p>
               </div>
             </div>
+
+            {/* Strength bars */}
+            {strengths && (
+              <div className="mt-4 space-y-2">
+                {strengths.map((s, i) => (
+                  <div key={s.label} className="flex items-center gap-3">
+                    <span className="w-24 text-[11px] text-white/40 text-right">{s.label}</span>
+                    <div className="flex-1 h-1.5 rounded-full bg-white/5 overflow-hidden">
+                      <motion.div
+                        className="h-full rounded-full"
+                        style={{ backgroundColor: COLOR_ACCENT[selectedCompanion.color] }}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${s.value}%` }}
+                        transition={{ duration: 0.6, delay: i * 0.1, ease: 'easeOut' }}
+                      />
+                    </div>
+                    <span className="w-8 text-[10px] font-mono text-white/30">{s.value}%</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </GlassCard>
         </motion.div>
       )}

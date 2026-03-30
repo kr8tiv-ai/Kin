@@ -12,10 +12,15 @@ export interface CompanionData {
   color: 'cyan' | 'magenta' | 'gold';
   description: string;
   images: string[];
-  /** Path to GLB 3D model (e.g., '/models/cipher.glb') */
+  /** Path to GLB 3D model (local or Arweave URL) */
   glbUrl: string;
-  /** Set true once the GLB file is placed in public/models/ */
+  /**
+   * Whether the 3D model is available. Set true once GLB is in public/models/
+   * or uploaded to Arweave. Can also be set dynamically via setModelReady().
+   */
   modelReady: boolean;
+  /** Arweave URI for the GLB model (set after Irys upload) */
+  arweaveModelUri?: string;
 }
 
 const COLOR_MAP: Record<string, string> = {
@@ -159,4 +164,27 @@ export function getCompanionColor(id: string): string {
   const companion = COMPANIONS[id];
   if (!companion) return COLOR_MAP.cyan;
   return COLOR_MAP[companion.color] ?? COLOR_MAP.cyan;
+}
+
+/**
+ * Mark a companion's 3D model as ready (e.g., after Arweave upload).
+ * Updates both the GLB URL and the modelReady flag.
+ */
+export function setModelReady(
+  id: string,
+  glbUrl: string,
+  arweaveUri?: string,
+): void {
+  const companion = COMPANIONS[id];
+  if (!companion) return;
+  companion.glbUrl = glbUrl;
+  companion.modelReady = true;
+  if (arweaveUri) companion.arweaveModelUri = arweaveUri;
+}
+
+/**
+ * Check if any companion has a ready 3D model.
+ */
+export function hasAny3DModels(): boolean {
+  return COMPANION_LIST.some((c) => c.modelReady);
 }

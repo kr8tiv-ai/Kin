@@ -6,6 +6,7 @@
 
 import { useCallback, useState } from 'react';
 import { kinApi } from '@/lib/api';
+import { track } from '@/lib/analytics';
 import type { UserPreferences } from '@/lib/types';
 
 export interface OnboardingPreferences {
@@ -62,10 +63,11 @@ export function useOnboarding() {
   });
 
   const nextStep = useCallback(() => {
-    setState((prev) => ({
-      ...prev,
-      step: Math.min(prev.step + 1, TOTAL_STEPS),
-    }));
+    setState((prev) => {
+      const next = Math.min(prev.step + 1, TOTAL_STEPS);
+      track('onboarding_step', { from: prev.step, to: next });
+      return { ...prev, step: next };
+    });
   }, []);
 
   const prevStep = useCallback(() => {
@@ -145,16 +147,25 @@ export function useOnboarding() {
         });
       }
 
-      // Post each memory entry
-      for (const entry of memoryEntries) {
-        await kinApi.post('/memories', {
-          companionId: state.selectedCompanionId,
-          type: entry.type,
-          content: entry.content,
-          importance: 0.8,
-          isTransferable: true,
-        });
-      }
+      // Post memory entries in parallel for speed
+      await Promise.all(
+        memoryEntries.map((entry) =>
+          kinApi.post('/memories', {
+            companionId: state.selectedCompanionId,
+            type: entry.type,
+            content: entry.content,
+            importance: 0.8,
+            isTransferable: true,
+          }),
+        ),
+      );
+
+      track('onboarding_completed', {
+        companionId: state.selectedCompanionId,
+        experienceLevel: state.preferences.experienceLevel,
+        goals: state.preferences.goals.join(','),
+        memoryCount: memoryEntries.length,
+      });
 
       setState((prev) => ({ ...prev, completing: false }));
     } catch (err) {

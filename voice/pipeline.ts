@@ -143,10 +143,13 @@ export async function transcribeLocal(
 // TTS Synthesis
 // ============================================================================
 
+// ElevenLabs pre-made voice IDs (free tier)
+// These map each companion's personality to a matching ElevenLabs voice.
+// Override per-companion via ELEVENLABS_VOICE_ID env var for single-voice mode.
 const COMPANION_VOICES: Record<string, VoicePersonality> = {
   cipher: {
     companionId: 'cipher',
-    voiceId: 'cipher_voice_v1',
+    voiceId: 'pNInz6obpgDQGcFmaJgB',  // Adam — deep, warm, analytical
     style: 'analytical, warm, slightly playful',
     speed: 1.0,
     pitch: 0,
@@ -154,7 +157,7 @@ const COMPANION_VOICES: Record<string, VoicePersonality> = {
   },
   mischief: {
     companionId: 'mischief',
-    voiceId: 'mischief_voice_v1',
+    voiceId: 'EXAVITQu4vr4xnSDxMaL',  // Bella — playful, young, energetic
     style: 'playful, energetic, curious',
     speed: 1.1,
     pitch: 2,
@@ -162,7 +165,7 @@ const COMPANION_VOICES: Record<string, VoicePersonality> = {
   },
   vortex: {
     companionId: 'vortex',
-    voiceId: 'vortex_voice_v1',
+    voiceId: 'VR6AewLTigWG4xSOukaG',  // Arnold — authoritative, strategic
     style: 'calm, wise, serene',
     speed: 0.95,
     pitch: -2,
@@ -170,7 +173,7 @@ const COMPANION_VOICES: Record<string, VoicePersonality> = {
   },
   forge: {
     companionId: 'forge',
-    voiceId: 'forge_voice_v1',
+    voiceId: 'ErXwobaYiN019PkySvjV',  // Antoni — confident, builder energy
     style: 'confident, inspiring, warm',
     speed: 1.0,
     pitch: 0,
@@ -178,7 +181,7 @@ const COMPANION_VOICES: Record<string, VoicePersonality> = {
   },
   aether: {
     companionId: 'aether',
-    voiceId: 'aether_voice_v1',
+    voiceId: 'MF3mGyEYCl7XYWbV9V6O',  // Elli — calm, contemplative
     style: 'steady, patient, methodical',
     speed: 0.9,
     pitch: -1,
@@ -186,7 +189,7 @@ const COMPANION_VOICES: Record<string, VoicePersonality> = {
   },
   catalyst: {
     companionId: 'catalyst',
-    voiceId: 'catalyst_voice_v1',
+    voiceId: '21m00Tcm4TlvDq8ikWAM',  // Rachel — warm, motivational
     style: 'enthusiastic, warm, adaptive',
     speed: 1.05,
     pitch: 1,
@@ -209,7 +212,8 @@ export async function synthesizeWithElevenLabs(
   }
 
   const voice = COMPANION_VOICES[companionId] ?? COMPANION_VOICES['cipher']!;
-  const voiceId = config.defaultVoice ?? process.env.ELEVENLABS_VOICE_ID ?? voice?.voiceId;
+  // Per-companion voice ID takes priority; env var is a single-voice fallback
+  const voiceId = config.defaultVoice ?? voice?.voiceId ?? process.env.ELEVENLABS_VOICE_ID ?? 'pNInz6obpgDQGcFmaJgB';
 
   const startTime = performance.now();
 

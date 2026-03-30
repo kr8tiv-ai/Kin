@@ -5,7 +5,7 @@
 import { Context, SessionFlavor, InputFile } from 'grammy';
 import type { FallbackHandler } from '../../inference/fallback-handler.js';
 import { conversationStore } from '../memory/conversation-store.js';
-import { buildCipherPrompt } from '../../inference/cipher-prompts.js';
+import { buildCompanionPrompt } from '../../inference/companion-prompts.js';
 import { supervisedChat } from '../../inference/supervisor.js';
 import { getVoicePipeline, VoicePipelineError } from '../../voice/index.js';
 
@@ -87,10 +87,10 @@ export async function handleVoice(
     // Get conversation history
     const history = await conversationStore.getHistory(userId, 10);
 
-    // Build prompt with voice personality
-    const systemPrompt = buildCipherPrompt(transcription, {
+    // Build prompt with voice personality — uses active companion
+    const systemPrompt = buildCompanionPrompt(companionId, {
       userName: ctx.from?.first_name ?? 'Friend',
-      taskContext: { type: 'chat' },
+      taskContext: { type: 'voice' },
     }) + '\n\n' + VOICE_PERSONALITY;
 
     const messages = [

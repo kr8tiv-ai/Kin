@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
+import { resolveArweaveUrl } from '@/lib/solana/constants';
 
 const CompanionScene = dynamic(
   () => import('./CompanionScene').then((mod) => ({ default: mod.CompanionScene })),
@@ -41,7 +42,15 @@ export function CompanionViewer({
   const [imageError, setImageError] = useState(false);
   const webgl = useMemo(() => isWebGLAvailable(), []);
 
-  const show3D = webgl && glbUrl && modelReady;
+  // Resolve Arweave URLs through Irys gateway for better reliability
+  const resolvedGlbUrl = useMemo(() => {
+    if (!glbUrl) return null;
+    // Local paths stay as-is, Arweave URLs get resolved
+    if (glbUrl.startsWith('/')) return glbUrl;
+    return resolveArweaveUrl(glbUrl) ?? glbUrl;
+  }, [glbUrl]);
+
+  const show3D = webgl && resolvedGlbUrl && modelReady;
 
   if (show3D) {
     return (
@@ -51,7 +60,7 @@ export function CompanionViewer({
         onMouseLeave={() => setHovered(false)}
       >
         <CompanionScene
-          glbUrl={glbUrl}
+          glbUrl={resolvedGlbUrl!}
           autoRotate={!hovered}
           interactive={interactive || hovered}
           className="h-full w-full"

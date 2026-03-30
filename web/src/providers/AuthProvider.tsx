@@ -22,6 +22,7 @@ import {
   parseJwt,
   isTokenExpired,
 } from '@/lib/auth';
+import { identify, resetIdentity } from '@/lib/analytics';
 
 interface AuthState {
   user: User | null;
@@ -79,6 +80,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         }
 
+        identify(verifyResponse.user.id, {
+          tier: verifyResponse.user.tier,
+          firstName: verifyResponse.user.firstName,
+        });
+
         setState({
           user: verifyResponse.user,
           token: storedToken,
@@ -102,11 +108,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback((token: string, user: User) => {
     setAuthToken(token);
+    identify(user.id, { tier: user.tier, firstName: user.firstName });
     setState({ user, token, loading: false, error: null, onboardingComplete: user.onboardingComplete ?? false });
   }, []);
 
   const logout = useCallback(() => {
     clearAuthToken();
+    resetIdentity();
     setState({ user: null, token: null, loading: false, error: null, onboardingComplete: false });
     router.push('/login');
   }, [router]);

@@ -35,6 +35,7 @@ export interface UserCompanion {
   claimedAt: string;
   isActive: boolean;
   nftMintAddress?: string;
+  bagsTokenId?: string;
 }
 
 export interface Conversation {
@@ -76,6 +77,11 @@ export interface BillingStatus {
   currentPeriodStart?: string;
   currentPeriodEnd?: string;
   cancelAtPeriodEnd?: boolean;
+  usage?: {
+    messagesToday: number;
+    activeCompanions: number;
+    apiCalls: number;
+  };
 }
 
 export interface ReferralStats {

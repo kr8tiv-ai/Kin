@@ -7,6 +7,7 @@ const ITEMS_ROW_1 = [
   'Grows With You',
   'Private & Secure',
   '6 Unique Companions',
+  'Built on Bags.fm',
 ];
 
 const ITEMS_ROW_2 = [
@@ -16,6 +17,7 @@ const ITEMS_ROW_2 = [
   'Personality AI',
   'Creative Tools',
   'Personalized Growth',
+  'Solana Powered',
 ];
 
 function MarqueeRow({

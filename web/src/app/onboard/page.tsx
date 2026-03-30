@@ -22,7 +22,7 @@ export default function OnboardPage() {
   const handleComplete = useCallback(async () => {
     try {
       await onboarding.complete();
-      router.push('/dashboard');
+      router.push('/dashboard/chat');
     } catch {
       // Error is displayed in StepReady via onboarding.error
     }

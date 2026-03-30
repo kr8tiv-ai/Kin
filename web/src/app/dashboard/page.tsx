@@ -7,18 +7,21 @@
 import { useAuth } from '@/providers/AuthProvider';
 import { useCompanions } from '@/hooks/useCompanions';
 import { useConversations } from '@/hooks/useConversations';
+import { useProgress } from '@/hooks/useProgress';
 import { OverviewStats } from '@/components/dashboard/OverviewStats';
 import { ActiveCompanion } from '@/components/dashboard/ActiveCompanion';
 import { RecentConversations } from '@/components/dashboard/RecentConversations';
 import { QuickStart } from '@/components/dashboard/QuickStart';
+import { TokenStats } from '@/components/dashboard/TokenStats';
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const { companions, loading: companionsLoading } = useCompanions();
   const { conversations, loading: conversationsLoading } = useConversations();
+  const { progress, loading: progressLoading } = useProgress();
 
   const firstName = user?.firstName ?? 'there';
-  const isLoading = companionsLoading || conversationsLoading;
+  const isLoading = companionsLoading || conversationsLoading || progressLoading;
 
   return (
     <div className="space-y-8">
@@ -35,12 +38,15 @@ export default function DashboardPage() {
       {/* Quick Start Guide (new users) */}
       <QuickStart conversationCount={conversations.length} />
 
-      {/* Stats Row */}
+      {/* Live Token Stats */}
+      <TokenStats />
+
+      {/* Stats Row — pulls real data from progress API */}
       <OverviewStats
         conversations={conversations}
         projectCount={0}
-        streak={0}
-        level={1}
+        streak={progress?.streakDays ?? 0}
+        level={progress?.level ?? 1}
         loading={isLoading}
       />
 

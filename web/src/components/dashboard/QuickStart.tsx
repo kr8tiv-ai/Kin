@@ -65,7 +65,7 @@ const STEPS = [
     title: 'Invite friends',
     description: 'Share your referral code and earn rewards when friends join.',
     ctaLabel: 'Get Referral Code',
-    ctaHref: '/dashboard/referrals',
+    ctaHref: '/dashboard/refer',
     external: false,
     accent: 'gold' as const,
     icon: (

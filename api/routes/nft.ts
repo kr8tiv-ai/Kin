@@ -4,6 +4,7 @@
 
 import { FastifyPluginAsync } from 'fastify';
 import crypto from 'crypto';
+import { mintCompanionNFT } from '../lib/solana-mint.js';
 
 interface NFTParams {
   mintAddress: string;
@@ -102,24 +103,19 @@ const nftRoutes: FastifyPluginAsync = async (fastify) => {
         return { error: 'Companion already owned' };
       }
 
-      // In production, this would:
-      // 1. Create Solana transaction
-      // 2. Request signature from user's wallet
-      // 3. Submit transaction
-      // 4. Record mint on success
-
-      const mockMintAddress = `mock-${crypto.randomUUID()}`;
+      // Attempt real Candy Machine mint (falls back to mock if CM not deployed)
+      const mintResult = await mintCompanionNFT(companionId, wallet);
       const id = `nft-${crypto.randomUUID()}`;
 
       fastify.context.db.prepare(`
         INSERT INTO nft_ownership (id, user_id, companion_id, mint_address, owner_wallet)
         VALUES (?, ?, ?, ?, ?)
-      `).run(id, userId, companionId, mockMintAddress, wallet);
+      `).run(id, userId, companionId, mintResult.mintAddress, wallet);
 
       return {
         success: true,
-        mintAddress: mockMintAddress,
-        message: 'Mock mint successful - integrate Solana for production',
+        mintAddress: mintResult.mintAddress,
+        source: mintResult.source,
       };
     }
   );

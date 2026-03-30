@@ -6,6 +6,7 @@
 
 import { motion } from 'framer-motion';
 import { getCompanion, getCompanionColor } from '@/lib/companions';
+import { track } from '@/lib/analytics';
 import { CompanionViewer } from '@/components/3d/CompanionViewer';
 import { Button } from '@/components/ui/Button';
 
@@ -69,6 +70,11 @@ export function StepReady({
   const companionColor = selectedCompanionId
     ? getCompanionColor(selectedCompanionId)
     : '#00f0ff';
+
+  function handleComplete() {
+    track('onboarding_completed', { companionId: selectedCompanionId ?? 'unknown' });
+    onComplete();
+  }
 
   return (
     <motion.div
@@ -134,7 +140,7 @@ export function StepReady({
       <div className="flex flex-col items-center gap-3 sm:flex-row">
         <Button
           size="lg"
-          onClick={onComplete}
+          onClick={handleComplete}
           disabled={completing}
         >
           {completing ? 'Setting up...' : 'Start Chatting'}
@@ -152,12 +158,12 @@ export function StepReady({
       <p className="mt-6 text-center text-[11px] text-white/20">
         Chat with your companion on Telegram anytime at{' '}
         <a
-          href="https://t.me/kin_by_kr8tiv_bot"
+          href="https://t.me/KinCompanionBot"
           target="_blank"
           rel="noopener noreferrer"
           className="text-cyan/50 underline underline-offset-2 hover:text-cyan/70"
         >
-          @kin_by_kr8tiv_bot
+          @KinCompanionBot
         </a>
       </p>
     </motion.div>

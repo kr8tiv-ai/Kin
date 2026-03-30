@@ -3,7 +3,10 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
+import { track } from '@/lib/analytics';
+
+const HERO_VIDEO_SRC = '/video/hero-bg.mp4';
 
 const container = {
   hidden: {},
@@ -19,6 +22,7 @@ const fadeUp = {
 
 export function HeroSection() {
   const sectionRef = useRef<HTMLElement>(null);
+  const [videoFailed, setVideoFailed] = useState(false);
   const { scrollYProgress } = useScroll({
     target: sectionRef,
     offset: ['start start', 'end start'],
@@ -29,8 +33,22 @@ export function HeroSection() {
 
   return (
     <section ref={sectionRef} className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Background Image with parallax */}
+      {/* Background: Video with image fallback + parallax */}
       <motion.div className="absolute inset-0" style={{ y: bgY }}>
+        {/* Video background — falls back to image on error or when no video file present */}
+        {!videoFailed && (
+          <video
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="absolute inset-0 w-full h-full object-cover scale-110"
+            onError={() => setVideoFailed(true)}
+          >
+            <source src={HERO_VIDEO_SRC} type="video/mp4" />
+          </video>
+        )}
+        {/* Static image fallback (always rendered behind video, shows when video fails) */}
         <Image
           src="/creatures/cipher-1.jpg"
           alt=""
@@ -119,7 +137,7 @@ export function HeroSection() {
       >
         <motion.div variants={fadeUp} className="mb-6">
           <span className="inline-flex items-center rounded-full bg-cyan/10 border border-cyan/20 px-4 py-1.5 text-xs font-mono text-cyan">
-            AI Companion Platform
+            AI Companion Platform &middot; Bags.fm
           </span>
         </motion.div>
 
@@ -156,12 +174,14 @@ export function HeroSection() {
             href="https://t.me/KinCompanionBot"
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => track('cta_clicked', { label: 'start_chatting', location: 'hero' })}
             className="w-full sm:w-auto inline-flex items-center justify-center rounded-full bg-magenta px-8 py-3.5 text-base font-semibold text-white shadow-[0_0_30px_rgba(255,0,170,0.3)] transition-all duration-200 hover:brightness-110 hover:shadow-[0_0_40px_rgba(255,0,170,0.5)]"
           >
             Start Chatting
           </a>
           <Link
             href="/companions"
+            onClick={() => track('cta_clicked', { label: 'meet_companions', location: 'hero' })}
             className="w-full sm:w-auto inline-flex items-center justify-center rounded-full border border-cyan text-cyan px-8 py-3.5 text-base font-semibold transition-all duration-200 hover:bg-cyan/10"
           >
             Meet the Companions

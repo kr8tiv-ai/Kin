@@ -78,7 +78,7 @@ function PromptCard({
   index: number;
 }) {
   const styles = ACCENT_STYLES[sample.accent];
-  const telegramUrl = `https://t.me/kin_by_kr8tiv_bot?start=${sample.companionId}`;
+  const telegramUrl = `https://t.me/KinCompanionBot?start=${sample.companionId}`;
 
   return (
     <motion.div

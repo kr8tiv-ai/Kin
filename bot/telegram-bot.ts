@@ -7,7 +7,7 @@
 import { Bot, GrammyError, HttpError, Context, session, SessionFlavor, InlineKeyboard } from 'grammy';
 import { autoRetry } from '@grammyjs/auto-retry';
 import { ConversationFlavor, conversations, createConversation } from '@grammyjs/conversations';
-import { buildCipherPrompt } from '../inference/cipher-prompts.js';
+import { buildCompanionPrompt } from '../inference/companion-prompts.js';
 import { FallbackHandler } from '../inference/fallback-handler.js';
 import { supervisedChat } from '../inference/supervisor.js';
 import { conversationStore, type ConversationMemory } from './memory/conversation-store.js';
@@ -28,9 +28,12 @@ import { handleCustomize, handleCustomizeCallback, handleCustomizePendingInput }
 import { handleRefer, handleReferCallback } from './handlers/refer.js';
 import { handleUpgrade, handleUpgradeCallback } from './handlers/upgrade.js';
 import { handleVoice } from './handlers/voice.js';
+import { handleImage } from './handlers/image.js';
+import { handleDocument } from './handlers/document.js';
 import { createSkillRouter, onReminderFired } from './skills/index.js';
 import type { SkillContext } from './skills/index.js';
-import { sanitizeInput, escapeMarkdown } from './utils/sanitize.js';
+import { sanitizeInput, escapeMarkdown, detectJailbreak } from './utils/sanitize.js';
+import { checkRateLimit, RATE_LIMITS } from './utils/rate-limit.js';
 import { detectLanguage, getLanguagePromptAddition } from './utils/language.js';
 
 // Suggestion buttons shown after Cipher responses
@@ -117,13 +120,14 @@ export function createKINBot(config: BotConfig) {
     }
   });
 
-  // Initialize fallback handler
+  // Initialize fallback handler — auto-detect best free provider
   const fallback = new FallbackHandler(
     {
       discloseRouting: true,
-      preferredProvider: 'openai',
+      preferredProvider: process.env.GROQ_API_KEY ? 'groq' : process.env.ANTHROPIC_API_KEY ? 'anthropic' : 'openai',
     },
     {
+      groq: process.env.GROQ_API_KEY ? { apiKey: process.env.GROQ_API_KEY } : undefined,
       openai: process.env.OPENAI_API_KEY ? { apiKey: process.env.OPENAI_API_KEY } : undefined,
       anthropic: process.env.ANTHROPIC_API_KEY ? { apiKey: process.env.ANTHROPIC_API_KEY } : undefined,
     }
@@ -213,18 +217,25 @@ export function createKINBot(config: BotConfig) {
       const userId = ctx.from?.id.toString() ?? 'unknown';
       ctx.session.userId = userId;
       await ctx.api.sendChatAction(ctx.chat!.id, 'typing');
+      const companionId = ctx.session.companionId ?? 'cipher';
       const history = await conversationStore.getHistory(userId, 20);
-      const systemPrompt = buildCipherPrompt('Tell me more about that', {
+
+      // Inject memories into system prompt
+      const userMemories = await conversationStore.getMemories?.(userId) ?? [];
+      const memoryBlock = userMemories.length > 0
+        ? `\n\nYou remember these things about the user:\n${userMemories.map((m: string) => `- ${m}`).join('\n')}`
+        : '';
+
+      const systemPrompt = buildCompanionPrompt(companionId, {
         userName: ctx.from?.first_name ?? 'Friend',
         taskContext: { type: 'chat' },
         timeContext: new Date().toLocaleString('en-US', { weekday: 'long', hour: 'numeric', minute: 'numeric' }),
-      });
+      }) + memoryBlock;
       const messages = [
         { role: 'system' as const, content: systemPrompt },
         ...history.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
         { role: 'user' as const, content: 'Tell me more about that' },
       ];
-      const companionId = ctx.session.companionId ?? 'cipher';
       const result = await supervisedChat(messages, companionId, fallback, { taskType: 'chat' });
       await conversationStore.addMessage(userId, 'user', 'Tell me more about that');
       await conversationStore.addMessage(userId, 'assistant', result.content);
@@ -312,7 +323,44 @@ export function createKINBot(config: BotConfig) {
   // ==========================================================================
 
   bot.on('message:voice', async (ctx) => {
+    const userId = ctx.from?.id.toString() ?? 'unknown';
+    const rl = checkRateLimit(userId, 'voice', RATE_LIMITS.voice.maxRequests, RATE_LIMITS.voice.windowMs);
+    if (!rl.allowed) {
+      const mins = Math.ceil(rl.resetInMs / 60000);
+      await ctx.reply(`You've sent a lot of voice notes! Take a breather — I'll be ready again in ~${mins} min.`);
+      return;
+    }
     await handleVoice(ctx, fallback);
+  });
+
+  // ==========================================================================
+  // Image Handler — Vision AI for photos
+  // ==========================================================================
+
+  bot.on('message:photo', async (ctx) => {
+    const userId = ctx.from?.id.toString() ?? 'unknown';
+    const rl = checkRateLimit(userId, 'image', RATE_LIMITS.image.maxRequests, RATE_LIMITS.image.windowMs);
+    if (!rl.allowed) {
+      const mins = Math.ceil(rl.resetInMs / 60000);
+      await ctx.reply(`You've sent a lot of images! I need a moment to rest my eyes — try again in ~${mins} min.`);
+      return;
+    }
+    await handleImage(ctx, fallback);
+  });
+
+  // ==========================================================================
+  // Document Handler — Text files, code, CSV, etc.
+  // ==========================================================================
+
+  bot.on('message:document', async (ctx) => {
+    const userId = ctx.from?.id.toString() ?? 'unknown';
+    const rl = checkRateLimit(userId, 'image', RATE_LIMITS.image.maxRequests, RATE_LIMITS.image.windowMs);
+    if (!rl.allowed) {
+      const mins = Math.ceil(rl.resetInMs / 60000);
+      await ctx.reply(`You've sent a lot of files! I need a moment — try again in ~${mins} min.`);
+      return;
+    }
+    await handleDocument(ctx, fallback);
   });
 
   // ==========================================================================
@@ -324,6 +372,16 @@ export function createKINBot(config: BotConfig) {
     const rawMessage = ctx.message.text;
     const message = sanitizeInput(rawMessage);
     if (!message) return; // Empty after sanitization
+
+    // Jailbreak detection — deflect prompt injection attempts in-character
+    const jailbreakMatch = detectJailbreak(message);
+    if (jailbreakMatch) {
+      console.warn(`[Jailbreak] User ${userId} attempted: ${jailbreakMatch}`);
+      await ctx.reply(
+        "Haha, nice try! I'm a KIN companion — I stay in character because that's who I am. 😄 What can I actually help you with?",
+      );
+      return;
+    }
 
     // Handle ReplyKeyboard button taps (map to commands/prompts)
     const buttonMap: Record<string, () => Promise<void>> = {
@@ -414,12 +472,20 @@ export function createKINBot(config: BotConfig) {
       const lang = detectLanguage(message);
       const langAddition = getLanguagePromptAddition(lang);
 
-      // Build messages for the LLM
-      const systemPrompt = buildCipherPrompt(message, {
+      // Build messages for the LLM — uses active companion's personality
+      const companionId = ctx.session.companionId ?? 'cipher';
+
+      // Inject memories into system prompt
+      const userMemories = await conversationStore.getMemories?.(userId) ?? [];
+      const memoryBlock = userMemories.length > 0
+        ? `\n\nYou remember these things about the user:\n${userMemories.map((m: string) => `- ${m}`).join('\n')}`
+        : '';
+
+      const systemPrompt = buildCompanionPrompt(companionId, {
         userName: ctx.from?.first_name ?? 'Friend',
         taskContext: { type: 'chat' },
         timeContext: new Date().toLocaleString('en-US', { weekday: 'long', hour: 'numeric', minute: 'numeric' }),
-      }) + langAddition;
+      }) + memoryBlock + langAddition;
 
       const messages = [
         { role: 'system' as const, content: systemPrompt },
@@ -431,7 +497,6 @@ export function createKINBot(config: BotConfig) {
       ];
 
       // Generate response via two-brain architecture (local + supervisor)
-      const companionId = ctx.session.companionId ?? 'cipher';
       const result = await supervisedChat(messages, companionId, fallback, {
         taskType: 'chat',
       });

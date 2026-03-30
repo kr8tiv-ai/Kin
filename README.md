@@ -1,24 +1,95 @@
-# KIN Platform - Runtime Truth Contracts
+# KIN — We Build You A Friend
 
-> A managed family of AI companions with persistent memory, local-first inference, and blockchain identity.
+> AI companions that grow with you. Persistent memory, unique personalities, voice chat, NFT ownership — powered by Bags.fm.
 
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue.svg)](https://www.typescriptlang.org/)
-[![Node](https://img.shields.io/badge/Node-20%2B-green.svg)](https://nodejs.org/)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Built on Bags](https://img.shields.io/badge/Built%20on-Bags.fm-FF00AA?style=for-the-badge)](https://bags.fm)
+[![Next.js 15](https://img.shields.io/badge/Next.js-15-black?style=for-the-badge&logo=next.js)](https://nextjs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?style=for-the-badge&logo=typescript)](https://typescriptlang.org)
+[![Solana](https://img.shields.io/badge/Solana-NFTs-9945FF?style=for-the-badge&logo=solana)](https://solana.com)
+[![License](https://img.shields.io/badge/License-MIT-00F0FF?style=for-the-badge)](LICENSE)
+
+---
 
 ## What is KIN?
 
-KIN is a platform of persistent AI companions that feel like real friends. Each companion has:
+KIN is a consumer AI companion platform where users adopt, chat with, and grow alongside personalized AI friends. Each companion is a **unique NFT** with distinct personality, persistent memory across sessions, voice capabilities, and special abilities. No crypto knowledge needed — just pick a friend and start talking.
 
-- **Persistent Identity** - Remembers you across sessions
-- **Local-First Processing** - Runs on your hardware when possible
-- **Cloud Fallback** - Graceful degradation with transparency
-- **Blockchain Identity** - NFT-linked ownership and transferability
-- **Multi-Surface Presence** - Telegram, Mission Control dashboard, voice
+**Bags Hackathon Entry** — KIN integrates with Bags.fm for companion ownership, token-gated features, and the Bags ecosystem.
 
-The first companion is **Cipher** (Code Kraken 🐙) - a web design specialist and creative technologist.
+## Live Demo
 
----
+- **Web App**: [meetyourkin.com](https://meetyourkin.com)
+- **Telegram Bot**: [@KinCompanionBot](https://t.me/KinCompanionBot)
+- **NFT Mint**: [KIN by KR8TIV](https://github.com/kr8tiv-io/Kinbykr8tiv-website)
+
+## Features
+
+### Consumer Experience
+- **6 unique AI companions** — Cipher (code), Mischief (creative), Vortex (strategy), Forge (builder), Aether (philosophy), Catalyst (motivator)
+- **Persistent memory** — companions remember your conversations, preferences, and context across sessions
+- **Voice chat** — microphone input in web dashboard + voice notes in Telegram, per-companion ElevenLabs voices
+- **5-step onboarding wizard** — choose companion, set preferences, teach your AI, start chatting
+- **Gamification** — XP, levels, badges, streaks (persisted to SQLite), and a referral leaderboard
+- **NFT companion ownership** — each Genesis KIN is a Solana NFT with special abilities
+
+### Technical
+- **Two-brain AI architecture** — local Ollama (private, fast) + frontier supervisor (Groq Qwen 3 32B, free) with PII redaction
+- **3D model viewer** — Three.js/React Three Fiber with GLB + Arweave/Irys resolution and 2D fallback
+- **Telegram-native chat** — talk to your companion directly in Telegram with voice, images, and documents
+- **Full web dashboard** — 23 pages, 60+ components, glass-morphism dark UI with real-time chat
+- **Candy Machine NFT minting** — Stripe checkout + server-side mint via Metaplex CM v3
+- **Auto-wallet generation** — Ed25519 keypair via Web Crypto API, AES-GCM encryption, no crypto knowledge needed
+- **Phantom wallet support** — optional connection for crypto-native users
+- **Multi-tier pricing** — Free, Pro ($9.99/mo), Enterprise ($29.99/mo) with live usage meters
+- **Real-time analytics** — PostHog event tracking + identity on login/logout
+- **Security** — jailbreak detection, PII redaction, input sanitization, rate limiting, personality validation
+
+### Bags.fm Integration
+- Companion ownership verified on-chain via DAS queries
+- NFT minting through Candy Machine v3 (Stripe payment + auto-mint)
+- Token-gated premium features
+- Built on the Bags ecosystem
+- Fee-sharing revenue model
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Frontend | Next.js 15, React 19, TypeScript 5.7, Tailwind CSS 4 |
+| 3D | Three.js, React Three Fiber, Drei |
+| Animation | Framer Motion |
+| Backend | Fastify, Node.js 20+ |
+| Bot | Grammy (Telegram Bot Framework) |
+| AI | Groq (Qwen 3 32B free), Ollama (local), OpenAI/Anthropic (paid fallback) |
+| Voice | ElevenLabs TTS (6 voices), OpenAI Whisper STT, whisper.cpp (local), XTTS v2 / Piper (local TTS) |
+| Database | SQLite (better-sqlite3) — conversations, memories, progress, NFT ownership |
+| Auth | Telegram Login Widget + JWT |
+| NFT Minting | Metaplex Candy Machine v3, Umi, Arweave/Irys, [3D Anvil (CC0)](https://github.com/ToxSam/3d-anvil) |
+| Blockchain | Solana (devnet/mainnet), Phantom Wallet, DAS (Digital Asset Standard) |
+| Payments | Stripe (subscriptions + one-time NFT mint payments, no SDK — raw fetch) |
+| Analytics | PostHog, Vercel Analytics |
+| Hosting | Vercel (free tier) |
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────┐
+│                    KIN Platform                      │
+├──────────┬──────────┬──────────┬───────────────────┤
+│  Web App │ Telegram │  Voice   │   Bags.fm / NFT   │
+│ (Next.js)│  (Grammy)│(6 voices)│  (Candy Machine)  │
+├──────────┴──────────┴──────────┴───────────────────┤
+│               Fastify API Server                    │
+├──────────┬──────────┬──────────┬───────────────────┤
+│   Auth   │  Chat    │ Memory   │  Companions (6)   │
+│  (JWT)   │(2-brain) │(SQLite)  │  (NFT ownership)  │
+├──────────┼──────────┼──────────┼───────────────────┤
+│  Ollama  │  Groq    │ Stripe   │  Solana RPC       │
+│ (local)  │ (free)   │(payments)│  (Metaplex/DAS)   │
+├──────────┴──────────┴──────────┴───────────────────┤
+│           SQLite + Solana + Arweave/Irys            │
+└─────────────────────────────────────────────────────┘
+```
 
 ## Quick Start
 
@@ -27,265 +98,145 @@ The first companion is **Cipher** (Code Kraken 🐙) - a web design specialist a
 git clone https://github.com/kr8tiv-ai/kr8tiv-runtime-truth-contracts.git
 cd kr8tiv-runtime-truth-contracts
 
-# Install dependencies
-npm install
+# Install web app dependencies
+cd web && npm install
 
 # Configure environment
-cp .env.example .env
-# Edit .env with your API keys
-
-# Initialize database
-mkdir -p data && npm run db:migrate
+cp ../.env.example .env.local
+# Edit .env.local with your API keys (see below)
 
 # Start development server
 npm run dev
+# → http://localhost:3001
 ```
 
-### Required Environment Variables
+### Minimum Environment Variables
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `TELEGRAM_BOT_TOKEN` | **Yes** | From [@BotFather](https://t.me/botfather) |
-| `JWT_SECRET` | **Yes** | Random string for JWT signing |
-| `OPENAI_API_KEY` | Recommended | Fallback LLM + Whisper transcription |
-| `ELEVENLABS_API_KEY` | Optional | Voice synthesis |
-| `TAILSCALE_API_KEY` | Optional | Remote access integration |
-| `OLLAMA_HOST` | Optional | Local LLM host (default: 127.0.0.1) |
+```env
+# Required
+TELEGRAM_BOT_TOKEN=your_bot_token       # From @BotFather
+JWT_SECRET=your_random_secret           # Any secure string
 
----
+# Free AI (pick one)
+GROQ_API_KEY=                           # Free at console.groq.com (500K tokens/day)
 
-## Architecture
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                      KIN Platform                           │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐  │
-│  │   Telegram   │    │   Mission    │    │    Solana    │  │
-│  │     Bot      │◄──►│   Control    │◄──►│     NFT      │  │
-│  └──────┬───────┘    └──────┬───────┘    └──────────────┘  │
-│         │                   │                              │
-│         ▼                   ▼                              │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │                    API Server                        │  │
-│  │         (Fastify + JWT + WebSocket)                  │  │
-│  └──────────────────────────────────────────────────────┘  │
-│                           │                                │
-│         ┌─────────────────┼─────────────────┐             │
-│         ▼                 ▼                 ▼             │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
-│  │  Inference   │  │   Memory     │  │   Health     │     │
-│  │  (Ollama)    │  │  (SQLite)    │  │  Monitor     │     │
-│  └──────────────┘  └──────────────┘  └──────────────┘     │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
+# Optional
+NEXT_PUBLIC_API_URL=http://localhost:3000
+ELEVENLABS_API_KEY=                     # For voice features
+STRIPE_SECRET_KEY=                      # For payments (graceful without it)
+SOLANA_ADMIN_KEYPAIR=                   # For NFT minting (falls back to mock)
 ```
 
-### Key Modules
-
-| Module | Path | Description |
-|--------|------|-------------|
-| **Telegram Bot** | `bot/` | Grammy-based bot with conversation memory |
-| **Inference** | `inference/` | Ollama client + cloud fallback |
-| **Voice** | `voice/` | Whisper transcription + TTS synthesis |
-| **Website** | `website/` | AI code generation + deployment |
-| **API** | `api/` | Fastify REST + WebSocket server |
-| **Tailscale** | `tailscale/` | Remote access with trust ladder |
-| **Solana** | `solana/` | NFT minting + transfer |
-| **Companions** | `companions/` | Personality definitions |
-
----
-
-## The Genesis Six
-
-Six companion bloodlines, each with unique personality and specialization:
-
-| Name | Type | Specialization | Personality |
-|------|------|----------------|-------------|
-| **Cipher** | Code Kraken 🐙 | Web design, frontend | Analytical, warm, playful |
-| **Mischief** | Glitch Pup 🐕 | Family companion, branding | Curious, energetic, loyal |
-| **Vortex** | Teal Dragon 🐉 | Marketing, social media | Wise, strategic, calm |
-| **Forge** | Cyber Unicorn 🦄 | Development, debugging | Confident, inspiring, precise |
-| **Aether** | Frost Ape 🦍 | Creative writing, art | Patient, methodical, deep |
-| **Catalyst** | Cosmic Blob 🫧 | Wealth coaching, habits | Enthusiastic, adaptive, supportive |
-
----
-
-## API Endpoints
-
-### Health
-```
-GET  /health/live    # Liveness probe
-GET  /health/ready   # Readiness probe
-GET  /health/status  # Full system status
-```
-
-### Authentication
-```
-POST /auth/telegram  # Telegram login widget auth
-```
-
-### Kin Management
-```
-GET  /kin            # List user's Kin
-POST /kin/claim      # Claim a companion
-GET  /kin/:id        # Get specific Kin status
-```
-
-### Conversations
-```
-GET  /conversations  # Conversation history
-POST /conversations  # Add message
-```
-
-### NFT
-```
-GET  /nft            # User's NFTs
-POST /nft/mint       # Mint companion NFT
-POST /nft/transfer   # Transfer NFT
-```
-
-### Support
-```
-GET  /features       # Feature requests
-POST /features       # Submit feature request
-POST /tickets        # Create support ticket
-```
-
----
-
-## Development
-
-### Scripts
-
-```bash
-npm run dev          # Start API + bot in development
-npm run dev:api      # Start API server only
-npm run dev:bot      # Start Telegram bot only
-npm run build        # Build for production
-npm run test         # Run tests
-npm run typecheck    # TypeScript check
-npm run db:migrate   # Initialize database
-npm run health:check # Single health check
-```
-
-### Project Structure
+## Project Structure
 
 ```
-├── api/                 # Fastify API server
-│   ├── server.ts        # Main server entry
-│   └── routes/          # API route handlers
-├── bot/                 # Telegram bot
-│   ├── telegram-bot.ts  # Bot entry point
-│   ├── handlers/        # Command handlers
-│   └── memory/          # Conversation store
-├── companions/          # Personality definitions
-├── db/                  # Database schema
-├── inference/           # LLM integration
-├── solana/              # NFT integration
-├── tailscale/           # Remote access
-├── voice/               # Voice processing
-├── website/             # Website building
-├── config/              # Configuration files
-├── scripts/             # Utility scripts
-└── tests/               # Test files
+├── web/                 # Next.js 15 web app (23 pages, 60+ components)
+│   ├── src/app/         # App Router pages (dashboard, chat, onboard, billing)
+│   ├── src/components/  # UI, landing, dashboard, onboard, 3D, auth
+│   ├── src/hooks/       # 12 custom React hooks (useChat, useBilling, etc.)
+│   ├── src/lib/         # API client, types, constants, wallet, analytics, Solana
+│   └── src/providers/   # Auth, Toast providers
+├── api/                 # Fastify API server (40+ endpoints)
+│   ├── routes/          # chat, billing, nft, preferences, memories, etc.
+│   └── lib/             # solana-mint, middleware
+├── bot/                 # Telegram bot (Grammy)
+│   ├── handlers/        # start, help, companions, voice, image, document, progress
+│   ├── memory/          # SQLite conversation store with memories
+│   ├── skills/          # Extensible skill router (web search, reminders)
+│   └── utils/           # sanitize, rate-limit, language detection, jailbreak detection
+├── inference/           # Two-brain AI architecture
+│   ├── supervisor.ts    # Local ↔ supervisor routing with PII redaction
+│   ├── fallback-handler.ts  # Groq → Anthropic → OpenAI waterfall
+│   └── companion-prompts.ts # Per-companion prompt builder
+├── voice/               # Voice processing pipeline
+│   ├── pipeline.ts      # Whisper STT + ElevenLabs/OpenAI/local TTS
+│   └── local-tts.ts     # XTTS v2 + Piper local synthesis
+├── companions/          # Companion personality definitions + config
+├── packages/            # Shared packages (mission-control, node-runtime)
+└── schemas/             # Data schemas
 ```
 
----
+## Companion Archetypes
 
-## Features
+Each companion is a unique NFT with special abilities:
 
-### ✅ Implemented
+| Companion | Species | Specialization | Ability | Voice |
+|-----------|---------|---------------|---------|-------|
+| **Cipher** | Code Kraken | Code & Web Design | Frontend generation | Adam (deep, analytical) |
+| **Mischief** | Glitch Pup | Creative & Social | Brand building | Bella (playful, energetic) |
+| **Vortex** | Teal Dragon | Strategy & Analytics | Data analysis | Arnold (authoritative) |
+| **Forge** | Cyber Unicorn | Building & Making | Architecture review | Antoni (confident) |
+| **Aether** | Frost Ape | Philosophy & Writing | Creative writing | Elli (contemplative) |
+| **Catalyst** | Cosmic Blob | Motivation & Growth | Habit coaching | Rachel (warm, motivational) |
 
-- **Telegram Bot Core** - Full conversation loop with Cipher personality
-- **Local LLM Integration** - Ollama client with streaming + cloud fallback
-- **Voice Processing** - Whisper transcription + TTS synthesis
-- **Website Building** - AI code generation with quality validation
-- **Production API** - Fastify with JWT auth, WebSocket, rate limiting
-- **Database** - SQLite with complete schema
-- **Tailscale Integration** - Remote access with 5-level trust ladder
-- **Solana NFT Scaffold** - Metadata, minting, transfer structures
-- **Health Monitoring** - Python daemon with auto-restart
-- **All 6 Companions** - Full personality definitions
+## Roadmap
 
-### 🔄 Ready for Integration
+### Now (MVP — $0 cost)
+- [x] 23-page Next.js web app with glass-morphism UI
+- [x] 6 companion archetypes with unique personalities and prompts
+- [x] 5-step onboarding wizard with memory seeding
+- [x] 3D model viewer infrastructure (Arweave/Irys pipeline ready)
+- [x] Telegram bot with voice, image, and document support
+- [x] Dashboard with gamification (XP, badges, levels — SQLite persisted)
+- [x] Web chat with markdown, typewriter, reactions, voice input
+- [x] Referral system with leaderboard
+- [x] PostHog analytics with identity tracking
+- [x] Bags.fm ecosystem integration
+- [x] Groq-powered free AI chat (Qwen 3 32B, 500K tokens/day)
+- [x] Two-brain supervisor with PII redaction and graceful fallback
+- [x] Candy Machine v3 NFT minting (Stripe + server-side mint)
+- [x] Auto-wallet generation (no crypto knowledge needed)
+- [x] Phantom wallet optional connection
+- [x] Per-companion ElevenLabs voice IDs
+- [x] Persistent memory injection into chat context
+- [x] Jailbreak detection, rate limiting, input sanitization
+- [ ] Vercel deployment
 
-- Solana mainnet deployment (Anchor program)
-- ElevenLabs voice synthesis
-- Production hosting (Docker)
+### Post-Grant (with Bags Hackathon funding)
+- [x] ElevenLabs voice companions (6 unique voices mapped)
+- [x] Stripe billing integration (subscriptions + NFT mint checkout)
+- [ ] GLB 3D model creation via Tripo3D.ai
+- [ ] Helius RPC paid tier for production DAS queries
+- [ ] Custom companion fine-tuning (DPO training)
+- [ ] Custom domain + SSL
 
----
+### Future
+- [ ] Multi-language support
+- [ ] Companion marketplace (trade NFTs)
+- [ ] Team/enterprise companion sharing
+- [ ] Mobile app (React Native)
+- [ ] Voice-first interaction mode
+- [ ] Plugin system for companion abilities
 
-## Trust Ladder (Remote Access)
+## KR8TIV Ecosystem
 
-5-level permission system for remote computer access:
+KIN is part of the [KR8TIV-AI](https://github.com/kr8tiv-ai) ecosystem:
 
-| Level | Name | Permissions | Duration |
-|-------|------|-------------|----------|
-| 0 | Guest | View status only | 5 min |
-| 1 | Visitor | View logs | 15 min |
-| 2 | Member | Readonly commands, SSH view | 1 hour |
-| 3 | Admin | Full access, device management | 8 hours |
-| 4 | Owner | Unlimited | No limit |
+| Project | Purpose |
+|---------|---------|
+| **kr8tiv-runtime-truth-contracts** | KIN core platform (this repo) |
+| **PinkBrain-lp** | Auto-compounding liquidity engine for Bags.fm |
+| **PinkBrain-Router** | Bags.fm App Store — DeFi fees → OpenRouter AI credits |
+| **kr8tiv-mission-control** | Multi-agent orchestration |
+| **team-setup-and-organization** | DevOps infrastructure |
+| **kr8tiv-team-execution-resilience** | Agent recovery framework |
 
----
+## Team
 
-## Requirements Coverage
+**Matt Haynes** — Builder, [@lucidbloks](https://twitter.com/lucidbloks)
 
-| Category | Requirements | Status |
-|----------|--------------|--------|
-| Core Loop | R001, R002, R003 | ✅ Complete |
-| Local-First | R008, R009, R031, R032, R045 | ✅ Complete |
-| Voice | R038, R043 | ✅ Complete |
-| Website | R005, R006, R040 | ✅ Complete |
-| Remote Access | R004, R011 | ✅ Complete |
-| Memory | R013, R019 | ✅ Complete |
-| API/DB | R015, R016 | ✅ Complete |
-| NFT | R048, R049 | 🔄 Scaffold ready |
-| Production | R034, R035, R036 | ✅ Complete |
+Built with KR8TIV — *We Build You A Friend*
 
----
+## Credits
 
-## Technology Stack
-
-| Layer | Technology |
-|-------|------------|
-| Runtime | Node.js 20+, TypeScript 5.7 |
-| Bot Framework | Grammy |
-| API Framework | Fastify |
-| Database | SQLite (better-sqlite3) |
-| Local LLM | Ollama |
-| Cloud LLM | OpenAI, Anthropic |
-| Voice | Whisper, ElevenLabs |
-| Blockchain | Solana (Anchor) |
-| VPN | Tailscale |
-| Monitoring | Python daemon |
-
----
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
----
+- **NFT minting infrastructure** adapted from [3D Anvil](https://github.com/ToxSam/3d-anvil) (CC0 Public Domain) — Candy Machine mint, Arweave/Irys upload, and DAS query utilities. Credit to [ToxSam](https://github.com/ToxSam) for the open-source Solana NFT launchpad.
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
+MIT License — see [LICENSE](LICENSE) for details.
 
 ---
 
-## Support
-
-- **Documentation:** `.gsd/` directory
-- **Issues:** [GitHub Issues](https://github.com/kr8tiv-ai/kr8tiv-runtime-truth-contracts/issues)
-- **Telegram:** Talk to @your_kin_bot
-
----
-
-*KIN - AI companions that feel like friends.*
+<p align="center">
+  <strong>Built on <a href="https://bags.fm">Bags.fm</a></strong> | <a href="https://bags.fm/hackathon">Bags Hackathon 2026</a>
+</p>

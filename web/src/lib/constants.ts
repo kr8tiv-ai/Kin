@@ -183,3 +183,9 @@ export const XP_PER_MESSAGE = 10;
 export function XP_FOR_LEVEL(level: number): number {
   return Math.floor(100 * Math.pow(1.2, level - 1));
 }
+
+// --- Bags.fm Integration ---------------------------------------------------
+
+export const BAGS_APP_URL = 'https://bags.fm';
+export const BAGS_HACKATHON_URL = 'https://bags.fm/hackathon';
+export const BAGS_TOKEN_ADDRESS = '7r9RJw6gWbj6s1N9pGKrdzzd5H7oK1sauuwkUDVKBAGS';

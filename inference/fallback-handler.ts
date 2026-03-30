@@ -18,7 +18,7 @@ export interface FallbackConfig {
   /** Enable cloud fallback (default: true) */
   enabled?: boolean;
   /** Preferred fallback provider */
-  preferredProvider?: 'openai' | 'anthropic';
+  preferredProvider?: 'openai' | 'anthropic' | 'groq';
   /** Maximum cost per request in USD */
   maxCostPerRequest?: number;
   /** Disclose routing to user (default: true) */
@@ -40,13 +40,18 @@ export interface ProviderConfig {
     model?: string;
     baseUrl?: string;
   };
+  groq?: {
+    apiKey?: string;
+    model?: string;
+    baseUrl?: string;
+  };
 }
 
 export interface RoutingDecision {
   /** Which route was selected */
   route: 'local' | 'fallback';
   /** Which provider was used (if fallback) */
-  provider?: 'openai' | 'anthropic';
+  provider?: 'openai' | 'anthropic' | 'groq';
   /** Model that was used */
   model: string;
   /** Reason for routing decision */
@@ -67,7 +72,7 @@ export type RoutingReason =
 
 export interface CostRecord {
   timestamp: string;
-  provider: 'openai' | 'anthropic';
+  provider: 'openai' | 'anthropic' | 'groq';
   model: string;
   inputTokens: number;
   outputTokens: number;
@@ -91,7 +96,7 @@ export interface Message {
 // Constants
 // ============================================================================
 
-/** Cost per 1K tokens (as of 2024) */
+/** Cost per 1K tokens (2025-2026 pricing) */
 const COST_PER_1K_TOKENS = {
   openai: {
     'gpt-4': { input: 0.03, output: 0.06 },
@@ -103,12 +108,18 @@ const COST_PER_1K_TOKENS = {
     'claude-3-sonnet': { input: 0.003, output: 0.015 },
     'claude-3-haiku': { input: 0.00025, output: 0.00125 },
   },
+  groq: {
+    'qwen/qwen3-32b': { input: 0.00029, output: 0.00059 },
+    'meta-llama/llama-4-scout-17b-16e-instruct': { input: 0.00011, output: 0.00034 },
+    'llama-3.3-70b-versatile': { input: 0.00059, output: 0.00079 },
+  },
 };
 
 /** Default models */
 const DEFAULT_MODELS = {
   openai: 'gpt-4-turbo',
   anthropic: 'claude-3-sonnet',
+  groq: 'qwen/qwen3-32b',
 };
 
 /** Disclosure messages */
@@ -159,7 +170,7 @@ class CostTracker {
   /**
    * Get cost by provider
    */
-  getByProvider(provider: 'openai' | 'anthropic'): number {
+  getByProvider(provider: 'openai' | 'anthropic' | 'groq'): number {
     return this.records
       .filter(r => r.provider === provider)
       .reduce((sum, r) => sum + r.costUsd, 0);
@@ -176,7 +187,7 @@ class CostTracker {
    * Estimate cost for a request
    */
   estimateCost(
-    provider: 'openai' | 'anthropic',
+    provider: 'openai' | 'anthropic' | 'groq',
     model: string,
     inputTokens: number,
     outputTokens: number
@@ -221,9 +232,14 @@ export class FallbackHandler {
     config: FallbackConfig = {},
     providerConfig: ProviderConfig = {}
   ) {
+    // Auto-detect preferred provider: Groq (free) → Anthropic → OpenAI
+    const defaultProvider = process.env.GROQ_API_KEY ? 'groq'
+      : process.env.ANTHROPIC_API_KEY ? 'anthropic'
+      : 'openai';
+
     this.config = {
       enabled: config.enabled ?? true,
-      preferredProvider: config.preferredProvider ?? 'openai',
+      preferredProvider: config.preferredProvider ?? defaultProvider,
       maxCostPerRequest: config.maxCostPerRequest ?? 1.0,
       discloseRouting: config.discloseRouting ?? true,
       localTimeout: config.localTimeout ?? 30000,
@@ -241,6 +257,11 @@ export class FallbackHandler {
         model: providerConfig.anthropic?.model ?? DEFAULT_MODELS.anthropic,
         baseUrl: providerConfig.anthropic?.baseUrl,
       },
+      groq: {
+        apiKey: providerConfig.groq?.apiKey ?? process.env.GROQ_API_KEY,
+        model: providerConfig.groq?.model ?? DEFAULT_MODELS.groq,
+        baseUrl: providerConfig.groq?.baseUrl ?? 'https://api.groq.com/openai/v1',
+      },
     };
 
     this.costTracker = new CostTracker();
@@ -256,10 +277,11 @@ export class FallbackHandler {
   /**
    * Check if fallback is available
    */
-  async isFallbackAvailable(): Promise<{ openai: boolean; anthropic: boolean }> {
+  async isFallbackAvailable(): Promise<{ openai: boolean; anthropic: boolean; groq: boolean }> {
     return {
       openai: !!(this.providerConfig.openai?.apiKey),
       anthropic: !!(this.providerConfig.anthropic?.apiKey),
+      groq: !!(this.providerConfig.groq?.apiKey),
     };
   }
 
@@ -340,14 +362,30 @@ export class FallbackHandler {
     reason: RoutingReason
   ): Promise<FallbackResult> {
     const start = performance.now();
-    const provider = this.config.preferredProvider;
-    const model = this.providerConfig[provider]?.model ?? DEFAULT_MODELS[provider];
 
-    // Check API key
-    const apiKey = this.providerConfig[provider]?.apiKey;
-    if (!apiKey) {
-      throw new Error(`No API key configured for ${provider}`);
+    // Build provider priority: preferred → fallbacks
+    const providerOrder: Array<'groq' | 'openai' | 'anthropic'> = [this.config.preferredProvider as 'groq' | 'openai' | 'anthropic'];
+    for (const p of ['groq', 'anthropic', 'openai'] as const) {
+      if (!providerOrder.includes(p)) providerOrder.push(p);
     }
+
+    // Find first available provider
+    let provider: 'groq' | 'openai' | 'anthropic' | undefined;
+    let apiKey: string | undefined;
+    for (const p of providerOrder) {
+      const key = this.providerConfig[p]?.apiKey;
+      if (key) {
+        provider = p;
+        apiKey = key;
+        break;
+      }
+    }
+
+    if (!provider || !apiKey) {
+      throw new Error(`No API key configured for any provider (tried: ${providerOrder.join(', ')})`);
+    }
+
+    const model = this.providerConfig[provider]?.model ?? DEFAULT_MODELS[provider];
 
     // Disclose routing
     const disclosure = this.config.discloseRouting
@@ -391,11 +429,13 @@ export class FallbackHandler {
    * Execute request on specific provider
    */
   private async executeProviderRequest(
-    provider: 'openai' | 'anthropic',
+    provider: 'openai' | 'anthropic' | 'groq',
     messages: Message[],
     apiKey: string
   ): Promise<{ content: string; inputTokens: number; outputTokens: number }> {
-    if (provider === 'openai') {
+    if (provider === 'groq') {
+      return this.executeGroqRequest(messages, apiKey);
+    } else if (provider === 'openai') {
       return this.executeOpenAIRequest(messages, apiKey);
     } else {
       return this.executeAnthropicRequest(messages, apiKey);
@@ -486,18 +526,57 @@ export class FallbackHandler {
   }
 
   /**
+   * Execute Groq request (OpenAI-compatible API)
+   */
+  private async executeGroqRequest(
+    messages: Message[],
+    apiKey: string
+  ): Promise<{ content: string; inputTokens: number; outputTokens: number }> {
+    const baseUrl = this.providerConfig.groq?.baseUrl ?? 'https://api.groq.com/openai/v1';
+    const model = this.providerConfig.groq?.model ?? DEFAULT_MODELS.groq;
+
+    const response = await fetch(`${baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages,
+        max_tokens: 4096,
+        temperature: 0.8,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Groq API error: ${response.status} - ${error}`);
+    }
+
+    const data = await response.json();
+
+    return {
+      content: data.choices[0]?.message?.content ?? '',
+      inputTokens: data.usage?.prompt_tokens ?? 0,
+      outputTokens: data.usage?.completion_tokens ?? 0,
+    };
+  }
+
+  /**
    * Format disclosure message
    */
   private formatDisclosure(reason: RoutingReason, provider: string): string {
     const template = DISCLOSURE_MESSAGES[reason as keyof typeof DISCLOSURE_MESSAGES] ?? DISCLOSURE_MESSAGES.local_error;
-    return template.replace('{{provider}}', provider === 'openai' ? 'OpenAI' : 'Claude');
+    const providerName = provider === 'openai' ? 'OpenAI' : provider === 'groq' ? 'Groq' : 'Claude';
+    return template.replace('{{provider}}', providerName);
   }
 
   /**
    * Create cost record
    */
   private createCostRecord(
-    provider: 'openai' | 'anthropic',
+    provider: 'openai' | 'anthropic' | 'groq',
     model: string,
     inputTokens: number,
     outputTokens: number
@@ -527,12 +606,13 @@ export class FallbackHandler {
   /**
    * Get cost summary
    */
-  getCostSummary(): { total: number; byProvider: { openai: number; anthropic: number } } {
+  getCostSummary(): { total: number; byProvider: { openai: number; anthropic: number; groq: number } } {
     return {
       total: this.costTracker.getTotal(),
       byProvider: {
         openai: this.costTracker.getByProvider('openai'),
         anthropic: this.costTracker.getByProvider('anthropic'),
+        groq: this.costTracker.getByProvider('groq'),
       },
     };
   }

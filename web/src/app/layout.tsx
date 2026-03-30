@@ -3,6 +3,8 @@ import { Outfit, Plus_Jakarta_Sans, JetBrains_Mono } from 'next/font/google';
 import { AuthProvider } from '@/providers/AuthProvider';
 import { ToastProvider } from '@/providers/ToastProvider';
 import { SupportWidget } from '@/components/ui/SupportWidget';
+import { AnalyticsInit } from '@/components/AnalyticsInit';
+import { Analytics } from '@vercel/analytics/react';
 import './globals.css';
 
 const outfit = Outfit({
@@ -24,9 +26,31 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'KIN — We Build You A Friend',
+  metadataBase: new URL('https://meetyourkin.com'),
+  title: {
+    default: 'KIN — We Build You A Friend',
+    template: '%s | KIN',
+  },
   description:
-    'Meet your AI companion that grows with you. KIN creates personalized AI friends that remember, learn, and evolve alongside you.',
+    'Meet your AI companion that grows with you. KIN creates personalized AI friends that remember, learn, and evolve alongside you. Built on Bags.fm.',
+  openGraph: {
+    title: 'KIN — We Build You A Friend',
+    description:
+      'AI companions that grow with you. Chat, create, and build together.',
+    siteName: 'KIN',
+    type: 'website',
+    locale: 'en_US',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'KIN — We Build You A Friend',
+    description: 'AI companions that grow with you. Built on Bags.fm.',
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+  keywords: ['AI companion', 'AI friend', 'chatbot', 'Telegram bot', 'Bags.fm', 'NFT companions', 'KIN', 'KR8TIV'],
 };
 
 export default function RootLayout({
@@ -39,6 +63,15 @@ export default function RootLayout({
       lang="en"
       className={`dark ${outfit.variable} ${plusJakarta.variable} ${jetbrainsMono.variable}`}
     >
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#00f0ff" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="KIN" />
+        <link rel="apple-touch-icon" href="/creatures/cipher-1.jpg" />
+      </head>
       <body className="font-body">
         <AuthProvider>
           <ToastProvider>
@@ -46,6 +79,8 @@ export default function RootLayout({
           </ToastProvider>
         </AuthProvider>
         <SupportWidget />
+        <AnalyticsInit />
+        <Analytics />
         <div className="grain-overlay" aria-hidden="true" />
       </body>
     </html>

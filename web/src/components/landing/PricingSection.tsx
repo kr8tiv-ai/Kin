@@ -4,6 +4,7 @@ import { useRef } from 'react';
 import Link from 'next/link';
 import { motion, useInView } from 'framer-motion';
 import { PRICING_TIERS, type PricingTier } from '@/lib/constants';
+import { track } from '@/lib/analytics';
 import { cn } from '@/lib/utils';
 
 function PricingCard({ tier, index, isInView }: { tier: PricingTier; index: number; isInView: boolean }) {
@@ -79,6 +80,7 @@ function PricingCard({ tier, index, isInView }: { tier: PricingTier; index: numb
       {/* CTA */}
       <Link
         href={cta.href}
+        onClick={() => track('pricing_cta_clicked', { tier: tier.id, price: tier.price })}
         className={cn(
           'block w-full text-center rounded-full px-6 py-3 text-sm font-semibold transition-all duration-200',
           isHighlighted
