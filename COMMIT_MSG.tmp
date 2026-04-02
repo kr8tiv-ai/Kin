@@ -1,1 +1,1 @@
-feat: wire companion abilities to Ollama inference, add createModel, resolveLocalModel, domain prompts, setup scripts 
+feat: add installer system, deploy scripts, setup UI, smoke tests, help page updates 

@@ -12,6 +12,7 @@
     "start:all": "tsx scripts/start.ts",
     "start:api": "tsx scripts/start.ts api",
     "start:bot": "tsx scripts/start.ts bot",
+    "deploy:easy": "tsx scripts/deploy-easy.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint . --ext .ts,.tsx",

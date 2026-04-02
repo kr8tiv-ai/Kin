@@ -42,6 +42,7 @@ import soulRoutes from './routes/soul.js';
 import voiceRoutes from './routes/voice.js';
 import modelRoutes from './routes/models.js';
 import trainingRoutes from './routes/training.js';
+import installerRoutes from './routes/installer.js';
 
 // Inference imports for WebSocket streaming chat
 import crypto from 'crypto';
@@ -264,6 +265,7 @@ export async function createServer(config: ApiConfig = {}) {
     await protectedFastify.register(voiceRoutes);
     await protectedFastify.register(modelRoutes);
     await protectedFastify.register(trainingRoutes);
+    await protectedFastify.register(installerRoutes);
   });
 
   // ==========================================================================

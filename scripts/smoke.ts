@@ -134,7 +134,40 @@ async function main() {
   }
 
   // ---------------------------------------------------------------------------
-  // 4. GET /chat/status → returns providers
+  // 4. GET /installer/status → returns installer state shape
+  // ---------------------------------------------------------------------------
+  try {
+    const res = await server.inject({
+      method: 'GET',
+      url: '/installer/status',
+      headers: token ? { authorization: `Bearer ${token}` } : {},
+    });
+
+    if (res.statusCode === 200) {
+      const body = res.json<{ status?: string; currentPhase?: string }>();
+      if (body.status && body.currentPhase) {
+        results.push(
+          pass(
+            'GET /installer/status → state',
+            `status=${body.status}, phase=${body.currentPhase}`,
+          ),
+        );
+      } else {
+        results.push(
+          fail('GET /installer/status → state', 'missing status/currentPhase'),
+        );
+      }
+    } else {
+      results.push(
+        fail('GET /installer/status → state', `got ${res.statusCode}: ${res.body}`),
+      );
+    }
+  } catch (err) {
+    results.push(fail('GET /installer/status → state', String(err)));
+  }
+
+  // ---------------------------------------------------------------------------
+  // 5. GET /chat/status → returns providers
   // ---------------------------------------------------------------------------
   try {
     const res = await server.inject({
@@ -159,7 +192,7 @@ async function main() {
   }
 
   // ---------------------------------------------------------------------------
-  // 5. GET /skills → returns array
+  // 6. GET /skills → returns array
   // ---------------------------------------------------------------------------
   try {
     const res = await server.inject({

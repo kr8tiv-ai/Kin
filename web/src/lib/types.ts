@@ -133,6 +133,44 @@ export interface ApiError {
 }
 
 // ============================================================================
+// Installer Runtime
+// ============================================================================
+
+export type InstallerRuntimeStatus =
+  | 'idle'
+  | 'running'
+  | 'waiting-confirmation'
+  | 'failed'
+  | 'complete';
+
+export interface InstallerPendingAction {
+  id: string;
+  description: string;
+  scope: 'local' | 'external';
+  risk: 'safe' | 'destructive' | 'account';
+}
+
+export interface InstallerStatusResponse {
+  runId: string;
+  status: InstallerRuntimeStatus;
+  currentPhase: string;
+  retryCount: number;
+  maxRetries: number;
+  lastError: string | null;
+  pendingAction: InstallerPendingAction | null;
+  blockedPhase: string | null;
+  startedAt: number;
+  updatedAt: number;
+  phaseHistory: Array<{
+    phase: string;
+    result: 'ok' | 'failed' | 'blocked';
+    timestamp: number;
+    error?: string;
+  }>;
+  allowedRecoveryActions: string[];
+}
+
+// ============================================================================
 // Skills Marketplace
 // ============================================================================
 

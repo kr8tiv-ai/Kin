@@ -12,6 +12,8 @@ import { cn } from '@/lib/utils';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import type { InstallerStatusResponse } from '@/lib/types';
+import { phaseToPlainLanguage, recoveryActionsForStatus } from '@/lib/installer-ui';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -89,6 +91,17 @@ function StatusDot({ online }: { online: boolean }) {
   );
 }
 
+function installerBadgeColor(
+  status: InstallerStatusResponse['status'] | null,
+): 'cyan' | 'gold' | 'magenta' | 'muted' {
+  if (!status) return 'muted';
+
+  if (status === 'complete') return 'cyan';
+  if (status === 'running' || status === 'waiting-confirmation') return 'gold';
+  if (status === 'failed') return 'magenta';
+  return 'muted';
+}
+
 // ---------------------------------------------------------------------------
 // Integration item
 // ---------------------------------------------------------------------------
@@ -127,28 +140,71 @@ function IntegrationRow({
 export default function SetupPage() {
   const [ollamaOnline, setOllamaOnline] = useState<boolean | null>(null);
   const [modelReady, setModelReady] = useState<boolean>(false);
+  const [installerStatus, setInstallerStatus] =
+    useState<InstallerStatusResponse | null>(null);
   const [checking, setChecking] = useState(true);
+  const [installerActionBusy, setInstallerActionBusy] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [selectedModel, setSelectedModel] = useState('qwen3:32b');
 
-  // Check connection status on mount
+  // Check connection + installer status on mount
   const checkStatus = useCallback(async () => {
     setChecking(true);
     try {
-      const data = await kinApi.get<ModelStatus>('/models/status');
-      setOllamaOnline(data?.online ?? false);
-      setModelReady(data?.hasModel ?? false);
+      const [ollamaData, installerData] = await Promise.all([
+        kinApi.get<ModelStatus>('/health/ollama'),
+        kinApi.get<InstallerStatusResponse>('/installer/status'),
+      ]);
+
+      setOllamaOnline(ollamaData?.online ?? false);
+      setModelReady(ollamaData?.hasModel ?? false);
+      setInstallerStatus(installerData);
     } catch {
       setOllamaOnline(false);
       setModelReady(false);
+      setInstallerStatus(null);
     } finally {
       setChecking(false);
     }
   }, []);
 
+  const runInstallerAction = useCallback(
+    async (
+      action: 'retry' | 'restart' | 'approve-external' | 'reject-external',
+    ) => {
+      setInstallerActionBusy(true);
+      try {
+        if (action === 'retry') {
+          await kinApi.post('/installer/retry');
+        } else if (action === 'restart') {
+          await kinApi.post('/installer/restart');
+        } else if (action === 'approve-external') {
+          await kinApi.post('/installer/confirm-external', { approved: true });
+        } else {
+          await kinApi.post('/installer/confirm-external', { approved: false });
+        }
+      } catch {
+        // keep UI resilient — status refresh will show latest truth from API
+      } finally {
+        setInstallerActionBusy(false);
+        await checkStatus();
+      }
+    },
+    [checkStatus],
+  );
+
   useEffect(() => {
     checkStatus();
   }, [checkStatus]);
+
+  const installerPhaseLabel = phaseToPlainLanguage(
+    installerStatus?.currentPhase ?? 'preflight',
+  );
+
+  const installerActions = recoveryActionsForStatus(
+    installerStatus?.status ?? 'idle',
+    installerStatus?.pendingAction ?? null,
+  );
 
   const step1Done = ollamaOnline === true;
   const step2Done = modelReady;
@@ -175,7 +231,85 @@ export default function SetupPage() {
       </div>
 
       {/* ------------------------------------------------------------------ */}
-      {/* 1. Connection Status                                                */}
+      {/* 1. Installer Progress                                               */}
+      {/* ------------------------------------------------------------------ */}
+      <GlassCard className="p-6" hover={false}>
+        <div className="flex items-center justify-between mb-4 gap-3">
+          <h2 className="font-display text-lg font-semibold text-white">
+            Installer Progress
+          </h2>
+          <Badge color={installerBadgeColor(installerStatus?.status ?? null)}>
+            {installerStatus?.status ?? 'unknown'}
+          </Badge>
+        </div>
+
+        <div className="rounded-xl border border-white/5 bg-white/[0.02] px-5 py-4 space-y-2">
+          <p className="text-sm font-medium text-white/80">{installerPhaseLabel}</p>
+          {installerStatus?.pendingAction && (
+            <p className="text-xs text-gold/80">
+              Approval needed: {installerStatus.pendingAction.description}
+            </p>
+          )}
+          {installerStatus?.lastError && (
+            <p className="text-xs text-magenta/80">Last error: {installerStatus.lastError}</p>
+          )}
+        </div>
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          {installerActions.includes('retry') && (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={installerActionBusy}
+              onClick={() => runInstallerAction('retry')}
+            >
+              Retry
+            </Button>
+          )}
+
+          {installerActions.includes('restart') && (
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={installerActionBusy}
+              onClick={() => runInstallerAction('restart')}
+            >
+              Restart Setup
+            </Button>
+          )}
+
+          {installerActions.includes('approve-external') && (
+            <Button
+              size="sm"
+              variant="primary"
+              disabled={installerActionBusy}
+              onClick={() => runInstallerAction('approve-external')}
+            >
+              Approve External Action
+            </Button>
+          )}
+
+          {installerActions.includes('reject-external') && (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={installerActionBusy}
+              onClick={() => runInstallerAction('reject-external')}
+            >
+              Reject External Action
+            </Button>
+          )}
+
+          {installerActions.includes('contact-support') && (
+            <Button size="sm" variant="ghost" href="/dashboard/help">
+              Contact Support
+            </Button>
+          )}
+        </div>
+      </GlassCard>
+
+      {/* ------------------------------------------------------------------ */}
+      {/* 2. Connection Status                                                */}
       {/* ------------------------------------------------------------------ */}
       <GlassCard className="p-6" hover={false}>
         <div className="flex items-center justify-between mb-4">

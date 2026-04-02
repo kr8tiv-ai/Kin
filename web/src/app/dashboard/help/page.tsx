@@ -206,11 +206,27 @@ export default function HelpPage() {
             onClick={async () => {
               setEscalating(true);
               try {
-                await kinApi.post('/support/escalate', {
+                const supportChat = await kinApi.post<{ chatId: string }>(
+                  '/support/chat',
+                  {
+                    message: 'User requested human support from Help page',
+                  },
+                );
+
+                await kinApi.post('/support/chat/escalate', {
+                  chatId: supportChat.chatId,
                   reason: 'User requested human support from Help page',
                 });
               } catch {
-                // Still show success — escalation is best-effort
+                // fallback path: open a support ticket directly
+                try {
+                  await kinApi.post('/support/tickets', {
+                    subject: 'User requested human support from Help page',
+                    priority: 'high',
+                  });
+                } catch {
+                  // still show success — escalation is best-effort
+                }
               }
               setEscalating(false);
               setEscalated(true);

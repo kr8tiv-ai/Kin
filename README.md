@@ -357,39 +357,36 @@ Platform revenue (NFT mints, skill marketplace, subscriptions) flows back to **$
 git clone https://github.com/kr8tiv-ai/Kin.git
 cd Kin
 npm install
-cd web && npm install && cd ..
+npm install --prefix web
 ```
 
-### 2. Configure Environment
+### 2. Run the Adaptive Installer (recommended)
 
+Unix/macOS/WSL:
 ```bash
-cp .env.example .env
+./deploy-easy.sh --dry-run
+./deploy-easy.sh
 ```
 
-Required keys (all free):
-| Key | Source | Cost |
-|-----|--------|------|
-| `GROQ_API_KEY` | [console.groq.com](https://console.groq.com) | FREE |
-| `JWT_SECRET` | Generate: `openssl rand -hex 32` | FREE |
+Windows:
+```bat
+deploy-easy.bat --dry-run
+deploy-easy.bat
+```
 
-Optional keys:
-| Key | Source | Purpose |
-|-----|--------|---------|
-| `GOOGLE_CLIENT_ID/SECRET` | Google Cloud Console | Google login |
-| `TELEGRAM_BOT_TOKEN` | @BotFather | Telegram bot |
-| `OPENAI_API_KEY` | platform.openai.com | Cipher frontier brain |
-| `ANTHROPIC_API_KEY` | console.anthropic.com | Vortex frontier brain |
-| `HELIUS_API_KEY` | helius.dev | Solana RPC + webhooks |
+The installer is deterministic and resumable. Safe local fixes can run automatically, while external actions require explicit confirmation.
 
-### 3. Run Development Servers
+### 3. Start Development Servers
 
 ```bash
-# Terminal 1: API server
+# API + Telegram bot
 npm run dev
 
-# Terminal 2: Web frontend
-cd web && npm run dev
+# Web frontend
+npm run dev --prefix web
 ```
+
+> Legacy `setup.sh` / `setup.bat` remain as compatibility wrappers and now delegate to `deploy-easy`.
 
 ### 4. Docker Deployment
 
