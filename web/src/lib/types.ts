@@ -298,3 +298,37 @@ export interface NftTransfer {
   transferTxSig?: string;
   createdAt: string;
 }
+
+// ============================================================================
+// Training Curation
+// ============================================================================
+
+export interface TrainingCompanionStats {
+  id: string;
+  name: string;
+  emoji: string;
+  totalEntries: number;
+  approvedCount: number;
+  rejectedCount: number;
+  pendingCount: number;
+}
+
+export interface TrainingEntry {
+  hash: string;
+  messages: { role: 'system' | 'user' | 'assistant'; content: string }[];
+  metadata: {
+    companionId: string;
+    timestamp: string;
+    provider: string;
+    model: string;
+    latencyMs: number;
+  };
+  verdict: 'pending' | 'approved' | 'rejected';
+}
+
+export interface TrainingEntriesResponse {
+  entries: TrainingEntry[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
