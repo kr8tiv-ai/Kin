@@ -1,0 +1,370 @@
+{
+  "version": 1,
+  "exported_at": "2026-04-02T02:47:45.929Z",
+  "milestones": [
+    {
+      "id": "M001",
+      "title": "",
+      "status": "queued",
+      "depends_on": [],
+      "created_at": "2026-04-02T02:46:11.637Z",
+      "completed_at": null,
+      "vision": "Deploy the KIN platform to Vercel production, verify all critical paths work end-to-end (API, web dashboard, Telegram bot), ensure the hackathon demo is polished and reliable, and harden the codebase with passing tests and type checks.",
+      "success_criteria": [
+        "Web dashboard deploys to Vercel and serves at meetyourkin.com without errors",
+        "API server starts cleanly and all health endpoints respond 200",
+        "Vitest suite passes (all existing tests green)",
+        "TypeScript compiles without errors (npm run typecheck)",
+        "Telegram bot connects and responds to /start command",
+        "Free-tier chat (Groq) works end-to-end through the web UI",
+        "NFT mint flow works on Solana devnet (Stripe checkout → mint)"
+      ],
+      "key_risks": [
+        {
+          "risk": "Vercel serverless may not support Fastify/WebSocket/SQLite patterns",
+          "whyItMatters": "The API uses Fastify with WebSocket, SQLite WAL mode, and long-lived connections — these may not work in serverless"
+        },
+        {
+          "risk": "API keys may be missing or expired for demo",
+          "whyItMatters": "7 AI providers and multiple services (Stripe, Solana, ElevenLabs, Supermemory) all need valid keys for the demo"
+        },
+        {
+          "risk": "Next.js build may fail due to SSR/client boundary issues",
+          "whyItMatters": "The web app uses Three.js, Framer Motion, and browser-only APIs that can break SSR"
+        },
+        {
+          "risk": "Existing tests may not pass on current codebase",
+          "whyItMatters": "Tests were written during development and may have drifted from the implementation"
+        }
+      ],
+      "proof_strategy": [
+        {
+          "riskOrUnknown": "Vercel deployment compatibility",
+          "retireIn": "S01",
+          "whatWillBeProven": "Next.js web app builds and deploys to Vercel; API deployment strategy validated"
+        },
+        {
+          "riskOrUnknown": "Test suite health",
+          "retireIn": "S02",
+          "whatWillBeProven": "All Vitest tests pass, TypeScript compiles cleanly"
+        },
+        {
+          "riskOrUnknown": "End-to-end chat flow",
+          "retireIn": "S03",
+          "whatWillBeProven": "User can chat with a companion through the web UI using Groq free tier"
+        }
+      ],
+      "verification_contract": "All code changes verified by: npm test (Vitest), npm run typecheck (TSC), and manual smoke test via scripts/smoke.ts",
+      "verification_integration": "Cross-slice integration verified by end-to-end flow: web UI → API → inference → response displayed",
+      "verification_operational": "Production deployment verified by Vercel build logs + live URL health check",
+      "verification_uat": "Demo walkthrough: landing page → onboarding → chat with companion → verify response quality",
+      "definition_of_done": [
+        "npm test passes with 0 failures",
+        "npm run typecheck passes with 0 errors",
+        "cd web && npm run build succeeds",
+        "Vercel deployment URL loads without errors",
+        "Smoke test (npx tsx scripts/smoke.ts) passes all checks"
+      ],
+      "requirement_coverage": "R001 (Vercel deploy) → S01; R002 (test health) → S02; R003 (e2e chat) → S03",
+      "boundary_map_markdown": "```\nS01 (Web Build & Deploy) → provides: deployed URL, build config\nS02 (Test & Type Health)  → provides: green test suite, clean types\nS03 (E2E Chat Validation) → requires: S01 (deployed URL), S02 (stable codebase)\n```"
+    }
+  ],
+  "slices": [
+    {
+      "milestone_id": "M001",
+      "id": "S01",
+      "title": "Web App Build Fix & Vercel Deployment",
+      "status": "pending",
+      "risk": "high — SSR/client boundary issues, Vercel config unknowns",
+      "depends": [],
+      "demo": "After this, the Next.js web app builds cleanly and deploys to Vercel",
+      "created_at": "2026-04-02T02:46:54.521Z",
+      "completed_at": null,
+      "full_summary_md": "",
+      "full_uat_md": "",
+      "goal": "Fix any Next.js build errors and deploy the web dashboard to Vercel production",
+      "success_criteria": "cd web && npm run build succeeds; Vercel deploy completes; site loads at production URL",
+      "proof_level": "build-passes",
+      "integration_closure": "Web app serves as the frontend for the Fastify API",
+      "observability_impact": "Vercel build logs + deployment URL accessible",
+      "sequence": 0,
+      "replan_triggered_at": null
+    },
+    {
+      "milestone_id": "M001",
+      "id": "S02",
+      "title": "Test Suite & TypeScript Health",
+      "status": "pending",
+      "risk": "medium — tests may have drifted from implementation",
+      "depends": [],
+      "demo": "After this, npm test and npm run typecheck both pass cleanly",
+      "created_at": "2026-04-02T02:46:54.521Z",
+      "completed_at": null,
+      "full_summary_md": "",
+      "full_uat_md": "",
+      "goal": "Fix all failing tests and TypeScript errors so the codebase is provably healthy",
+      "success_criteria": "npm test exits 0; npm run typecheck exits 0; no skipped tests without justification",
+      "proof_level": "tests-pass",
+      "integration_closure": "Healthy test suite validates API, bot, inference, and voice modules",
+      "observability_impact": "CI-ready test suite provides regression safety net",
+      "sequence": 0,
+      "replan_triggered_at": null
+    },
+    {
+      "milestone_id": "M001",
+      "id": "S03",
+      "title": "End-to-End Chat Validation",
+      "status": "pending",
+      "risk": "medium — requires API keys and running services",
+      "depends": [
+        "S01",
+        "S02"
+      ],
+      "demo": "After this, a user can open the web app and have a real conversation with a KIN companion",
+      "created_at": "2026-04-02T02:46:54.521Z",
+      "completed_at": null,
+      "full_summary_md": "",
+      "full_uat_md": "",
+      "goal": "Validate the full chat flow from web UI through API to inference and back",
+      "success_criteria": "Free-tier user can send a message and receive a streaming response; conversation persists in SQLite",
+      "proof_level": "manual-e2e",
+      "integration_closure": "Proves the full stack works: Next.js → Fastify → Groq → SSE → UI",
+      "observability_impact": "Chat latency and provider routing logged via trajectory system",
+      "sequence": 0,
+      "replan_triggered_at": null
+    }
+  ],
+  "tasks": [
+    {
+      "milestone_id": "M001",
+      "slice_id": "S01",
+      "id": "T01",
+      "title": "Audit & fix Next.js build",
+      "status": "pending",
+      "one_liner": "",
+      "narrative": "",
+      "verification_result": "",
+      "duration": "",
+      "completed_at": null,
+      "blocker_discovered": false,
+      "deviations": "",
+      "known_issues": "",
+      "key_files": [],
+      "key_decisions": [],
+      "full_summary_md": "",
+      "description": "Run `cd web && npm run build` and fix all errors — SSR/client boundary mismatches, missing imports, Three.js dynamic imports, type errors. Goal: clean build with 0 errors.",
+      "estimate": "30-60min",
+      "files": [
+        "web/src/**/*.tsx",
+        "web/src/**/*.ts",
+        "web/next.config.ts",
+        "web/tsconfig.json"
+      ],
+      "verify": "cd /mnt/c/Users/lucid/Desktop/kr8tiv-runtime-truth-contracts/web && npm run build",
+      "inputs": [
+        "web/package.json",
+        "web/next.config.ts"
+      ],
+      "expected_output": [
+        "Clean Next.js build output in web/.next/"
+      ],
+      "observability_impact": "",
+      "full_plan_md": "",
+      "sequence": 0
+    },
+    {
+      "milestone_id": "M001",
+      "slice_id": "S01",
+      "id": "T02",
+      "title": "Verify Vercel configuration",
+      "status": "pending",
+      "one_liner": "",
+      "narrative": "",
+      "verification_result": "",
+      "duration": "",
+      "completed_at": null,
+      "blocker_discovered": false,
+      "deviations": "",
+      "known_issues": "",
+      "key_files": [],
+      "key_decisions": [],
+      "full_summary_md": "",
+      "description": "Check web/vercel.json, ensure build settings are correct, validate environment variables are listed, confirm the project can be deployed from the web/ directory.",
+      "estimate": "15min",
+      "files": [
+        "web/vercel.json",
+        "web/package.json",
+        "web/next.config.ts"
+      ],
+      "verify": "cat /mnt/c/Users/lucid/Desktop/kr8tiv-runtime-truth-contracts/web/vercel.json",
+      "inputs": [
+        "web/vercel.json"
+      ],
+      "expected_output": [
+        "Validated vercel.json with correct build config"
+      ],
+      "observability_impact": "",
+      "full_plan_md": "",
+      "sequence": 0
+    },
+    {
+      "milestone_id": "M001",
+      "slice_id": "S01",
+      "id": "T03",
+      "title": "Run smoke test against local API",
+      "status": "pending",
+      "one_liner": "",
+      "narrative": "",
+      "verification_result": "",
+      "duration": "",
+      "completed_at": null,
+      "blocker_discovered": false,
+      "deviations": "",
+      "known_issues": "",
+      "key_files": [],
+      "key_decisions": [],
+      "full_summary_md": "",
+      "description": "Start the API server locally and run the smoke test script to verify all health and critical endpoints respond correctly.",
+      "estimate": "15min",
+      "files": [
+        "scripts/smoke.ts",
+        "api/server.ts"
+      ],
+      "verify": "cd /mnt/c/Users/lucid/Desktop/kr8tiv-runtime-truth-contracts && npx tsx scripts/smoke.ts",
+      "inputs": [
+        "scripts/smoke.ts",
+        "api/server.ts"
+      ],
+      "expected_output": [
+        "Smoke test output showing all checks passing"
+      ],
+      "observability_impact": "",
+      "full_plan_md": "",
+      "sequence": 0
+    },
+    {
+      "milestone_id": "M001",
+      "slice_id": "S02",
+      "id": "T01",
+      "title": "Fix TypeScript compilation errors",
+      "status": "pending",
+      "one_liner": "",
+      "narrative": "",
+      "verification_result": "",
+      "duration": "",
+      "completed_at": null,
+      "blocker_discovered": false,
+      "deviations": "",
+      "known_issues": "",
+      "key_files": [],
+      "key_decisions": [],
+      "full_summary_md": "",
+      "description": "Run `npm run typecheck` and fix all TypeScript errors across the entire backend codebase (api/, bot/, inference/, runtime/, voice/, scripts/).",
+      "estimate": "30-60min",
+      "files": [
+        "api/**/*.ts",
+        "bot/**/*.ts",
+        "inference/**/*.ts",
+        "runtime/**/*.ts",
+        "voice/**/*.ts",
+        "tsconfig.json"
+      ],
+      "verify": "cd /mnt/c/Users/lucid/Desktop/kr8tiv-runtime-truth-contracts && npx tsc --noEmit",
+      "inputs": [
+        "tsconfig.json"
+      ],
+      "expected_output": [
+        "Clean tsc output with 0 errors"
+      ],
+      "observability_impact": "",
+      "full_plan_md": "",
+      "sequence": 0
+    },
+    {
+      "milestone_id": "M001",
+      "slice_id": "S02",
+      "id": "T02",
+      "title": "Fix failing Vitest tests",
+      "status": "pending",
+      "one_liner": "",
+      "narrative": "",
+      "verification_result": "",
+      "duration": "",
+      "completed_at": null,
+      "blocker_discovered": false,
+      "deviations": "",
+      "known_issues": "",
+      "key_files": [],
+      "key_decisions": [],
+      "full_summary_md": "",
+      "description": "Run `npm test` and fix all failing Vitest tests. Update test expectations where the implementation has intentionally changed. Keep test coverage at current level or better.",
+      "estimate": "30-60min",
+      "files": [
+        "tests/*.test.ts",
+        "vitest.config.ts"
+      ],
+      "verify": "cd /mnt/c/Users/lucid/Desktop/kr8tiv-runtime-truth-contracts && npx vitest run",
+      "inputs": [
+        "tests/",
+        "vitest.config.ts"
+      ],
+      "expected_output": [
+        "All Vitest tests passing"
+      ],
+      "observability_impact": "",
+      "full_plan_md": "",
+      "sequence": 0
+    },
+    {
+      "milestone_id": "M001",
+      "slice_id": "S03",
+      "id": "T01",
+      "title": "E2E chat flow validation",
+      "status": "pending",
+      "one_liner": "",
+      "narrative": "",
+      "verification_result": "",
+      "duration": "",
+      "completed_at": null,
+      "blocker_discovered": false,
+      "deviations": "",
+      "known_issues": "",
+      "key_files": [],
+      "key_decisions": [],
+      "full_summary_md": "",
+      "description": "Start the API server and web dev server. Open the web app in browser. Navigate to chat, send a test message, verify the companion responds with streaming tokens. Confirm the conversation is saved to SQLite.",
+      "estimate": "20min",
+      "files": [
+        "api/routes/chat.ts",
+        "web/src/app/dashboard/"
+      ],
+      "verify": "Manual: open http://localhost:3001, navigate to chat, send message, verify streaming response",
+      "inputs": [
+        "api/server.ts",
+        "web/src/app/dashboard/"
+      ],
+      "expected_output": [
+        "Screenshot/log of successful chat exchange",
+        "SQLite query showing persisted conversation"
+      ],
+      "observability_impact": "",
+      "full_plan_md": "",
+      "sequence": 0
+    }
+  ],
+  "decisions": [
+    {
+      "seq": 1,
+      "id": "D001",
+      "when_context": "",
+      "scope": "architecture",
+      "decision": "GSD project management initialization approach",
+      "choice": "Initialize with M001 focused on production deployment readiness (Vercel), as the core platform is hackathon-complete and the README roadmap lists Vercel deployment as the immediate next step",
+      "rationale": "The codebase is mature — 50+ API endpoints, 25+ pages, 7 AI providers, multi-platform bots, NFT minting, skills marketplace, and 17+ tests are all implemented. The project is for the Bags Hackathon Q1 2026 and needs production deployment to demonstrate the live product. GSD tracking will organize the remaining deployment, IPFS, and on-chain anchoring work.",
+      "revisable": "Yes",
+      "made_by": "collaborative",
+      "superseded_by": null
+    }
+  ],
+  "verification_evidence": []
+}

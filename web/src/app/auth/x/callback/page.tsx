@@ -4,13 +4,13 @@
 // X (Twitter) OAuth Callback — exchanges code for token, logs user in
 // ============================================================================
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/providers/AuthProvider';
 import { kinApi } from '@/lib/api';
 import type { User } from '@/lib/types';
 
-export default function XCallbackPage() {
+function XCallbackInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login } = useAuth();
@@ -76,5 +76,26 @@ export default function XCallbackPage() {
         </p>
       </div>
     </main>
+  );
+}
+
+function LoadingFallback() {
+  return (
+    <main className="min-h-screen flex flex-col items-center justify-center bg-black text-white">
+      <div className="flex flex-col items-center gap-4">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white/80" />
+        <p className="font-display text-sm uppercase tracking-wide text-white/60">
+          Loading...
+        </p>
+      </div>
+    </main>
+  );
+}
+
+export default function XCallbackPage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <XCallbackInner />
+    </Suspense>
   );
 }
