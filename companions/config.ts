@@ -18,6 +18,8 @@
  */
 
 import type { FrontierProviderId } from '../inference/providers/types.js';
+import type { OllamaClient } from '../inference/local-llm.js';
+import { getModelName } from '../training/modelfile-generator.js';
 
 // ============================================================================
 // Types
@@ -182,4 +184,26 @@ export function getCompanionConfig(companionId: string): CompanionConfig {
  */
 export function getCompanionIds(): string[] {
   return Object.keys(COMPANION_CONFIGS);
+}
+
+/**
+ * Resolve which local model to use for a companion.
+ *
+ * Prefers the branded model (kin-{companionId}) if it exists in Ollama,
+ * otherwise falls back to the companion's default localModel (typically llama3.2).
+ * This is the integration seam for the supervisor — call it to determine
+ * which model to use without hardcoding model names.
+ */
+export async function resolveLocalModel(
+  companionId: string,
+  ollamaClient: OllamaClient,
+): Promise<string> {
+  const brandedModel = getModelName(companionId);
+  const exists = await ollamaClient.hasModel(brandedModel);
+
+  if (exists) {
+    return brandedModel;
+  }
+
+  return getCompanionConfig(companionId).localModel;
 }

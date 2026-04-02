@@ -29,6 +29,7 @@ The collection spans **6 bloodlines** with **57 individually crafted 3D characte
 | **Skill Portability** | Skills accrue to companions and transfer with NFT sales — the new owner inherits everything the companion learned |
 | **Local-First Privacy** | Ollama integration means conversations can stay on-device. Cloud is opt-in, not required |
 | **57 Unique 3D Characters** | AI-generated from original artwork, rendered in real-time WebGL with interactive rotation |
+| **Companion Abilities** | 6 domain-specific skills (code gen, social content, data analysis, architecture review, creative writing, habit coaching) powered by local models |
 | **Privacy-First Training** | Opt-in conversation curation → QLoRA fine-tuning pipeline → custom Ollama models per companion |
 | **Multi-Platform** | Web dashboard, Telegram bot, Discord bot, WhatsApp — same AI, same memory, everywhere |
 
@@ -123,6 +124,21 @@ Each companion can be fine-tuned on its own conversation history to become more 
 4. **QLoRA Fine-Tuning** — Unsloth-powered 4-bit quantized training script (`training/fine-tune.py`) runs on consumer GPUs (16GB VRAM)
 5. **Ollama Deployment** — Auto-generates Modelfiles and deploys fine-tuned models to Ollama for immediate local inference
 
+### Companion Abilities
+
+Each companion has domain-specific abilities powered by their local Ollama model:
+
+| Companion | Ability | Triggers |
+|-----------|---------|----------|
+| **Cipher** | Code Generation | `generate code`, `write function`, `review code` |
+| **Mischief** | Social Content | `create post`, `social media`, `brand content` |
+| **Vortex** | Data Analysis | `analyze data`, `market research`, `trend` |
+| **Forge** | Architecture Review | `architecture`, `system design`, `code review` |
+| **Aether** | Creative Writing | `write story`, `creative writing`, `worldbuild` |
+| **Catalyst** | Habit Coaching | `habit`, `goal setting`, `routine`, `accountability` |
+
+Abilities auto-resolve the correct model — branded fine-tuned model (`kin-{companionId}`) if available, otherwise the default local model.
+
 ### Privacy Controls
 
 Users control their data with a two-option privacy toggle during onboarding and in settings:
@@ -186,14 +202,23 @@ Kin/
 │   ├── train-companion.ts        # Full training orchestration (curate → export → fine-tune → deploy)
 │   ├── fine-tune.py              # Unsloth QLoRA fine-tuning script (4-bit quantization)
 │   ├── modelfile-generator.ts    # Ollama Modelfile generation per companion
-│   └── requirements.txt         # Python dependencies (unsloth, transformers, peft)
+│   └── requirements.txt          # Python dependencies (unsloth, transformers, peft)
+│
+├── scripts/                      # Setup & deployment utilities
+│   ├── setup-companion.ts        # Companion setup wizard (model pull + config)
+│   └── publish-model.ts          # Publish fine-tuned models to Ollama registry
 │
 ├── companions/config.ts          # 6 companion configs with frontier model assignments
 │
 ├── bot/                          # Multi-platform bots
 │   ├── telegram-bot.ts           # Telegram (grammy) — 16 command handlers
 │   ├── discord-bot.ts            # Discord bot
-│   └── whatsapp-bot.ts           # WhatsApp bot (Baileys)
+│   ├── whatsapp-bot.ts           # WhatsApp bot (Baileys)
+│   └── skills/                   # Companion ability system
+│       ├── companion-abilities.ts # 6 domain abilities wired to Ollama inference
+│       ├── ability-prompts.ts    # Domain-specific system prompts per companion
+│       ├── index.ts              # Skill registration + router
+│       └── types.ts              # SkillContext, SkillResult types
 │
 ├── voice/                        # Voice pipeline
 │   ├── local-stt.ts              # Speech-to-text (Whisper)

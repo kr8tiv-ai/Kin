@@ -22,7 +22,10 @@ export interface GenerateModelfileOptions {
   /** Companion ID (must exist in COMPANION_SHORT_PROMPTS) */
   companionId: string;
   /** Absolute or relative path to the GGUF model file */
-  ggufPath: string;
+  ggufPath?: string;
+  /** Model reference for FROM line (e.g. 'hf.co/kr8tiv/kin-cipher-GGUF:Q4_K_M').
+   *  When provided, used instead of ggufPath. At least one of ggufPath or modelRef is required. */
+  modelRef?: string;
   /** Output directory for the Modelfile (default: training/output/{companionId}) */
   outputDir?: string;
 }
@@ -62,7 +65,14 @@ export function getModelName(companionId: string): string {
 export function generateModelfile(
   options: GenerateModelfileOptions,
 ): GenerateModelfileResult {
-  const { companionId, ggufPath, outputDir } = options;
+  const { companionId, ggufPath, modelRef, outputDir } = options;
+
+  // ── Validate that at least one model source is provided ───────────────
+  if (!modelRef && !ggufPath) {
+    throw new Error(
+      'Either modelRef or ggufPath must be provided to generateModelfile().',
+    );
+  }
 
   // ── Validate companion ID ─────────────────────────────────────────────
   const available = getAvailableCompanions();
@@ -75,9 +85,10 @@ export function generateModelfile(
     );
   }
 
-  // ── Build Modelfile content ───────────────────────────────────────────
+  // ── Build Modelfile content (prefer modelRef over ggufPath) ───────────
+  const fromValue = modelRef ?? ggufPath;
   const modelfileContent = [
-    `FROM ${ggufPath}`,
+    `FROM ${fromValue}`,
     `SYSTEM """${shortPrompt}"""`,
     `PARAMETER temperature 0.7`,
     `PARAMETER top_p 0.9`,

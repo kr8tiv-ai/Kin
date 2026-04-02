@@ -407,6 +407,54 @@ export class OllamaClient {
   }
 
   /**
+   * Create a model from a Modelfile content string.
+   *
+   * Calls POST /api/create with streaming NDJSON progress — same pattern as
+   * pullModel(). The Ollama API returns {"status": "..."} lines during
+   * processing, then {"status": "success"} on completion.
+   */
+  async createModel(
+    name: string,
+    modelfileContent: string,
+    onProgress?: (status: string) => void,
+  ): Promise<void> {
+    const response = await this.fetchWithTimeout(`${this.baseUrl}/api/create`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, modelfile: modelfileContent, stream: true }),
+    });
+
+    if (!response.ok) {
+      throw new OllamaError(`Create model failed: ${response.status}`, response.status);
+    }
+
+    // Process NDJSON streaming response (same as pullModel)
+    const reader = response.body?.getReader();
+    if (!reader) {
+      throw new OllamaError('No response body', 500);
+    }
+
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const lines = decoder.decode(value).split('\n').filter(Boolean);
+      for (const line of lines) {
+        try {
+          const data = JSON.parse(line);
+          if (onProgress && data.status) {
+            onProgress(data.status);
+          }
+        } catch {
+          // Ignore parse errors
+        }
+      }
+    }
+  }
+
+  /**
    * Delete a model from the local Ollama instance
    */
   async deleteModel(model: string): Promise<void> {

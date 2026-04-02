@@ -30,7 +30,7 @@ import { handleUpgrade, handleUpgradeCallback } from './handlers/upgrade.js';
 import { handleVoice } from './handlers/voice.js';
 import { handleImage } from './handlers/image.js';
 import { handleDocument } from './handlers/document.js';
-import { createSkillRouter, onReminderFired } from './skills/index.js';
+import { createSkillRouter, onReminderFired, registerCompanionAbilities } from './skills/index.js';
 import type { SkillContext } from './skills/index.js';
 import { sanitizeInput, escapeMarkdown, detectJailbreak } from './utils/sanitize.js';
 import { checkRateLimit, RATE_LIMITS } from './utils/rate-limit.js';
@@ -108,6 +108,9 @@ export function createKINBot(config: BotConfig) {
 
   // Initialize skill router
   const skillRouter = createSkillRouter();
+
+  // Register companion abilities after builtins so builtins get trigger priority
+  registerCompanionAbilities(skillRouter);
 
   // Wire reminder notifications — when a reminder fires, send message to user
   onReminderFired(async (reminder) => {

@@ -1,1 +1,1 @@
-docs: fix token references - KIN uses $KR8TIV token, remove distribution details 
+feat: wire companion abilities to Ollama inference, add createModel, resolveLocalModel, domain prompts, setup scripts 

@@ -59,3 +59,14 @@ export {
   onReminderFired,
 } from './builtins/reminder.js';
 export type { Reminder } from './builtins/reminder.js';
+
+// Companion abilities
+export {
+  registerCompanionAbilities,
+  getCompanionAbilities,
+  companionAbilities,
+} from './companion-abilities.js';
+export type { CompanionAbility } from './companion-abilities.js';
+
+// Ability domain prompts
+export { ABILITY_PROMPTS } from './ability-prompts.js';

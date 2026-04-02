@@ -2,12 +2,25 @@
  * Companion Abilities - Skills powered by companion-specific local models
  *
  * Each companion (cipher, mischief, vortex, forge, aether, catalyst)
- * has specialized abilities that will be driven by their trained
- * local models once activated. Until then, abilities remain inactive
- * and return placeholder messages.
+ * has specialized abilities driven by their trained local models via
+ * structured domain prompts. Each ability uses createAbilityExecute()
+ * to wire up OllamaClient inference with domain-specific system prompts.
+ *
+ * @module bot/skills/companion-abilities
  */
 
 import type { KinSkill, SkillContext, SkillResult } from './types.js';
+import type { SkillRouter } from './loader.js';
+import { getOllamaClient } from '../../inference/local-llm.js';
+import { resolveLocalModel } from '../../companions/config.js';
+import {
+  CODE_GEN_PROMPT,
+  SOCIAL_CONTENT_PROMPT,
+  DATA_ANALYSIS_PROMPT,
+  ARCHITECTURE_REVIEW_PROMPT,
+  CREATIVE_WRITING_PROMPT,
+  HABIT_COACHING_PROMPT,
+} from './ability-prompts.js';
 
 // ============================================================================
 // Companion Ability Interface
@@ -22,25 +35,84 @@ export interface CompanionAbility extends KinSkill {
 
   /** Whether the ability is currently active (model available) */
   isActive: boolean;
+
+  /** Domain-specific system prompt guiding structured output */
+  systemPrompt: string;
 }
 
 // ============================================================================
-// Placeholder Executor
+// Ability Executor Factory
 // ============================================================================
 
 /**
- * Creates a placeholder execute function for abilities whose
- * local models are not yet available.
+ * Creates a real execute function that calls OllamaClient inference
+ * with a domain-specific system prompt.
+ *
+ * The factory resolves the correct model (branded kin-{companionId} or
+ * fallback) at call time, sends the domain prompt as the system message,
+ * and returns structured results with metadata for observability.
+ *
+ * On error (Ollama unreachable, model missing, timeout), returns a
+ * descriptive fallback message instead of throwing — callers always
+ * get a SkillResult.
  */
-function createPlaceholderExecute(companionName: string) {
-  return async (_ctx: SkillContext): Promise<SkillResult> => ({
-    content: `This ability will be powered by ${companionName}'s trained local model. Coming soon!`,
-    type: 'text',
-    metadata: {
-      companion: companionName,
-      status: 'awaiting-model',
-    },
-  });
+function createAbilityExecute(
+  companionId: string,
+  abilityName: string,
+  domainSystemPrompt: string,
+): (ctx: SkillContext) => Promise<SkillResult> {
+  return async (ctx: SkillContext): Promise<SkillResult> => {
+    let model = 'unknown';
+
+    try {
+      const ollamaClient = getOllamaClient();
+      model = await resolveLocalModel(companionId, ollamaClient);
+
+      const response = await ollamaClient.chat({
+        model,
+        messages: [
+          { role: 'system', content: domainSystemPrompt },
+          { role: 'user', content: ctx.message },
+        ],
+        stream: false,
+      });
+
+      const content = response.message.content;
+
+      console.log(
+        `[ability:${abilityName}] companion=${companionId} model=${model} responseLen=${content.length}`,
+      );
+
+      return {
+        content,
+        type: 'markdown',
+        metadata: {
+          companion: companionId,
+          ability: abilityName,
+          model,
+        },
+      };
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+
+      console.error(
+        `[ability:${abilityName}] companion=${companionId} model=${model} error=${errorMessage}`,
+      );
+
+      return {
+        content: `I'm unable to process this right now — the local model (${model}) for ${abilityName} is unavailable. Error: ${errorMessage}`,
+        type: 'text',
+        metadata: {
+          companion: companionId,
+          ability: abilityName,
+          model,
+          status: 'model-unavailable',
+          error: errorMessage,
+        },
+      };
+    }
+  };
 }
 
 // ============================================================================
@@ -53,8 +125,9 @@ export const codeGenAbility: CompanionAbility = {
   triggers: ['generate code', 'write.*function', 'review.*code'],
   companionIds: ['cipher'],
   requiresLocalModel: true,
-  isActive: false,
-  execute: createPlaceholderExecute('cipher'),
+  isActive: true,
+  systemPrompt: CODE_GEN_PROMPT,
+  execute: createAbilityExecute('cipher', 'code-gen', CODE_GEN_PROMPT),
 };
 
 export const socialContentAbility: CompanionAbility = {
@@ -63,8 +136,9 @@ export const socialContentAbility: CompanionAbility = {
   triggers: ['create.*post', 'social.*media', 'brand.*content'],
   companionIds: ['mischief'],
   requiresLocalModel: true,
-  isActive: false,
-  execute: createPlaceholderExecute('mischief'),
+  isActive: true,
+  systemPrompt: SOCIAL_CONTENT_PROMPT,
+  execute: createAbilityExecute('mischief', 'social-content', SOCIAL_CONTENT_PROMPT),
 };
 
 export const dataAnalysisAbility: CompanionAbility = {
@@ -73,18 +147,27 @@ export const dataAnalysisAbility: CompanionAbility = {
   triggers: ['analyze.*data', 'market.*research', 'trend'],
   companionIds: ['vortex'],
   requiresLocalModel: true,
-  isActive: false,
-  execute: createPlaceholderExecute('vortex'),
+  isActive: true,
+  systemPrompt: DATA_ANALYSIS_PROMPT,
+  execute: createAbilityExecute('vortex', 'data-analysis', DATA_ANALYSIS_PROMPT),
 };
 
+/**
+ * Note: 'code.*review' trigger overlaps with code-gen's 'review.*code'.
+ * Since SkillRouter returns the first match and companion abilities
+ * register after builtins, registration order determines priority.
+ * This is acceptable — both abilities produce relevant output for
+ * code review requests.
+ */
 export const architectureReviewAbility: CompanionAbility = {
   name: 'architecture-review',
   description: 'Review system architecture and code design with forge',
   triggers: ['architecture', 'system.*design', 'code.*review'],
   companionIds: ['forge'],
   requiresLocalModel: true,
-  isActive: false,
-  execute: createPlaceholderExecute('forge'),
+  isActive: true,
+  systemPrompt: ARCHITECTURE_REVIEW_PROMPT,
+  execute: createAbilityExecute('forge', 'architecture-review', ARCHITECTURE_REVIEW_PROMPT),
 };
 
 export const creativeWritingAbility: CompanionAbility = {
@@ -93,8 +176,9 @@ export const creativeWritingAbility: CompanionAbility = {
   triggers: ['write.*story', 'creative.*writing', 'worldbuild'],
   companionIds: ['aether'],
   requiresLocalModel: true,
-  isActive: false,
-  execute: createPlaceholderExecute('aether'),
+  isActive: true,
+  systemPrompt: CREATIVE_WRITING_PROMPT,
+  execute: createAbilityExecute('aether', 'creative-writing', CREATIVE_WRITING_PROMPT),
 };
 
 export const habitCoachingAbility: CompanionAbility = {
@@ -103,8 +187,9 @@ export const habitCoachingAbility: CompanionAbility = {
   triggers: ['habit', 'goal.*setting', 'routine', 'accountability'],
   companionIds: ['catalyst'],
   requiresLocalModel: true,
-  isActive: false,
-  execute: createPlaceholderExecute('catalyst'),
+  isActive: true,
+  systemPrompt: HABIT_COACHING_PROMPT,
+  execute: createAbilityExecute('catalyst', 'habit-coaching', HABIT_COACHING_PROMPT),
 };
 
 // ============================================================================
@@ -119,6 +204,24 @@ export const companionAbilities: CompanionAbility[] = [
   creativeWritingAbility,
   habitCoachingAbility,
 ];
+
+// ============================================================================
+// Registration
+// ============================================================================
+
+/**
+ * Register all companion abilities with a SkillRouter instance.
+ *
+ * Call this after builtin skills are registered so that builtin triggers
+ * take precedence over companion ability triggers. Companion abilities
+ * are additive — they extend the router's capabilities without overriding
+ * existing skills.
+ */
+export function registerCompanionAbilities(router: SkillRouter): void {
+  for (const ability of companionAbilities) {
+    router.register(ability);
+  }
+}
 
 // ============================================================================
 // Query Helpers
