@@ -1,6 +1,6 @@
 /**
  * Auth Routes - Authentication endpoints
- * Supports: Telegram Login, Google OAuth, Solana Wallet Sign-In
+ * Supports: Telegram Login, Google OAuth, Solana Wallet Sign-In, Email/Password
  */
 
 import { FastifyPluginAsync } from 'fastify';
@@ -45,7 +45,7 @@ async function verifyGoogleIdToken(idToken: string, clientId: string): Promise<G
 // ============================================================================
 
 // In-memory nonce store (TTL 5 minutes)
-const nonceStore = new Map<string, { walletAddress: string; expiresAt: number }>();
+const nonceStore = new Map<string, { walletAddress: string; message: string; expiresAt: number }>();
 
 // Clean expired nonces every 60 seconds
 setInterval(() => {
@@ -361,11 +361,12 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
     async (request) => {
       const { walletAddress } = request.body;
       const nonce = crypto.randomUUID();
+      const message = `Sign in to KIN with your Solana wallet.\n\nNonce: ${nonce}\nTimestamp: ${new Date().toISOString()}`;
       nonceStore.set(nonce, {
         walletAddress,
+        message,
         expiresAt: Date.now() + 5 * 60 * 1000, // 5 minutes
       });
-      const message = `Sign in to KIN with your Solana wallet.\n\nNonce: ${nonce}\nTimestamp: ${new Date().toISOString()}`;
       return { nonce, message };
     }
   );
@@ -403,29 +404,12 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
       }
       nonceStore.delete(nonce); // Single use
 
-      // Reconstruct the message that was signed
-      const message = `Sign in to KIN with your Solana wallet.\n\nNonce: ${nonce}\nTimestamp: ${new Date().toISOString().slice(0, 16)}`; // Truncate seconds for tolerance
-
-      // Verify Ed25519 signature
-      const messageBytes = new TextEncoder().encode(
-        `Sign in to KIN with your Solana wallet.\n\nNonce: ${nonce}`
-      );
+      // Use the exact message that was sent to the client for signing
+      const messageBytes = new TextEncoder().encode(nonceData.message);
       const signatureBytes = Buffer.from(signature, 'base64');
       const publicKeyBytes = base58Decode(walletAddress);
 
-      // Try verification — if the exact message doesn't match, try the nonce-only variant
-      let valid = await verifyEd25519Signature(messageBytes, signatureBytes, publicKeyBytes);
-      if (!valid) {
-        // Try with full message from nonce store
-        const fullMessage = new TextEncoder().encode(nonceData.walletAddress === walletAddress
-          ? `Sign in to KIN with your Solana wallet.\n\nNonce: ${nonce}\nTimestamp:`
-          : '');
-        valid = fullMessage.length > 0 && await verifyEd25519Signature(
-          new TextEncoder().encode(`Sign in to KIN with your Solana wallet.\n\nNonce: ${nonce}`),
-          signatureBytes,
-          publicKeyBytes,
-        );
-      }
+      const valid = await verifyEd25519Signature(messageBytes, signatureBytes, publicKeyBytes);
 
       // For development, allow unsigned requests (Phantom may not be available)
       if (!valid && fastify.context.config.environment !== 'development') {
@@ -467,6 +451,342 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
           firstName: user.first_name,
           lastName: user.last_name,
           tier: user.tier,
+          walletAddress: user.wallet_address,
+          authProvider: user.auth_provider,
+        },
+      };
+    }
+  );
+
+  // ========================================================================
+  // Email Registration & Login
+  // ========================================================================
+
+  fastify.post<{ Body: { email: string; password: string; firstName: string } }>(
+    '/auth/email/register',
+    {
+      schema: {
+        body: {
+          type: 'object' as const,
+          required: ['email', 'password', 'firstName'],
+          properties: {
+            email: { type: 'string' as const, format: 'email', maxLength: 320 },
+            password: { type: 'string' as const, minLength: 8, maxLength: 128 },
+            firstName: { type: 'string' as const, minLength: 1, maxLength: 128 },
+          },
+        },
+      },
+      config: { rateLimit: { max: 5, timeWindow: '1 minute' } },
+    } as any,
+    async (request, reply) => {
+      const { email, password, firstName } = request.body;
+      const normalizedEmail = email.toLowerCase().trim();
+
+      // Check if email already registered
+      const existing = fastify.context.db.prepare(
+        `SELECT id FROM users WHERE email = ?`
+      ).get(normalizedEmail) as any;
+
+      if (existing) {
+        reply.status(409);
+        return { error: 'An account with this email already exists. Try signing in.' };
+      }
+
+      // Hash password with scrypt
+      const salt = crypto.randomBytes(16);
+      const hash = await new Promise<Buffer>((resolve, reject) => {
+        crypto.scrypt(password, salt, 64, (err, derivedKey) => {
+          if (err) reject(err);
+          else resolve(derivedKey);
+        });
+      });
+      const passwordHash = `${salt.toString('hex')}:${hash.toString('hex')}`;
+
+      const userId = `user-${crypto.randomUUID()}`;
+      const syntheticTelegramId = -(Date.now() % 2_000_000_000 + Math.floor(Math.random() * 1000));
+
+      fastify.context.db.prepare(`
+        INSERT INTO users (id, telegram_id, first_name, email, password_hash, auth_provider)
+        VALUES (?, ?, ?, ?, ?, 'email')
+      `).run(userId, syntheticTelegramId, firstName, normalizedEmail, passwordHash);
+
+      const user = fastify.context.db.prepare(
+        `SELECT * FROM users WHERE id = ?`
+      ).get(userId) as any;
+
+      const token = fastify.jwt.sign({
+        userId: user.id,
+        telegramId: user.telegram_id,
+        tier: user.tier,
+      });
+
+      return {
+        token,
+        user: {
+          id: user.id,
+          telegramId: String(user.telegram_id),
+          username: user.username,
+          firstName: user.first_name,
+          lastName: user.last_name,
+          tier: user.tier,
+          email: user.email,
+          authProvider: user.auth_provider,
+        },
+      };
+    }
+  );
+
+  fastify.post<{ Body: { email: string; password: string } }>(
+    '/auth/email/login',
+    {
+      schema: {
+        body: {
+          type: 'object' as const,
+          required: ['email', 'password'],
+          properties: {
+            email: { type: 'string' as const, maxLength: 320 },
+            password: { type: 'string' as const, maxLength: 128 },
+          },
+        },
+      },
+      config: { rateLimit: { max: 10, timeWindow: '1 minute' } },
+    } as any,
+    async (request, reply) => {
+      const { email, password } = request.body;
+      const normalizedEmail = email.toLowerCase().trim();
+
+      const user = fastify.context.db.prepare(
+        `SELECT * FROM users WHERE email = ?`
+      ).get(normalizedEmail) as any;
+
+      if (!user || !user.password_hash) {
+        reply.status(401);
+        return { error: 'Invalid email or password' };
+      }
+
+      // Verify password
+      const [saltHex, hashHex] = user.password_hash.split(':');
+      const salt = Buffer.from(saltHex, 'hex');
+      const storedHash = Buffer.from(hashHex, 'hex');
+
+      const derivedKey = await new Promise<Buffer>((resolve, reject) => {
+        crypto.scrypt(password, salt, 64, (err, key) => {
+          if (err) reject(err);
+          else resolve(key);
+        });
+      });
+
+      if (!crypto.timingSafeEqual(storedHash, derivedKey)) {
+        reply.status(401);
+        return { error: 'Invalid email or password' };
+      }
+
+      const token = fastify.jwt.sign({
+        userId: user.id,
+        telegramId: user.telegram_id,
+        tier: user.tier,
+      });
+
+      return {
+        token,
+        user: {
+          id: user.id,
+          telegramId: String(user.telegram_id),
+          username: user.username,
+          firstName: user.first_name,
+          lastName: user.last_name,
+          tier: user.tier,
+          email: user.email,
+          authProvider: user.auth_provider,
+        },
+      };
+    }
+  );
+
+  // ========================================================================
+  // X (Twitter) OAuth 2.0 — Authorization Code Flow with PKCE
+  // ========================================================================
+
+  // In-memory PKCE verifier store (TTL 10 minutes)
+  const xPkceStore = new Map<string, { codeVerifier: string; expiresAt: number }>();
+
+  // Clean expired PKCE entries every 60 seconds
+  setInterval(() => {
+    const now = Date.now();
+    for (const [state, data] of xPkceStore) {
+      if (data.expiresAt < now) xPkceStore.delete(state);
+    }
+  }, 60_000);
+
+  // Step 1: Generate PKCE challenge and return authorize URL
+  fastify.post(
+    '/auth/x/authorize',
+    {
+      config: { rateLimit: { max: 20, timeWindow: '1 minute' } },
+    } as any,
+    async () => {
+      const clientId = process.env.X_CLIENT_ID;
+      if (!clientId) {
+        throw new Error('X OAuth not configured');
+      }
+
+      // Generate PKCE code_verifier (64 random bytes, base64url)
+      const codeVerifier = crypto.randomBytes(64)
+        .toString('base64url');
+
+      // Generate code_challenge (SHA-256 of verifier, base64url)
+      const codeChallenge = crypto.createHash('sha256')
+        .update(codeVerifier)
+        .digest('base64url');
+
+      // Generate state for CSRF protection
+      const state = crypto.randomUUID();
+
+      // Store verifier keyed by state
+      xPkceStore.set(state, {
+        codeVerifier,
+        expiresAt: Date.now() + 10 * 60 * 1000, // 10 minutes
+      });
+
+      const callbackUrl = process.env.X_CALLBACK_URL || 'http://localhost:3001/auth/x/callback';
+
+      const params = new URLSearchParams({
+        response_type: 'code',
+        client_id: clientId,
+        redirect_uri: callbackUrl,
+        scope: 'tweet.read users.read offline.access',
+        state,
+        code_challenge: codeChallenge,
+        code_challenge_method: 'S256',
+      });
+
+      return { url: `https://x.com/i/oauth2/authorize?${params.toString()}` };
+    }
+  );
+
+  // Step 2: Exchange code for token, fetch user, create/find user
+  fastify.post<{ Body: { code: string; state: string } }>(
+    '/auth/x/callback',
+    {
+      schema: {
+        body: {
+          type: 'object' as const,
+          required: ['code', 'state'],
+          properties: {
+            code: { type: 'string' as const },
+            state: { type: 'string' as const },
+          },
+        },
+      },
+      config: { rateLimit: { max: 10, timeWindow: '1 minute' } },
+    } as any,
+    async (request, reply) => {
+      const { code, state } = request.body;
+
+      const clientId = process.env.X_CLIENT_ID;
+      const clientSecret = process.env.X_CLIENT_SECRET;
+      if (!clientId || !clientSecret) {
+        reply.status(500);
+        return { error: 'X OAuth not configured' };
+      }
+
+      // Validate state and retrieve code_verifier
+      const pkceData = xPkceStore.get(state);
+      if (!pkceData) {
+        reply.status(401);
+        return { error: 'Invalid or expired state' };
+      }
+      if (pkceData.expiresAt < Date.now()) {
+        xPkceStore.delete(state);
+        reply.status(401);
+        return { error: 'State expired' };
+      }
+      xPkceStore.delete(state); // Single use
+
+      const callbackUrl = process.env.X_CALLBACK_URL || 'http://localhost:3001/auth/x/callback';
+
+      // Exchange authorization code for access token
+      const tokenRes = await fetch('https://api.x.com/2/oauth2/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Authorization': `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`,
+        },
+        body: new URLSearchParams({
+          code,
+          grant_type: 'authorization_code',
+          redirect_uri: callbackUrl,
+          code_verifier: pkceData.codeVerifier,
+        }).toString(),
+      });
+
+      if (!tokenRes.ok) {
+        const err = await tokenRes.text();
+        fastify.log.error({ err }, 'X token exchange failed');
+        reply.status(401);
+        return { error: 'Failed to exchange X authorization code' };
+      }
+
+      const tokenData = await tokenRes.json() as { access_token: string; token_type: string };
+
+      // Fetch X user profile
+      const userRes = await fetch('https://api.x.com/2/users/me?user.fields=profile_image_url,name,username', {
+        headers: {
+          'Authorization': `Bearer ${tokenData.access_token}`,
+        },
+      });
+
+      if (!userRes.ok) {
+        reply.status(401);
+        return { error: 'Failed to fetch X user profile' };
+      }
+
+      const xUserData = await userRes.json() as {
+        data: { id: string; name: string; username: string; profile_image_url?: string };
+      };
+      const xUser = xUserData.data;
+
+      // Find or create user by x_id
+      let user = fastify.context.db.prepare(
+        `SELECT * FROM users WHERE x_id = ?`
+      ).get(xUser.id) as any;
+
+      if (!user) {
+        // Create new user with synthetic negative telegram_id
+        const userId = `user-${crypto.randomUUID()}`;
+        const syntheticTelegramId = -(Date.now() % 2_000_000_000 + Math.floor(Math.random() * 1000));
+
+        // Split name into first/last
+        const nameParts = xUser.name.split(' ');
+        const firstName = nameParts[0] || xUser.username;
+        const lastName = nameParts.slice(1).join(' ') || null;
+
+        fastify.context.db.prepare(`
+          INSERT INTO users (id, telegram_id, first_name, last_name, username, x_id, auth_provider)
+          VALUES (?, ?, ?, ?, ?, ?, 'x')
+        `).run(userId, syntheticTelegramId, firstName, lastName, xUser.username, xUser.id);
+
+        user = fastify.context.db.prepare(
+          `SELECT * FROM users WHERE id = ?`
+        ).get(userId) as any;
+      }
+
+      const token = fastify.jwt.sign({
+        userId: user.id,
+        telegramId: user.telegram_id,
+        tier: user.tier,
+      });
+
+      return {
+        token,
+        user: {
+          id: user.id,
+          telegramId: String(user.telegram_id),
+          username: user.username,
+          firstName: user.first_name,
+          lastName: user.last_name,
+          tier: user.tier,
+          email: user.email,
           walletAddress: user.wallet_address,
           authProvider: user.auth_provider,
         },

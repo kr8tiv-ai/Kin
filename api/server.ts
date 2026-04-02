@@ -149,6 +149,10 @@ export async function createServer(config: ApiConfig = {}) {
     `ALTER TABLE users ADD COLUMN email TEXT`,
     `ALTER TABLE users ADD COLUMN wallet_address TEXT`,
     `ALTER TABLE users ADD COLUMN auth_provider TEXT NOT NULL DEFAULT 'telegram'`,
+    // Email auth
+    `ALTER TABLE users ADD COLUMN password_hash TEXT`,
+    // X (Twitter) OAuth
+    `ALTER TABLE users ADD COLUMN x_id TEXT`,
   ];
   for (const migration of safeMigrations) {
     try { db.exec(migration); } catch { /* column already exists — safe to ignore */ }

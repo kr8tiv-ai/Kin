@@ -7,6 +7,8 @@ import { useAuth } from '@/providers/AuthProvider';
 import { TelegramLoginButton } from '@/components/auth/TelegramLoginButton';
 import { GoogleLoginButton } from '@/components/auth/GoogleLoginButton';
 import { SolanaLoginButton } from '@/components/auth/SolanaLoginButton';
+import { EmailLoginButton } from '@/components/auth/EmailLoginButton';
+import { XLoginButton } from '@/components/auth/XLoginButton';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -109,7 +111,9 @@ export default function LoginPage() {
           className="mt-6 max-w-lg text-white/70 leading-relaxed"
           style={{ fontSize: 'clamp(1rem, 1.8vw, 1.25rem)' }}
         >
-          Your AI companion that grows with you. Sign in to begin.
+          Your AI companion that grows with you.
+          <br />
+          Sign in to begin.
         </motion.p>
 
         {/* Login Card */}
@@ -119,9 +123,9 @@ export default function LoginPage() {
           transition={{ duration: 0.6, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
           className="mt-10 w-full max-w-sm"
         >
-          <div className="rounded-[24px] border border-white/[0.15] bg-white/[0.03] backdrop-blur-[20px] p-8 sm:p-10">
+          <div className="rounded-3xl border border-white/[0.08] bg-white/[0.04] backdrop-blur-2xl px-7 py-8 sm:px-9 sm:py-10 space-y-4">
             {/* Google Sign-In */}
-            <div className="mb-4 flex justify-center">
+            <div className="flex justify-center">
               <GoogleLoginButton
                 onAuth={(token, user) => {
                   login(token, user);
@@ -130,27 +134,36 @@ export default function LoginPage() {
               />
             </div>
 
+            {/* X (Twitter) Sign-In */}
+            <XLoginButton />
+
             {/* Solana Wallet Sign-In */}
-            <div className="mb-4">
-              <SolanaLoginButton
-                onAuth={(token, user) => {
-                  login(token, user);
-                  router.push('/onboard');
-                }}
-              />
-            </div>
+            <SolanaLoginButton
+              onAuth={(token, user) => {
+                login(token, user);
+                router.push('/onboard');
+              }}
+            />
+
+            {/* Email Sign-In */}
+            <EmailLoginButton
+              onAuth={(token, user) => {
+                login(token, user);
+                router.push('/onboard');
+              }}
+            />
 
             {/* Divider */}
-            <div className="flex items-center gap-3 my-5">
-              <div className="flex-1 h-px bg-white/10" />
-              <span className="font-mono text-[0.6rem] uppercase tracking-[0.15em] text-white/25">
+            <div className="flex items-center gap-3 !my-5">
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
+              <span className="font-mono text-[0.55rem] uppercase tracking-[0.2em] text-white/20 select-none">
                 or
               </span>
-              <div className="flex-1 h-px bg-white/10" />
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
             </div>
 
             {/* Telegram Login Widget */}
-            <div className="mb-4 flex justify-center">
+            <div className="flex justify-center">
               <TelegramLoginButton
                 onAuth={(token, user) => {
                   login(token, user);
@@ -159,71 +172,40 @@ export default function LoginPage() {
               />
             </div>
 
-            {/* Primary CTA — magenta fill, matches meetyourkin.com */}
+            {/* Open in Telegram — outline style, consistent with Solana button */}
             <a
               href="https://t.me/KinCompanionBot"
               target="_blank"
               rel="noopener noreferrer"
-              className="group flex w-full items-center justify-center gap-2.5 rounded-full px-8 py-3.5 font-display text-sm font-medium uppercase tracking-wide text-white transition-all duration-400"
-              style={{
-                background: '#ff00aa',
-                boxShadow: '0 0 20px rgba(255,0,170,0.2)',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = '#fff';
-                e.currentTarget.style.color = '#000';
-                e.currentTarget.style.boxShadow = '0 0 40px rgba(255,255,255,0.5)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = '#ff00aa';
-                e.currentTarget.style.color = '#fff';
-                e.currentTarget.style.boxShadow = '0 0 20px rgba(255,0,170,0.2)';
-              }}
+              className="login-btn login-btn--telegram flex w-full items-center justify-center gap-2.5 rounded-full border border-[#ff00aa]/40 px-8 py-3 font-display text-sm font-medium uppercase tracking-wide text-[#ff00aa] transition-all duration-300 hover:bg-[#ff00aa] hover:text-white hover:border-[#ff00aa] hover:shadow-[0_0_30px_rgba(255,0,170,0.3)]"
             >
               <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
                 <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
               </svg>
               Open in Telegram
             </a>
+          </div>
 
-            {/* Secondary CTA — cyan outline */}
+          {/* Links below card */}
+          <div className="mt-5 flex items-center justify-center gap-4 text-[0.7rem]">
             <a
               href="https://www.meetyourkin.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-3 flex w-full items-center justify-center gap-2 rounded-full border px-8 py-3.5 font-display text-sm font-medium uppercase tracking-wide transition-all duration-400"
-              style={{
-                borderColor: '#00f0ff',
-                color: '#00f0ff',
-                boxShadow: '0 0 20px rgba(0,240,255,0.1)',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = '#00f0ff';
-                e.currentTarget.style.color = '#000';
-                e.currentTarget.style.boxShadow = '0 0 40px rgba(0,240,255,0.4)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'transparent';
-                e.currentTarget.style.color = '#00f0ff';
-                e.currentTarget.style.boxShadow = '0 0 20px rgba(0,240,255,0.1)';
-              }}
+              className="text-white/30 hover:text-[#00f0ff] transition-colors duration-300"
             >
               Learn More
             </a>
-          </div>
-
-          {/* Help text */}
-          <p className="mt-6 text-center text-xs text-white/25">
-            Don&apos;t have Telegram?{' '}
+            <span className="text-white/10">|</span>
             <a
               href="https://telegram.org"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-cyan underline underline-offset-2 hover:text-cyan/80 transition-colors"
+              className="text-white/30 hover:text-[#00f0ff] transition-colors duration-300"
             >
-              Download it free
+              Get Telegram
             </a>
-          </p>
+          </div>
         </motion.div>
       </div>
 

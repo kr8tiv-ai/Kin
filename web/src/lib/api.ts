@@ -10,7 +10,9 @@ export class KinApiClient {
   private baseUrl: string;
 
   constructor(baseUrl?: string) {
-    this.baseUrl = baseUrl ?? process.env.NEXT_PUBLIC_API_URL ?? '/api';
+    // Always use /api prefix in the browser — Next.js rewrites handle the proxy.
+    // NEXT_PUBLIC_API_URL is only used by next.config.ts for the rewrite destination.
+    this.baseUrl = baseUrl ?? (typeof window !== 'undefined' ? '/api' : (process.env.NEXT_PUBLIC_API_URL ?? '/api'));
   }
 
   private getToken(): string | undefined {
