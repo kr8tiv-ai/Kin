@@ -271,37 +271,16 @@ Every KIN character follows the same production pipeline:
 
 ### Categories
 - **AI Agents** — 6 AI companions with distinct frontier model brains
-- **Fee Sharing** — Revenue from NFT mints + skill marketplace shared with $KIN holders
+- **Fee Sharing** — Revenue from NFT mints + skill marketplace shared with **$KR8TIV** holders
 - **Bags API** — Token-gated features, price feeds, holder verification
 
-### $KIN Token (Solana SPL via Bags.fm)
+### $KR8TIV Token
 
-```
-Total Supply: 1,000,000,000 $KIN
-
-Distribution:
-  40% — Community Rewards (daily rewards, referrals, leaderboard)
-  20% — Treasury (development, marketing)
-  15% — Team (12-month vest)
-  15% — Liquidity (Meteora/Raydium)
-  10% — Hackathon Reserve (early adopter airdrops)
-
-Utility:
-  - Hold to unlock premium companions
-  - Stake for fee-sharing revenue
-  - Spend on custom skills
-  - Tip companions (goes to stakers)
-  - Governance votes on new releases
-```
+KIN is powered by the **$KR8TIV** token on Solana via Bags.fm. The token drives the entire kr8tiv-ai ecosystem — 75% of platform profit goes to stakers, 5% to charitable causes, 20% to ongoing development. Hold $KR8TIV to unlock premium companions, access frontier AI models, and earn fee-sharing revenue from the platform.
 
 ### Fee-Sharing Revenue Model
 
-```
-Custom Skill Submission ($4.99)     -> 70% platform / 30% $KIN stakers
-Companion NFT Mint (2.5 SOL)       -> 80% platform / 20% $KIN stakers
-NFT Secondary Sales (5% royalty)    -> 50% creator / 30% platform / 20% stakers
-Pro Subscription ($114-$324/mo)     -> 85% platform / 15% $KIN stakers
-```
+Platform revenue (NFT mints, skill marketplace, subscriptions) flows back to **$KR8TIV** holders through Bags.fm's fee-sharing infrastructure.
 
 ### 60 Genesis NFTs
 
@@ -396,7 +375,7 @@ npm run build     # Production build verification
 | **Jarvis** | Persistent context engine — 81+ active Solana trading strategies | [Matt-Aurora-Ventures/Jarvis](https://github.com/Matt-Aurora-Ventures/Jarvis) |
 
 ### The $KR8TIV Token
-The ecosystem is anchored by **$KR8TIV** on Solana — 75% profit to stakers, 5% to charitable causes, 20% to development. KIN companions integrate with this token economy through Bags.fm fee-sharing infrastructure.
+The ecosystem is anchored by **$KR8TIV** on Solana — the single token powering all kr8tiv-ai products including KIN, PinkBrain Router, and PinkBrain LP through Bags.fm fee-sharing infrastructure.
 
 ---
 
