@@ -47,6 +47,9 @@ import setupWizardRoutes from './routes/setup-wizard.js';
 import completionRoutes from './routes/completion.js';
 import rateLimitRoutes from './routes/rate-limit.js';
 import fleetRoutes from './routes/fleet.js';
+import exportRoutes from './routes/export.js';
+import importRoutes from './routes/import.js';
+import communityRoutes from './routes/community.js';
 
 // Inference imports for WebSocket streaming chat
 import crypto from 'crypto';
@@ -278,6 +281,9 @@ export async function createServer(config: ApiConfig = {}) {
     await protectedFastify.register(completionRoutes);
     await protectedFastify.register(rateLimitRoutes);
     await protectedFastify.register(fleetRoutes);
+    await protectedFastify.register(exportRoutes);
+    await protectedFastify.register(importRoutes);
+    await protectedFastify.register(communityRoutes);
   });
 
   // ==========================================================================
