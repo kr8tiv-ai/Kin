@@ -71,7 +71,7 @@ export function CTASection() {
           className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4"
         >
           <Link
-            href="/login"
+            href="/getting-started"
             className="w-full sm:w-auto inline-flex items-center justify-center rounded-full bg-magenta px-10 py-4 text-base font-semibold text-white shadow-[0_0_30px_rgba(255,0,170,0.3)] transition-all duration-200 hover:brightness-110 hover:shadow-[0_0_40px_rgba(255,0,170,0.5)]"
           >
             Start for Free
@@ -84,6 +84,12 @@ export function CTASection() {
           >
             Open Telegram Bot
           </a>
+          <Link
+            href="/demo"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full border border-white/20 text-white/70 px-10 py-4 text-base font-semibold transition-all duration-200 hover:bg-white/10"
+          >
+            Try Demo
+          </Link>
         </motion.div>
       </div>
     </section>

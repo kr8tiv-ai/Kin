@@ -11,9 +11,11 @@ export interface User {
   tier: 'free' | 'hatchling' | 'elder' | 'hero';
   email?: string;
   walletAddress?: string;
-  authProvider?: string; // 'telegram' | 'google' | 'solana' | comma-separated combo
+  authProvider?: string;
   createdAt: string;
   onboardingComplete?: boolean;
+  setupWizardComplete?: boolean;
+  deploymentComplete?: boolean;
 }
 
 export interface UserPreferences {

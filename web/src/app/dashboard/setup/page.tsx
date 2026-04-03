@@ -14,6 +14,8 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import type { InstallerStatusResponse } from '@/lib/types';
 import { phaseToPlainLanguage, recoveryActionsForStatus } from '@/lib/installer-ui';
+import type { WizardStatus } from '@/lib/setup-wizard-ui';
+import { stepStatusToBadgeColor, stepStatusToLabel } from '@/lib/setup-wizard-ui';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -142,6 +144,7 @@ export default function SetupPage() {
   const [modelReady, setModelReady] = useState<boolean>(false);
   const [installerStatus, setInstallerStatus] =
     useState<InstallerStatusResponse | null>(null);
+  const [wizardStatus, setWizardStatus] = useState<WizardStatus | null>(null);
   const [checking, setChecking] = useState(true);
   const [installerActionBusy, setInstallerActionBusy] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
@@ -151,18 +154,21 @@ export default function SetupPage() {
   const checkStatus = useCallback(async () => {
     setChecking(true);
     try {
-      const [ollamaData, installerData] = await Promise.all([
+      const [ollamaData, installerData, wizardData] = await Promise.all([
         kinApi.get<ModelStatus>('/health/ollama'),
         kinApi.get<InstallerStatusResponse>('/installer/status'),
+        kinApi.get<WizardStatus>('/setup-wizard/status'),
       ]);
 
       setOllamaOnline(ollamaData?.online ?? false);
       setModelReady(ollamaData?.hasModel ?? false);
       setInstallerStatus(installerData);
+      setWizardStatus(wizardData);
     } catch {
       setOllamaOnline(false);
       setModelReady(false);
       setInstallerStatus(null);
+      setWizardStatus(null);
     } finally {
       setChecking(false);
     }
@@ -440,46 +446,39 @@ export default function SetupPage() {
       </GlassCard>
 
       {/* ------------------------------------------------------------------ */}
-      {/* 3. Integrations                                                     */}
+      {/* 3. Integrations / Setup Wizard Status                               */}
       {/* ------------------------------------------------------------------ */}
       <GlassCard className="p-6" hover={false}>
         <h2 className="font-display text-lg font-semibold text-white mb-2">
-          Integrations {'\uD83D\uDD17'}
+          Setup Wizard {'\uD83D\uDD17'}
         </h2>
         <p className="text-xs text-white/40 mb-5">
-          Connect your KIN to other apps so you can chat anywhere.
+          Track your setup progress and complete pending steps.
         </p>
 
-        <div className="space-y-3">
-          <IntegrationRow
-            emoji={'\uD83E\uDD16'}
-            title="Telegram Bot"
-            description="Connect your KIN to Telegram and chat on the go"
-            status="Coming soon"
-            statusColor="gold"
-          />
-          <IntegrationRow
-            emoji={'\uD83D\uDCAC'}
-            title="WhatsApp"
-            description="Chat with your KIN on WhatsApp"
-            status="Coming soon"
-            statusColor="gold"
-          />
-          <IntegrationRow
-            emoji={'\uD83C\uDF99\uFE0F'}
-            title="Voice"
-            description="Talk to your KIN out loud \u2014 it can listen and speak back!"
-            status="Coming soon"
-            statusColor="gold"
-          />
-          <IntegrationRow
-            emoji={'\uD83E\uDDE0'}
-            title="Supermemory"
-            description="Long-term memory so your KIN remembers everything important"
-            status="Included"
-            statusColor="cyan"
-          />
-        </div>
+        {wizardStatus?.steps ? (
+          <div className="space-y-3">
+            {wizardStatus.steps.map((step) => (
+              <div
+                key={step.id}
+                className="flex items-center gap-4 rounded-xl border border-white/5 bg-white/[0.02] px-5 py-4 transition-colors hover:bg-white/[0.04]"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-white/80">{step.label}</p>
+                </div>
+                <Badge color={stepStatusToBadgeColor(step.status)}>
+                  {stepStatusToLabel(step.status)}
+                </Badge>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-xl border border-white/5 bg-white/[0.02] px-5 py-6 text-center">
+            <p className="text-sm text-white/40">
+              {checking ? 'Loading setup status...' : 'No wizard status available'}
+            </p>
+          </div>
+        )}
       </GlassCard>
 
       {/* ------------------------------------------------------------------ */}

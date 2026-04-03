@@ -43,6 +43,10 @@ import voiceRoutes from './routes/voice.js';
 import modelRoutes from './routes/models.js';
 import trainingRoutes from './routes/training.js';
 import installerRoutes from './routes/installer.js';
+import setupWizardRoutes from './routes/setup-wizard.js';
+import completionRoutes from './routes/completion.js';
+import rateLimitRoutes from './routes/rate-limit.js';
+import fleetRoutes from './routes/fleet.js';
 
 // Inference imports for WebSocket streaming chat
 import crypto from 'crypto';
@@ -155,6 +159,10 @@ export async function createServer(config: ApiConfig = {}) {
     `ALTER TABLE users ADD COLUMN password_hash TEXT`,
     // X (Twitter) OAuth
     `ALTER TABLE users ADD COLUMN x_id TEXT`,
+    // Setup wizard
+    `ALTER TABLE user_preferences ADD COLUMN setup_wizard_complete INTEGER NOT NULL DEFAULT 0`,
+    // Deployment completion
+    `ALTER TABLE user_preferences ADD COLUMN deployment_complete INTEGER NOT NULL DEFAULT 0`,
   ];
   for (const migration of safeMigrations) {
     try { db.exec(migration); } catch { /* column already exists — safe to ignore */ }
@@ -266,6 +274,10 @@ export async function createServer(config: ApiConfig = {}) {
     await protectedFastify.register(modelRoutes);
     await protectedFastify.register(trainingRoutes);
     await protectedFastify.register(installerRoutes);
+    await protectedFastify.register(setupWizardRoutes);
+    await protectedFastify.register(completionRoutes);
+    await protectedFastify.register(rateLimitRoutes);
+    await protectedFastify.register(fleetRoutes);
   });
 
   // ==========================================================================

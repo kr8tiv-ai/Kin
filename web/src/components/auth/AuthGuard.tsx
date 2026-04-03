@@ -14,7 +14,7 @@ interface AuthGuardProps {
 }
 
 export function AuthGuard({ children }: AuthGuardProps) {
-  const { isAuthenticated, loading, onboardingComplete } = useAuth();
+  const { isAuthenticated, loading, onboardingComplete, setupWizardComplete, deploymentComplete } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -37,7 +37,25 @@ export function AuthGuard({ children }: AuthGuardProps) {
       router.push('/dashboard');
       return;
     }
-  }, [loading, isAuthenticated, onboardingComplete, pathname, router]);
+
+    // Redirect to setup wizard if onboarding complete but setup wizard not complete
+    if (onboardingComplete && !setupWizardComplete && !pathname.startsWith('/dashboard/setup')) {
+      router.push('/dashboard/setup');
+      return;
+    }
+
+    // Redirect to setup if deployment not complete (unless already on setup or help)
+    if (deploymentComplete === false && !pathname.startsWith('/dashboard/setup') && !pathname.startsWith('/dashboard/help')) {
+      router.push('/dashboard/setup');
+      return;
+    }
+
+    // If on /dashboard/setup but wizard complete, go to dashboard
+    if (setupWizardComplete && pathname.startsWith('/dashboard/setup')) {
+      router.push('/dashboard');
+      return;
+    }
+  }, [loading, isAuthenticated, onboardingComplete, setupWizardComplete, deploymentComplete, pathname, router]);
 
   // Full-page loading skeleton while checking auth
   if (loading) {
@@ -79,6 +97,21 @@ export function AuthGuard({ children }: AuthGuardProps) {
 
   // On onboarding page but already complete — waiting for redirect
   if (onboardingComplete && pathname.startsWith('/onboard')) {
+    return null;
+  }
+
+  // Waiting for setup wizard redirect
+  if (onboardingComplete && !setupWizardComplete && !pathname.startsWith('/dashboard/setup')) {
+    return null;
+  }
+
+  // On setup wizard page but already complete — waiting for redirect
+  if (setupWizardComplete && pathname.startsWith('/dashboard/setup')) {
+    return null;
+  }
+
+  // Waiting for deployment redirect
+  if (deploymentComplete === false && !pathname.startsWith('/dashboard/setup') && !pathname.startsWith('/dashboard/help')) {
     return null;
   }
 

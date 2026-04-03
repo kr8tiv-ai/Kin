@@ -224,7 +224,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
 
       // Check onboarding status
       const prefs = fastify.context.db.prepare(`
-        SELECT onboarding_complete FROM user_preferences WHERE user_id = ?
+        SELECT onboarding_complete, setup_wizard_complete, deployment_complete FROM user_preferences WHERE user_id = ?
       `).get(decoded.userId) as any;
 
       return {
@@ -242,6 +242,8 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
           authProvider: user.auth_provider ?? 'telegram',
           createdAt: new Date(user.created_at).toISOString(),
           onboardingComplete: prefs?.onboarding_complete === 1,
+          setupWizardComplete: prefs?.setup_wizard_complete === 1,
+          deploymentComplete: prefs?.deployment_complete === 1,
         },
       };
     } catch {

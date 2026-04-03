@@ -253,6 +253,8 @@ CREATE TABLE IF NOT EXISTS user_preferences (
   tone TEXT DEFAULT 'friendly' CHECK (tone IN ('friendly', 'professional', 'casual', 'technical')),
   privacy_mode TEXT DEFAULT 'private' CHECK (privacy_mode IN ('private', 'shared')),
   onboarding_complete BOOLEAN NOT NULL DEFAULT FALSE,
+  setup_wizard_complete BOOLEAN NOT NULL DEFAULT FALSE,
+  deployment_complete BOOLEAN NOT NULL DEFAULT FALSE,
   created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000),
   updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000),
   UNIQUE(user_id)

@@ -1,0 +1,128 @@
+version: '3.8'
+
+services:
+  # API Service - scales horizontally
+  kin-api:
+    image: ghcr.io/${KIN_OWNER:-kin}/kin-api:${KIN_VERSION:-latest}
+    deploy:
+      replicas: ${API_REPLICAS:-3}
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 512M
+    ports:
+      - "${API_PORT:-3002}:3002"
+    environment:
+      - DATABASE_PATH=/data/kin.db
+      - JWT_SECRET=${JWT_SECRET}
+      - OLLAMA_HOST=${OLLAMA_HOST:-ollama}
+      - OLLAMA_PORT=11434
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - OLLAMA_POOL_HOSTS=${OLLAMA_POOL_HOSTS:-ollama:11434}
+    volumes:
+      - api-data:/data
+    networks:
+      - kin-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Web Dashboard - single instance
+  kin-web:
+    image: ghcr.io/${KIN_OWNER:-kin}/kin-web:${KIN_VERSION:-latest}
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    ports:
+      - "${WEB_PORT:-3001}:3001"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://kin-api:3002
+    networks:
+      - kin-network
+    depends_on:
+      - kin-api
+    restart: unless-stopped
+
+  # Ollama instances - pool for inference
+  ollama:
+    image: ollama/ollama:latest
+    deploy:
+      replicas: ${OLLAMA_REPLICAS:-2}
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 8G
+        reservations:
+          cpus: '2.0'
+          memory: 4G
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    volumes:
+      - ollama-data:/root/.ollama
+    networks:
+      - kin-network
+    restart: unless-stopped
+
+  # Redis for rate limiting and session state
+  redis:
+    image: redis:7-alpine
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+    command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    networks:
+      - kin-network
+    restart: unless-stopped
+
+  # Traefik reverse proxy for load balancing
+  traefik:
+    image: traefik:v3
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.network=kin-network"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL:-admin@meetyourkin.com}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik-letsencrypt:/letsencrypt
+    networks:
+      - kin-network
+    restart: unless-stopped
+
+volumes:
+  api-data:
+  ollama-data:
+  redis-data:
+  traefik-letsencrypt:
+
+networks:
+  kin-network:
+    driver: bridge
