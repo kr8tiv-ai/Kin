@@ -1,0 +1,12 @@
+FROM ollama/ollama:latest
+
+ENV OLLAMA_HOST=0.0.0.0:11434
+
+LABEL org.opencontainers.image.title="kin-inference" \
+      io.kr8tiv.kin.service="inference"
+
+EXPOSE 11434
+
+VOLUME ["/root/.ollama"]
+
+CMD ["ollama", "serve"]

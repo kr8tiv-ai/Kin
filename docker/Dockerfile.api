@@ -1,0 +1,50 @@
+FROM node:20-alpine AS build
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci
+
+COPY tsconfig.json ./
+COPY types/ types/
+COPY api/ api/
+COPY bot/ bot/
+COPY companions/ companions/
+COPY inference/ inference/
+COPY runtime/ runtime/
+COPY scripts/ scripts/
+COPY tailscale/ tailscale/
+COPY training/ training/
+COPY voice/ voice/
+COPY website/ website/
+COPY db/ db/
+RUN npm run build
+
+FROM node:20-alpine AS runtime
+
+WORKDIR /app
+
+ENV NODE_ENV=production \
+    HOST=0.0.0.0 \
+    PORT=3002 \
+    DATABASE_PATH=/app/data/kin.db
+
+LABEL org.opencontainers.image.title="kin-api" \
+      io.kr8tiv.kin.service="api"
+
+# Voice pipeline dependency
+RUN apk add --no-cache ffmpeg
+
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev && npm cache clean --force
+
+COPY --from=build /app/dist/ dist/
+COPY db/ db/
+COPY admin/ admin/
+COPY assets/ assets/
+
+RUN mkdir -p data
+
+EXPOSE 3002
+
+CMD ["node", "dist/api/server.js"]
