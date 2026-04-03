@@ -6,6 +6,8 @@ const path = require('node:path');
 const repoRoot = path.resolve(__dirname, '..');
 const workflowPath = path.join(repoRoot, '.github', 'workflows', 'publish-ghcr.yml');
 const contractPath = path.join(repoRoot, 'scripts', 'ghcr-contract.ts');
+const composePath = path.join(repoRoot, 'docker-compose.yml');
+const readmePath = path.join(repoRoot, 'README.md');
 
 let failureCount = 0;
 
@@ -47,6 +49,10 @@ function assertRegex(content, regex, description) {
   pass(description);
 }
 
+function escapeRegex(text) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 function parseContractServices(contractSource) {
   const blockMatch = contractSource.match(/export const GHCR_SERVICES:[\s\S]*?=\s*\[([\s\S]*?)\];/);
 
@@ -68,16 +74,7 @@ function parseContractServices(contractSource) {
   return entries;
 }
 
-function main() {
-  const workflowSource = readFileOrFail(workflowPath, 'workflow file');
-  const contractSource = readFileOrFail(contractPath, 'GHCR contract source');
-
-  if (!workflowSource || !contractSource) {
-    process.exit(1);
-  }
-
-  const serviceContracts = parseContractServices(contractSource);
-
+function validateWorkflowContract(workflowSource, contractSource, serviceContracts) {
   assertIncludes(workflowSource, 'workflow_dispatch:', 'Manual dispatch trigger is configured');
   assertIncludes(workflowSource, 'packages: write', 'Workflow has package publish permissions');
   assertIncludes(workflowSource, 'concurrency:', 'Workflow defines concurrency controls');
@@ -100,34 +97,97 @@ function main() {
   );
 
   for (const service of serviceContracts) {
-    const escapedService = service.id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const escapedImage = service.image.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const escapedService = escapeRegex(service.id);
+    const escapedImage = escapeRegex(service.image);
 
     assertRegex(
       workflowSource,
       new RegExp(`service:\\s*${escapedService}`),
-      `Matrix includes service '${service.id}'`,
+      `Workflow matrix includes service '${service.id}'`,
     );
 
     assertRegex(
       workflowSource,
       new RegExp(`image:\\s*${escapedImage}`),
-      `Matrix includes image '${service.image}'`,
+      `Workflow matrix includes image '${service.image}'`,
     );
 
     assertRegex(
       workflowSource,
       new RegExp(`dockerfile:\\s*docker\\/Dockerfile\\.${escapedService}`),
-      `Matrix includes dockerfile docker/Dockerfile.${service.id}`,
+      `Workflow matrix includes dockerfile docker/Dockerfile.${service.id}`,
     );
   }
+}
+
+function validateComposeContract(composeSource, serviceContracts) {
+  assertIncludes(
+    composeSource,
+    'KIN_IMAGE_TAG:-latest',
+    'Compose defaults runtime tag to latest while allowing overrides',
+  );
+
+  for (const service of serviceContracts) {
+    const escapedService = escapeRegex(service.id);
+    const escapedImage = escapeRegex(service.image);
+
+    assertRegex(
+      composeSource,
+      new RegExp(`^\\s{2}${escapedService}:`, 'm'),
+      `Compose declares '${service.id}' service`,
+    );
+
+    assertRegex(
+      composeSource,
+      new RegExp(`image:\\s*ghcr\\.io\\/\\$\\{GHCR_OWNER:-[^}]+\\}\\/${escapedImage}:\\$\\{KIN_IMAGE_TAG:-latest\\}`),
+      `Compose image contract references ghcr.io/<owner>/${service.image}:<tag>`,
+    );
+  }
+}
+
+function validateReadmeContract(readmeSource, serviceContracts) {
+  assertIncludes(readmeSource, '### GHCR Runtime Image Contract', 'README documents GHCR runtime image contract');
+  assertIncludes(readmeSource, '`scripts/ghcr-contract.ts`', 'README links GHCR contract source of truth');
+  assertIncludes(readmeSource, 'docker compose pull', 'README includes pull-first deployment command');
+  assertIncludes(readmeSource, 'KIN_IMAGE_TAG=sha-', 'README shows sha-pinned tag deployment example');
+
+  for (const service of serviceContracts) {
+    assertIncludes(
+      readmeSource,
+      `ghcr.io/<owner>/${service.image}:latest`,
+      `README lists latest tag reference for ${service.image}`,
+    );
+
+    assertIncludes(
+      readmeSource,
+      `ghcr.io/<owner>/${service.image}:sha-<short_sha>`,
+      `README lists sha-pinned tag reference for ${service.image}`,
+    );
+  }
+}
+
+function main() {
+  const workflowSource = readFileOrFail(workflowPath, 'workflow file');
+  const contractSource = readFileOrFail(contractPath, 'GHCR contract source');
+  const composeSource = readFileOrFail(composePath, 'compose contract file');
+  const readmeSource = readFileOrFail(readmePath, 'README');
+
+  if (!workflowSource || !contractSource || !composeSource || !readmeSource) {
+    process.exit(1);
+  }
+
+  const serviceContracts = parseContractServices(contractSource);
+
+  validateWorkflowContract(workflowSource, contractSource, serviceContracts);
+  validateComposeContract(composeSource, serviceContracts);
+  validateReadmeContract(readmeSource, serviceContracts);
 
   if (failureCount > 0) {
     console.error(`\nValidation failed with ${failureCount} issue(s).`);
     process.exit(1);
   }
 
-  console.log('\nWorkflow validation passed.');
+  console.log('\nGHCR contract validation passed (workflow + compose + docs).');
 }
 
 main();

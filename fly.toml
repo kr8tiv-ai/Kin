@@ -1,0 +1,41 @@
+app = "kin-api"
+primary_region = "ord"
+kill_signal = "SIGINT"
+kill_timeout = "30s"
+
+# Pull prebuilt GHCR runtime image (no local Docker build).
+# Override owner/tag at deploy time with:
+#   fly deploy --image ghcr.io/<owner>/kin-api:sha-<7hex>
+# If the tag is not found, confirm GHCR publish completed and retry with an existing sha-* tag.
+# Additional runtime refs for companion Fly apps:
+# - web:       ghcr.io/${GHCR_OWNER:-kr8tiv-ai}/kin-web:${KIN_IMAGE_TAG:-latest}
+# - inference: ghcr.io/${GHCR_OWNER:-kr8tiv-ai}/kin-inference:${KIN_IMAGE_TAG:-latest}
+
+[build]
+  image = "ghcr.io/kr8tiv-ai/kin-api:latest"
+
+[env]
+  HOST = "0.0.0.0"
+  PORT = "3002"
+  NODE_ENV = "production"
+  OLLAMA_HOST = "kin-inference.internal"
+  OLLAMA_PORT = "11434"
+  # Required secret placeholder: set with `fly secrets set JWT_SECRET=<value>`
+  JWT_SECRET = "__SET_WITH_FLY_SECRETS__"
+  # Runtime image refs kept explicit for validator + operator clarity.
+  KIN_WEB_IMAGE = "ghcr.io/kr8tiv-ai/kin-web:latest"
+  KIN_INFERENCE_IMAGE = "ghcr.io/kr8tiv-ai/kin-inference:latest"
+
+[http_service]
+  internal_port = 3002
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 1
+
+[[http_service.checks]]
+  grace_period = "20s"
+  interval = "30s"
+  timeout = "5s"
+  method = "GET"
+  path = "/health"

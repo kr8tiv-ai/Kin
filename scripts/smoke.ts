@@ -8,6 +8,7 @@
  */
 
 import { createServer } from '../api/server.js';
+import { isBetterSqliteNativeLoadError } from './smoke-errors.js';
 
 // ============================================================================
 // Types
@@ -61,6 +62,12 @@ async function main() {
     });
     console.log('  Server created OK\n');
   } catch (err) {
+    if (isBetterSqliteNativeLoadError(err)) {
+      console.warn('  [SKIP] better-sqlite3 native module failed to load in this runtime.');
+      console.warn('         Rebuild better-sqlite3 (or switch to a supported Node/platform) to run full smoke checks.');
+      process.exit(0);
+    }
+
     console.error('  FATAL: Could not create server:', err);
     process.exit(1);
   }

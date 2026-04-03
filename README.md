@@ -314,7 +314,7 @@ Every KIN character follows the same production pipeline:
 | **Progress** | `GET /progress`, `POST /progress/streak` |
 | **Support** | `POST /support/chat`, `GET /support/tickets` |
 | **Training** | `GET /training/conversations`, `POST /training/curate`, `GET /training/stats`, `POST /training/export` |
-| **Health** | `GET /health/live`, `POST /heartbeat` |
+| **Health** | `GET /health`, `GET /live`, `POST /heartbeat` |
 
 ---
 
@@ -388,15 +388,16 @@ npm run dev --prefix web
 
 > Legacy `setup.sh` / `setup.bat` remain as compatibility wrappers and now delegate to `deploy-easy`.
 
-### 4. Docker Deployment
+### 4. Docker Deployment (GHCR Pull-Based)
 
 ```bash
-docker-compose up -d
+docker compose pull
+docker compose up -d
 ```
 
-With local LLM:
+Pin to a specific published build:
 ```bash
-docker-compose --profile local-llm up -d
+GHCR_OWNER=kr8tiv-ai KIN_IMAGE_TAG=sha-<short_sha> docker compose up -d
 ```
 
 ---
@@ -440,18 +441,70 @@ The ecosystem is anchored by **$KR8TIV** on Solana — the single token powering
 | SSL | Let's Encrypt | $0 |
 | Web hosting | Vercel free tier (optional) | $0 |
 
-### Production Docker
+### GHCR Runtime Image Contract
+
+The publish workflow (`.github/workflows/publish-ghcr.yml`) pushes three runtime images to GHCR on every `main` push:
+
+| Service | Latest Tag | Commit-Pinned Tag |
+|---------|------------|-------------------|
+| API | `ghcr.io/<owner>/kin-api:latest` | `ghcr.io/<owner>/kin-api:sha-<short_sha>` |
+| Web | `ghcr.io/<owner>/kin-web:latest` | `ghcr.io/<owner>/kin-web:sha-<short_sha>` |
+| Inference | `ghcr.io/<owner>/kin-inference:latest` | `ghcr.io/<owner>/kin-inference:sha-<short_sha>` |
+
+Tag contract is shared with `scripts/ghcr-contract.ts`:
+- Floating runtime channel: `latest`
+- Immutable rollout tag: `sha-<7 hex chars>`
+
+### Pull-Based Docker Compose (No Local Build)
+
+`docker-compose.yml` is now a pull-only deploy surface that consumes the GHCR runtime contract:
 
 ```bash
-# Build and run
-docker-compose up -d --build
+# Optional overrides (defaults shown)
+export GHCR_OWNER=kr8tiv-ai
+export KIN_IMAGE_TAG=latest
 
-# With Ollama for local LLM
-docker-compose --profile local-llm up -d
-
-# Health check
-curl http://localhost:3000/health/live
+# Pull and run prebuilt runtime images
+docker compose pull
+docker compose up -d
 ```
+
+Pin a deployment to a published workflow build:
+
+```bash
+export GHCR_OWNER=kr8tiv-ai
+export KIN_IMAGE_TAG=sha-1a2b3c4
+
+docker compose pull
+docker compose up -d
+```
+
+Sanity check:
+
+```bash
+curl http://localhost:3002/health
+```
+
+### One-Click Cloud Deploy Paths
+
+Use these deterministic one-click import paths. All providers consume GHCR runtime refs (`ghcr.io/<owner>/kin-<service>:<tag>`) and must prove live readiness via `GET /health` before claiming success.
+
+- **Railway** — `railway.toml` + guide: `docs/deploy/railway.md`
+- **Render** — `render.yaml` + guide: `docs/deploy/render.md`
+- **Fly.io** — `fly.toml` + guide: `docs/deploy/fly.md`
+- **Coolify** — `docker-compose.coolify.yml` + guide: `docs/deploy/coolify.md`
+
+Post-deploy proof command (per provider API URL):
+
+```bash
+curl -i https://<provider-api-url>/health
+```
+
+Pass condition: HTTP `200` from `/health`, then record evidence in `docs/deploy/cloud-proof-matrix.md`.
+
+#### External-Action Boundary (D010)
+
+Deploy triggers, secret entry/rotation (`JWT_SECRET`, bot tokens), domain cutovers, and production rollbacks are explicit human approvals inside each provider dashboard/CLI, not silent automation steps.
 
 ---
 

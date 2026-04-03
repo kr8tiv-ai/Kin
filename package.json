@@ -21,7 +21,8 @@
     "db:reset": "rm -f data/kin.db && npm run db:migrate",
     "smoke": "tsx scripts/smoke.ts",
     "health:check": "python scripts/health_monitor_daemon.py --once",
-    "health:daemon": "python scripts/health_monitor_daemon.py"
+    "health:daemon": "python scripts/health_monitor_daemon.py",
+    "validate:cloud-deploy-contract": "node scripts/validate-cloud-deploy-contract.cjs"
   },
   "dependencies": {
     "@fastify/cors": "^10.0.1",

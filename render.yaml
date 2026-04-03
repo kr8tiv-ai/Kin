@@ -1,0 +1,70 @@
+# Render Blueprint: GHCR pull-only runtime surfaces for KIN
+# Owner/tag overrides:
+# - Replace "kr8tiv-ai" in image URLs with your GHCR owner.
+# - Replace ":latest" with ":sha-<7hex>" for immutable rollouts.
+# Canonical deploy health proof path: /health
+
+services:
+  - type: web
+    name: kin-api
+    runtime: image
+    image:
+      url: ghcr.io/kr8tiv-ai/kin-api:latest
+    region: oregon
+    plan: starter
+    numInstances: 1
+    autoDeployTrigger: off
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: "3002"
+      - key: HOST
+        value: 0.0.0.0
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_PATH
+        value: /opt/render/project/src/data/kin.db
+      - key: OLLAMA_HOST
+        value: kin-inference
+      - key: OLLAMA_PORT
+        value: "11434"
+      - key: JWT_SECRET
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: OWNER_TELEGRAM_ID
+        sync: false
+
+  - type: web
+    name: kin-web
+    runtime: image
+    image:
+      url: ghcr.io/kr8tiv-ai/kin-web:latest
+    region: oregon
+    plan: starter
+    numInstances: 1
+    autoDeployTrigger: off
+    envVars:
+      - key: PORT
+        value: "3001"
+      - key: HOSTNAME
+        value: 0.0.0.0
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_API_URL
+        sync: false
+
+  - type: pserv
+    name: kin-inference
+    runtime: image
+    image:
+      url: ghcr.io/kr8tiv-ai/kin-inference:latest
+    region: oregon
+    plan: starter
+    numInstances: 1
+    autoDeployTrigger: off
+    envVars:
+      - key: OLLAMA_HOST
+        value: 0.0.0.0
+      - key: OLLAMA_PORT
+        value: "11434"

@@ -1,49 +1,53 @@
 version: "3.8"
 
+# GHCR contract defaults:
+# - GHCR_OWNER defaults to kr8tiv-ai
+# - KIN_IMAGE_TAG defaults to latest
+# For immutable releases, set KIN_IMAGE_TAG=sha-<7hex>.
+# If image pull fails with "manifest unknown", switch to a published sha-* tag.
+
 services:
   api:
     image: ghcr.io/${GHCR_OWNER:-kr8tiv-ai}/kin-api:${KIN_IMAGE_TAG:-latest}
-    container_name: kin-api
     restart: unless-stopped
     ports:
       - "${API_PORT:-3002}:3002"
     volumes:
       - kin-data:/app/data
-    env_file:
-      - .env
     environment:
-      - NODE_ENV=production
-      - HOST=0.0.0.0
-      - PORT=3002
-      - DATABASE_PATH=/app/data/kin.db
-      - OLLAMA_HOST=inference
-      - OLLAMA_PORT=11434
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: "3002"
+      DATABASE_PATH: /app/data/kin.db
+      OLLAMA_HOST: inference
+      OLLAMA_PORT: "11434"
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      OWNER_TELEGRAM_ID: ${OWNER_TELEGRAM_ID:-}
     depends_on:
       - inference
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3002/health"]
       interval: 30s
       timeout: 5s
-      retries: 3
-      start_period: 10s
+      retries: 5
+      start_period: 20s
 
   web:
     image: ghcr.io/${GHCR_OWNER:-kr8tiv-ai}/kin-web:${KIN_IMAGE_TAG:-latest}
-    container_name: kin-web
     restart: unless-stopped
     ports:
       - "${WEB_PORT:-3001}:3001"
     environment:
-      - NODE_ENV=production
-      - HOSTNAME=0.0.0.0
-      - PORT=3001
-      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://api:3002}
+      NODE_ENV: production
+      HOSTNAME: 0.0.0.0
+      PORT: "3001"
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://api:3002}
     depends_on:
       - api
 
   inference:
     image: ghcr.io/${GHCR_OWNER:-kr8tiv-ai}/kin-inference:${KIN_IMAGE_TAG:-latest}
-    container_name: kin-inference
     restart: unless-stopped
     ports:
       - "${OLLAMA_PORT:-11434}:11434"

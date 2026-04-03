@@ -1,0 +1,29 @@
+$schema = "https://railway.com/railway.schema.json"
+
+# Railway config-as-code controls deploy behavior only.
+# Runtime image source is configured per Railway service (Source: Image).
+# Use these GHCR contract refs for one-click image services:
+# - api:       ghcr.io/${GHCR_OWNER:-kr8tiv-ai}/kin-api:${KIN_IMAGE_TAG:-latest}
+# - web:       ghcr.io/${GHCR_OWNER:-kr8tiv-ai}/kin-web:${KIN_IMAGE_TAG:-latest}
+# - inference: ghcr.io/${GHCR_OWNER:-kr8tiv-ai}/kin-inference:${KIN_IMAGE_TAG:-latest}
+#
+# Required Railway variables (set in service Variables UI; no literals in repo):
+# - JWT_SECRET=<required>
+# - NEXT_PUBLIC_API_URL=<required for web, e.g. https://<api-domain>>
+# - OLLAMA_HOST=<required for api, e.g. inference.railway.internal>
+# - OLLAMA_PORT=11434
+# Optional bot variables when bot routes are enabled:
+# - TELEGRAM_BOT_TOKEN
+# - OWNER_TELEGRAM_ID
+#
+# Contract notes:
+# - Canonical health proof path is /health (never /health/live)
+# - Runtime ports: api=3002, web=3001, inference=11434
+# - For immutable rollouts, switch KIN_IMAGE_TAG from latest to sha-<7hex>
+
+[deploy]
+healthcheckPath = "/health"
+healthcheckTimeout = 300
+numReplicas = 1
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
