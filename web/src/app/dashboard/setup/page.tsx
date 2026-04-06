@@ -12,10 +12,25 @@ import { cn } from '@/lib/utils';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import type { InstallerStatusResponse } from '@/lib/types';
+import type { InstallerStatusResponse, CompletionStatusResponse, User } from '@/lib/types';
 import { phaseToPlainLanguage, recoveryActionsForStatus } from '@/lib/installer-ui';
 import type { WizardStatus } from '@/lib/setup-wizard-ui';
-import { stepStatusToBadgeColor, stepStatusToLabel } from '@/lib/setup-wizard-ui';
+import {
+  canCompleteWizard,
+  getBlockingSummary,
+  getNextActionLabels,
+  stepStatusToBadgeColor,
+  stepStatusToLabel,
+} from '@/lib/setup-wizard-ui';
+import {
+  gateStatusToBadgeColor,
+  gateStatusToLabel,
+  progressToPercentage,
+  getGateRecoveryLabels,
+  canCompleteDeployment,
+  getOverallBlockingSummary,
+} from '@/lib/completion-ui';
+import { useAuth } from '@/providers/AuthProvider';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -105,70 +120,54 @@ function installerBadgeColor(
 }
 
 // ---------------------------------------------------------------------------
-// Integration item
-// ---------------------------------------------------------------------------
-
-function IntegrationRow({
-  emoji,
-  title,
-  description,
-  status,
-  statusColor,
-}: {
-  emoji: string;
-  title: string;
-  description: string;
-  status: string;
-  statusColor: 'cyan' | 'gold' | 'muted';
-}) {
-  return (
-    <div className="flex items-center gap-4 rounded-xl border border-white/5 bg-white/[0.02] px-5 py-4 transition-colors hover:bg-white/[0.04]">
-      <span className="text-2xl">{emoji}</span>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-white/80">{title}</p>
-        <p className="text-xs text-white/40 mt-0.5">{description}</p>
-      </div>
-      <Badge color={statusColor} className="shrink-0">
-        {status}
-      </Badge>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
 // Main Page
 // ---------------------------------------------------------------------------
 
 export default function SetupPage() {
+  const { token, login } = useAuth();
   const [ollamaOnline, setOllamaOnline] = useState<boolean | null>(null);
   const [modelReady, setModelReady] = useState<boolean>(false);
   const [installerStatus, setInstallerStatus] =
     useState<InstallerStatusResponse | null>(null);
   const [wizardStatus, setWizardStatus] = useState<WizardStatus | null>(null);
+  const [completionStatus, setCompletionStatus] =
+    useState<CompletionStatusResponse | null>(null);
+  const [completionError, setCompletionError] = useState<string | null>(null);
   const [checking, setChecking] = useState(true);
   const [installerActionBusy, setInstallerActionBusy] = useState(false);
+  const [wizardActionBusy, setWizardActionBusy] = useState(false);
+  const [wizardNotice, setWizardNotice] = useState<string | null>(null);
+  const [wizardError, setWizardError] = useState<string | null>(null);
+  const [completionActionBusy, setCompletionActionBusy] = useState(false);
+  const [completionNotice, setCompletionNotice] = useState<string | null>(null);
+  const [completionActionError, setCompletionActionError] = useState<string | null>(null);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [selectedModel, setSelectedModel] = useState('qwen3:32b');
 
-  // Check connection + installer status on mount
+  // Check connection + installer + wizard + completion status on mount
   const checkStatus = useCallback(async () => {
     setChecking(true);
     try {
-      const [ollamaData, installerData, wizardData] = await Promise.all([
+      const [ollamaData, installerData, wizardData, completionData] = await Promise.all([
         kinApi.get<ModelStatus>('/health/ollama'),
         kinApi.get<InstallerStatusResponse>('/installer/status'),
         kinApi.get<WizardStatus>('/setup-wizard/status'),
+        kinApi.get<CompletionStatusResponse>('/completion/status'),
       ]);
 
       setOllamaOnline(ollamaData?.online ?? false);
       setModelReady(ollamaData?.hasModel ?? false);
       setInstallerStatus(installerData);
       setWizardStatus(wizardData);
+      setCompletionStatus(completionData);
+      setCompletionError(null);
     } catch {
       setOllamaOnline(false);
       setModelReady(false);
       setInstallerStatus(null);
       setWizardStatus(null);
+      setCompletionStatus(null);
+      setCompletionError('Failed to load setup status');
     } finally {
       setChecking(false);
     }
@@ -198,6 +197,78 @@ export default function SetupPage() {
     },
     [checkStatus],
   );
+
+  const completeWizard = useCallback(async () => {
+    if (!wizardStatus || !canCompleteWizard(wizardStatus)) {
+      setWizardError(
+        wizardStatus?.completion?.reason ?? 'Please resolve blocking setup steps first.',
+      );
+      return;
+    }
+
+    setWizardActionBusy(true);
+    setWizardNotice(null);
+    setWizardError(null);
+
+    try {
+      const response = await kinApi.post<{
+        success: boolean;
+        isComplete: boolean;
+      }>('/setup-wizard/complete', { confirmed: true });
+
+      if (!response.success || !response.isComplete) {
+        setWizardError('Setup completion was not accepted. Please retry.');
+      } else {
+        setWizardNotice('Setup marked complete. You can continue in the dashboard.');
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to complete setup';
+      setWizardError(message);
+    } finally {
+      setWizardActionBusy(false);
+      await checkStatus();
+    }
+  }, [checkStatus, wizardStatus]);
+
+  const completeDeployment = useCallback(async () => {
+    if (!completionStatus || !canCompleteDeployment(completionStatus)) {
+      setCompletionActionError('Please resolve all setup gates first.');
+      return;
+    }
+
+    setCompletionActionBusy(true);
+    setCompletionNotice(null);
+    setCompletionActionError(null);
+
+    try {
+      const response = await kinApi.post<{
+        success: boolean;
+        error?: string;
+      }>('/completion/complete');
+
+      if (!response.success) {
+        setCompletionActionError(response.error ?? 'Completion was not accepted. Please retry.');
+      } else {
+        setCompletionNotice('Setup complete! Your KIN is fully configured.');
+
+        // Refresh auth state so deploymentComplete propagates across the app
+        try {
+          const verifyResponse = await kinApi.get<{ user: User; valid: boolean }>('/auth/verify');
+          if (verifyResponse.valid && verifyResponse.user && token) {
+            login(token, verifyResponse.user);
+          }
+        } catch {
+          // Auth refresh is best-effort — page status still reflects truth
+        }
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to complete setup';
+      setCompletionActionError(message);
+    } finally {
+      setCompletionActionBusy(false);
+      await checkStatus();
+    }
+  }, [checkStatus, completionStatus, token, login]);
 
   useEffect(() => {
     checkStatus();
@@ -235,6 +306,209 @@ export default function SetupPage() {
           to connect your local AI brain and unlock all the cool features.
         </p>
       </div>
+
+      {/* ------------------------------------------------------------------ */}
+      {/* 0. Unified Completion Progress                                       */}
+      {/* ------------------------------------------------------------------ */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, delay: 0.1 }}
+      >
+        <GlassCard className="p-6" hover={false}>
+          <div className="flex items-center justify-between mb-4 gap-3">
+            <h2 className="font-display text-lg font-semibold text-white">
+              Setup Progress
+            </h2>
+            {completionStatus && (
+              <Badge color={completionStatus.overallComplete ? 'cyan' : 'gold'}>
+                {completionStatus.overallComplete ? 'Complete' : 'In Progress'}
+              </Badge>
+            )}
+          </div>
+
+          {checking && !completionStatus ? (
+            <div className="space-y-3 animate-pulse">
+              <div className="h-4 w-3/4 rounded bg-white/5" />
+              <div className="h-2 w-full rounded-full bg-white/5" />
+              <div className="h-12 rounded-xl bg-white/[0.02]" />
+            </div>
+          ) : completionError && !completionStatus ? (
+            <div className="rounded-xl border border-magenta/20 bg-magenta/5 px-5 py-4">
+              <p className="text-sm text-magenta/80">{completionError}</p>
+              <Button variant="outline" size="sm" className="mt-3" onClick={checkStatus} disabled={checking}>
+                Retry
+              </Button>
+            </div>
+          ) : completionStatus ? (
+            <div className="space-y-4">
+              {/* Progress summary + bar */}
+              <div className="space-y-2">
+                <p className="text-sm text-white/70">
+                  {completionStatus.progress.summary}
+                </p>
+                <div className="h-2 w-full rounded-full bg-white/5 overflow-hidden">
+                  <motion.div
+                    className="h-full rounded-full bg-gradient-to-r from-cyan to-cyan/70"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${progressToPercentage(completionStatus.progress)}%` }}
+                    transition={{ duration: 0.6, ease: 'easeOut' }}
+                  />
+                </div>
+              </div>
+
+              {/* Per-gate status list */}
+              <div className="space-y-3">
+                {completionStatus.gates.map((gate) => (
+                  <div
+                    key={gate.id}
+                    className="rounded-xl border border-white/5 bg-white/[0.02] px-5 py-4 transition-colors"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-white/80">{gate.label}</p>
+                        {!gate.ready && (
+                          <p className="text-xs text-white/45 mt-1">{gate.description}</p>
+                        )}
+                      </div>
+                      <Badge color={gateStatusToBadgeColor(gate.ready)}>
+                        {gateStatusToLabel(gate.ready)}
+                      </Badge>
+                    </div>
+
+                    {!gate.ready && gate.recoveryActions.length > 0 && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {getGateRecoveryLabels(gate.recoveryActions).map((recovery) => {
+                          if (recovery.action === 'retry') {
+                            return (
+                              <Button
+                                key={`${gate.id}-${recovery.action}`}
+                                variant="outline"
+                                size="sm"
+                                onClick={checkStatus}
+                                disabled={checking}
+                              >
+                                {recovery.label}
+                              </Button>
+                            );
+                          }
+
+                          if (recovery.action === 'open-setup-wizard') {
+                            return (
+                              <Button
+                                key={`${gate.id}-${recovery.action}`}
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  const wizardSection = document.getElementById('setup-wizard-section');
+                                  wizardSection?.scrollIntoView({ behavior: 'smooth' });
+                                }}
+                              >
+                                {recovery.label}
+                              </Button>
+                            );
+                          }
+
+                          if (recovery.action === 'contact-support') {
+                            return (
+                              <Button
+                                key={`${gate.id}-${recovery.action}`}
+                                variant="ghost"
+                                size="sm"
+                                href="/dashboard/help"
+                              >
+                                {recovery.label}
+                              </Button>
+                            );
+                          }
+
+                          if (recovery.action === 'check-deploy-status' || recovery.action === 'retry-deploy') {
+                            return (
+                              <Button
+                                key={`${gate.id}-${recovery.action}`}
+                                variant="outline"
+                                size="sm"
+                                onClick={checkStatus}
+                                disabled={checking}
+                              >
+                                {recovery.label}
+                              </Button>
+                            );
+                          }
+
+                          if (recovery.action === 'restart') {
+                            return (
+                              <Button
+                                key={`${gate.id}-${recovery.action}`}
+                                variant="ghost"
+                                size="sm"
+                                onClick={checkStatus}
+                                disabled={checking}
+                              >
+                                {recovery.label}
+                              </Button>
+                            );
+                          }
+
+                          return (
+                            <span
+                              key={`${gate.id}-${recovery.action}`}
+                              className="rounded-md border border-white/10 bg-white/[0.02] px-3 py-1.5 text-xs text-white/50"
+                            >
+                              {recovery.label}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Completion button */}
+              <div className="rounded-xl border border-white/5 bg-white/[0.02] px-5 py-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium text-white/80">
+                      {completionStatus.overallComplete
+                        ? 'Your KIN setup is complete!'
+                        : 'Mark Setup Complete'}
+                    </p>
+                    <p className="text-xs text-white/45 mt-1">
+                      {completionStatus.overallComplete
+                        ? 'All setup gates passed. Head to the dashboard to start chatting.'
+                        : getOverallBlockingSummary(completionStatus)}
+                    </p>
+                  </div>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    disabled={
+                      completionActionBusy ||
+                      completionStatus.overallComplete ||
+                      !canCompleteDeployment(completionStatus)
+                    }
+                    onClick={completeDeployment}
+                  >
+                    {completionActionBusy
+                      ? 'Completing...'
+                      : completionStatus.overallComplete
+                      ? '\u2713 Setup Complete'
+                      : 'Mark Setup Complete'}
+                  </Button>
+                </div>
+
+                {completionNotice && (
+                  <p className="text-xs text-cyan mt-3">{completionNotice}</p>
+                )}
+                {completionActionError && (
+                  <p className="text-xs text-magenta mt-3">{completionActionError}</p>
+                )}
+              </div>
+            </div>
+          ) : null}
+        </GlassCard>
+      </motion.div>
 
       {/* ------------------------------------------------------------------ */}
       {/* 1. Installer Progress                                               */}
@@ -448,29 +722,137 @@ export default function SetupPage() {
       {/* ------------------------------------------------------------------ */}
       {/* 3. Integrations / Setup Wizard Status                               */}
       {/* ------------------------------------------------------------------ */}
+      <div id="setup-wizard-section">
       <GlassCard className="p-6" hover={false}>
-        <h2 className="font-display text-lg font-semibold text-white mb-2">
-          Setup Wizard {'\uD83D\uDD17'}
-        </h2>
-        <p className="text-xs text-white/40 mb-5">
+        <div className="flex items-center justify-between gap-3 mb-2">
+          <h2 className="font-display text-lg font-semibold text-white">
+            Setup Wizard {'\uD83D\uDD17'}
+          </h2>
+          {wizardStatus && (
+            <Badge color={wizardStatus.isComplete ? 'cyan' : 'gold'}>
+              {wizardStatus.isComplete ? 'Complete' : 'In Progress'}
+            </Badge>
+          )}
+        </div>
+
+        <p className="text-xs text-white/40 mb-4">
           Track your setup progress and complete pending steps.
         </p>
 
         {wizardStatus?.steps ? (
           <div className="space-y-3">
+            <div className="rounded-xl border border-white/5 bg-white/[0.02] px-5 py-4">
+              <p className="text-sm text-white/70">{getBlockingSummary(wizardStatus)}</p>
+              {!canCompleteWizard(wizardStatus) && wizardStatus.completion?.reason && (
+                <p className="text-xs text-gold/80 mt-2">{wizardStatus.completion.reason}</p>
+              )}
+            </div>
+
             {wizardStatus.steps.map((step) => (
               <div
                 key={step.id}
-                className="flex items-center gap-4 rounded-xl border border-white/5 bg-white/[0.02] px-5 py-4 transition-colors hover:bg-white/[0.04]"
+                className="rounded-xl border border-white/5 bg-white/[0.02] px-5 py-4 transition-colors hover:bg-white/[0.04]"
               >
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white/80">{step.label}</p>
+                <div className="flex items-center gap-4">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-white/80">{step.label}</p>
+                    <p className="text-xs text-white/45 mt-1">{step.message}</p>
+                  </div>
+                  <Badge color={stepStatusToBadgeColor(step.status)}>
+                    {stepStatusToLabel(step.status)}
+                  </Badge>
                 </div>
-                <Badge color={stepStatusToBadgeColor(step.status)}>
-                  {stepStatusToLabel(step.status)}
-                </Badge>
+
+                {step.nextActions.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {getNextActionLabels(step.nextActions).map((action) => {
+                      if (action.action === 'retry') {
+                        return (
+                          <Button
+                            key={`${step.id}-${action.action}`}
+                            variant="outline"
+                            size="sm"
+                            onClick={checkStatus}
+                            disabled={checking || wizardActionBusy}
+                          >
+                            {action.label}
+                          </Button>
+                        );
+                      }
+
+                      if (action.action === 'open-provider') {
+                        return (
+                          <Button
+                            key={`${step.id}-${action.action}`}
+                            variant="ghost"
+                            size="sm"
+                            href="/dashboard/help"
+                          >
+                            {action.label}
+                          </Button>
+                        );
+                      }
+
+                      if (action.action === 'contact-support') {
+                        return (
+                          <Button
+                            key={`${step.id}-${action.action}`}
+                            variant="ghost"
+                            size="sm"
+                            href="/dashboard/help"
+                          >
+                            {action.label}
+                          </Button>
+                        );
+                      }
+
+                      return (
+                        <span
+                          key={`${step.id}-${action.action}`}
+                          className="rounded-md border border-white/10 bg-white/[0.02] px-3 py-1.5 text-xs text-white/50"
+                        >
+                          {action.label}
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             ))}
+
+            <div className="rounded-xl border border-white/5 bg-white/[0.02] px-5 py-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium text-white/80">Finish first-run setup</p>
+                  <p className="text-xs text-white/45 mt-1">
+                    Complete this after required blocking steps are ready.
+                  </p>
+                </div>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  disabled={
+                    wizardActionBusy ||
+                    wizardStatus.isComplete ||
+                    !canCompleteWizard(wizardStatus)
+                  }
+                  onClick={completeWizard}
+                >
+                  {wizardActionBusy
+                    ? 'Completing...'
+                    : wizardStatus.isComplete
+                    ? 'Setup Complete'
+                    : 'Mark Setup Complete'}
+                </Button>
+              </div>
+
+              {wizardNotice && (
+                <p className="text-xs text-cyan mt-3">{wizardNotice}</p>
+              )}
+              {wizardError && (
+                <p className="text-xs text-magenta mt-3">{wizardError}</p>
+              )}
+            </div>
           </div>
         ) : (
           <div className="rounded-xl border border-white/5 bg-white/[0.02] px-5 py-6 text-center">
@@ -480,6 +862,7 @@ export default function SetupPage() {
           </div>
         )}
       </GlassCard>
+      </div>
 
       {/* ------------------------------------------------------------------ */}
       {/* 4. Advanced (collapsible)                                           */}

@@ -8,6 +8,7 @@ const TOKEN_COOKIE = 'kin_token';
 
 export class KinApiClient {
   private baseUrl: string;
+  private refreshPromise: Promise<boolean> | null = null;
 
   constructor(baseUrl?: string) {
     // Always use /api prefix in the browser — Next.js rewrites handle the proxy.
@@ -24,6 +25,49 @@ export class KinApiClient {
     if (typeof window !== 'undefined') {
       window.location.href = '/login';
     }
+  }
+
+  /**
+   * Attempt to refresh the JWT token. Returns true if refresh succeeded.
+   * Deduplicates concurrent refresh attempts via a shared promise.
+   */
+  private async tryRefreshToken(): Promise<boolean> {
+    if (this.refreshPromise) return this.refreshPromise;
+
+    this.refreshPromise = (async () => {
+      const token = this.getToken();
+      if (!token) return false;
+
+      try {
+        const res = await fetch(`${this.baseUrl}/auth/refresh`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!res.ok) return false;
+
+        const data = await res.json();
+        if (data.token) {
+          Cookies.set(TOKEN_COOKIE, data.token, {
+            secure: typeof window !== 'undefined' && window.location.protocol === 'https:',
+            sameSite: 'lax',
+            expires: 2 / 24, // 2 hours in days
+            path: '/',
+          });
+          return true;
+        }
+        return false;
+      } catch {
+        return false;
+      } finally {
+        this.refreshPromise = null;
+      }
+    })();
+
+    return this.refreshPromise;
   }
 
   private async request<T>(
@@ -48,9 +92,46 @@ export class KinApiClient {
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
 
-    if (response.status === 401) {
+    // On 401, try refreshing the token once before giving up
+    if (response.status === 401 && path !== '/auth/refresh') {
+      const refreshed = await this.tryRefreshToken();
+      if (refreshed) {
+        // Retry the original request with the new token
+        const newToken = this.getToken();
+        const retryHeaders: Record<string, string> = {};
+        if (newToken) retryHeaders['Authorization'] = `Bearer ${newToken}`;
+        if (body !== undefined) retryHeaders['Content-Type'] = 'application/json';
+
+        const retryResponse = await fetch(`${this.baseUrl}${path}`, {
+          method,
+          headers: retryHeaders,
+          body: body !== undefined ? JSON.stringify(body) : undefined,
+        });
+
+        if (retryResponse.status === 401) {
+          this.handleUnauthorized();
+          throw new Error('Unauthorized');
+        }
+
+        if (retryResponse.status === 204) return undefined as T;
+        if (!retryResponse.ok) {
+          let message = `Request failed: ${retryResponse.status}`;
+          try { const e = await retryResponse.json(); if (e.error) message = e.error; } catch {}
+          throw new Error(message);
+        }
+        return retryResponse.json() as Promise<T>;
+      }
+
       this.handleUnauthorized();
       throw new Error('Unauthorized');
+    }
+
+    if (response.status === 429) {
+      const retryAfter = response.headers.get('Retry-After');
+      const seconds = retryAfter ? parseInt(retryAfter, 10) : 60;
+      throw new Error(
+        `You're sending messages too fast. Please wait ${seconds} second${seconds !== 1 ? 's' : ''} and try again.`,
+      );
     }
 
     if (!response.ok) {

@@ -46,10 +46,14 @@ import installerRoutes from './routes/installer.js';
 import setupWizardRoutes from './routes/setup-wizard.js';
 import completionRoutes from './routes/completion.js';
 import rateLimitRoutes from './routes/rate-limit.js';
-import fleetRoutes from './routes/fleet.js';
+import fleetRoutes from '../fleet/routes.js';
 import exportRoutes from './routes/export.js';
 import importRoutes from './routes/import.js';
 import communityRoutes from './routes/community.js';
+
+// Fleet imports
+import { FleetDb } from '../fleet/db.js';
+import { ContainerManager } from '../fleet/container-manager.js';
 
 // Inference imports for WebSocket streaming chat
 import crypto from 'crypto';
@@ -185,6 +189,26 @@ export async function createServer(config: ApiConfig = {}) {
     } catch { /* tables may not exist yet */ }
   }
 
+  // --------------------------------------------------------------------------
+  // Fleet control plane initialisation
+  // --------------------------------------------------------------------------
+
+  const fleetDbPath = path.join(
+    path.dirname(resolvedConfig.databasePath),
+    'fleet.db',
+  );
+  const fleetDb = new FleetDb(fleetDbPath);
+  fleetDb.init();
+
+  const containerManager = new ContainerManager({
+    fleetDb,
+    logger: {
+      info: (msg, ctx) => fastify.log.info(ctx ?? {}, `[fleet] ${msg}`),
+      warn: (msg, ctx) => fastify.log.warn(ctx ?? {}, `[fleet] ${msg}`),
+      error: (msg, ctx) => fastify.log.error(ctx ?? {}, `[fleet] ${msg}`),
+    },
+  });
+
   // Store context
   fastify.decorate('context', {
     db,
@@ -280,7 +304,7 @@ export async function createServer(config: ApiConfig = {}) {
     await protectedFastify.register(setupWizardRoutes);
     await protectedFastify.register(completionRoutes);
     await protectedFastify.register(rateLimitRoutes);
-    await protectedFastify.register(fleetRoutes);
+    await protectedFastify.register(fleetRoutes, { fleetDb, containerManager });
     await protectedFastify.register(exportRoutes);
     await protectedFastify.register(importRoutes);
     await protectedFastify.register(communityRoutes);
@@ -395,6 +419,7 @@ export async function createServer(config: ApiConfig = {}) {
     for (const handler of closeHandlers) {
       await handler();
     }
+    fleetDb.close();
     db.close();
   });
 

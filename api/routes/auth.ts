@@ -132,7 +132,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
     config: { rateLimit: { max: 10, timeWindow: '1 minute' } },
   } as any, async (request, reply: FastifyReply) => {
     const telegramData = request.body;
-    
+
     // Verify Telegram hash
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
     if (!botToken) {
@@ -192,7 +192,6 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
     // Generate JWT (expiry configured at server level)
     const token = fastify.jwt.sign({
       userId: user.id,
-      telegramId: user.telegram_id,
       tier: user.tier,
     });
 
@@ -200,11 +199,14 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
       token,
       user: {
         id: user.id,
-        telegramId: user.telegram_id,
+        telegramId: user.telegram_id ? String(user.telegram_id) : null,
         username: user.username,
         firstName: user.first_name,
         lastName: user.last_name,
         tier: user.tier,
+        email: user.email ?? null,
+        walletAddress: user.wallet_address ?? null,
+        authProvider: user.auth_provider ?? 'telegram',
       },
     };
   });
@@ -232,7 +234,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
         userId: decoded.userId,
         user: {
           id: user.id,
-          telegramId: user.telegram_id,
+          telegramId: user.telegram_id ? String(user.telegram_id) : null,
           username: user.username,
           firstName: user.first_name,
           lastName: user.last_name,
@@ -300,15 +302,12 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
       }
 
       if (!user) {
-        // Create new user — use a negative synthetic telegram_id to satisfy NOT NULL constraint
         const userId = `user-${crypto.randomUUID()}`;
-        const syntheticTelegramId = -(Date.now() % 2_000_000_000);
         fastify.context.db.prepare(`
-          INSERT INTO users (id, telegram_id, first_name, last_name, google_id, email, auth_provider)
-          VALUES (?, ?, ?, ?, ?, ?, 'google')
+          INSERT INTO users (id, first_name, last_name, google_id, email, auth_provider)
+          VALUES (?, ?, ?, ?, ?, 'google')
         `).run(
           userId,
-          syntheticTelegramId,
           googleUser.given_name,
           googleUser.family_name ?? null,
           googleUser.sub,
@@ -426,12 +425,11 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
 
       if (!user) {
         const userId = `user-${crypto.randomUUID()}`;
-        const syntheticTelegramId = -(Date.now() % 2_000_000_000 + Math.floor(Math.random() * 1000));
         const shortAddr = `${walletAddress.slice(0, 4)}...${walletAddress.slice(-4)}`;
         fastify.context.db.prepare(`
-          INSERT INTO users (id, telegram_id, first_name, wallet_address, auth_provider)
-          VALUES (?, ?, ?, ?, 'solana')
-        `).run(userId, syntheticTelegramId, shortAddr, walletAddress);
+          INSERT INTO users (id, first_name, wallet_address, auth_provider)
+          VALUES (?, ?, ?, 'solana')
+        `).run(userId, shortAddr, walletAddress);
 
         user = fastify.context.db.prepare(
           `SELECT * FROM users WHERE id = ?`
@@ -440,7 +438,6 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
 
       const token = fastify.jwt.sign({
         userId: user.id,
-        telegramId: user.telegram_id,
         tier: user.tier,
       });
 
@@ -448,7 +445,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
         token,
         user: {
           id: user.id,
-          telegramId: String(user.telegram_id),
+          telegramId: user.telegram_id ? String(user.telegram_id) : null,
           username: user.username,
           firstName: user.first_name,
           lastName: user.last_name,
@@ -505,12 +502,11 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
       const passwordHash = `${salt.toString('hex')}:${hash.toString('hex')}`;
 
       const userId = `user-${crypto.randomUUID()}`;
-      const syntheticTelegramId = -(Date.now() % 2_000_000_000 + Math.floor(Math.random() * 1000));
 
       fastify.context.db.prepare(`
-        INSERT INTO users (id, telegram_id, first_name, email, password_hash, auth_provider)
-        VALUES (?, ?, ?, ?, ?, 'email')
-      `).run(userId, syntheticTelegramId, firstName, normalizedEmail, passwordHash);
+        INSERT INTO users (id, first_name, email, password_hash, auth_provider)
+        VALUES (?, ?, ?, ?, 'email')
+      `).run(userId, firstName, normalizedEmail, passwordHash);
 
       const user = fastify.context.db.prepare(
         `SELECT * FROM users WHERE id = ?`
@@ -518,7 +514,6 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
 
       const token = fastify.jwt.sign({
         userId: user.id,
-        telegramId: user.telegram_id,
         tier: user.tier,
       });
 
@@ -526,7 +521,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
         token,
         user: {
           id: user.id,
-          telegramId: String(user.telegram_id),
+          telegramId: null,
           username: user.username,
           firstName: user.first_name,
           lastName: user.last_name,
@@ -585,7 +580,6 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
 
       const token = fastify.jwt.sign({
         userId: user.id,
-        telegramId: user.telegram_id,
         tier: user.tier,
       });
 
@@ -593,7 +587,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
         token,
         user: {
           id: user.id,
-          telegramId: String(user.telegram_id),
+          telegramId: user.telegram_id ? String(user.telegram_id) : null,
           username: user.username,
           firstName: user.first_name,
           lastName: user.last_name,
@@ -754,9 +748,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
       ).get(xUser.id) as any;
 
       if (!user) {
-        // Create new user with synthetic negative telegram_id
         const userId = `user-${crypto.randomUUID()}`;
-        const syntheticTelegramId = -(Date.now() % 2_000_000_000 + Math.floor(Math.random() * 1000));
 
         // Split name into first/last
         const nameParts = xUser.name.split(' ');
@@ -764,9 +756,9 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
         const lastName = nameParts.slice(1).join(' ') || null;
 
         fastify.context.db.prepare(`
-          INSERT INTO users (id, telegram_id, first_name, last_name, username, x_id, auth_provider)
-          VALUES (?, ?, ?, ?, ?, ?, 'x')
-        `).run(userId, syntheticTelegramId, firstName, lastName, xUser.username, xUser.id);
+          INSERT INTO users (id, first_name, last_name, username, x_id, auth_provider)
+          VALUES (?, ?, ?, ?, ?, 'x')
+        `).run(userId, firstName, lastName, xUser.username, xUser.id);
 
         user = fastify.context.db.prepare(
           `SELECT * FROM users WHERE id = ?`
@@ -775,7 +767,6 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
 
       const token = fastify.jwt.sign({
         userId: user.id,
-        telegramId: user.telegram_id,
         tier: user.tier,
       });
 
@@ -783,7 +774,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
         token,
         user: {
           id: user.id,
-          telegramId: String(user.telegram_id),
+          telegramId: user.telegram_id ? String(user.telegram_id) : null,
           username: user.username,
           firstName: user.first_name,
           lastName: user.last_name,
@@ -794,6 +785,82 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
         },
       };
     }
+  );
+
+  // ========================================================================
+  // JWT Refresh — Exchange a valid or recently-expired token for a new one
+  // ========================================================================
+  fastify.post(
+    '/auth/refresh',
+    {
+      config: { rateLimit: { max: 20, timeWindow: '1 minute' } },
+    } as any,
+    async (request, reply: FastifyReply) => {
+      try {
+        // Try to verify — also accept tokens expired within the last 7 days
+        let decoded: { userId: string; tier?: string };
+        try {
+          decoded = await request.jwtVerify() as { userId: string; tier?: string };
+        } catch (err: any) {
+          // If token is expired but otherwise valid, decode without verification
+          if (err?.code === 'FST_JWT_AUTHORIZATION_TOKEN_EXPIRED') {
+            const payload = fastify.jwt.decode(
+              request.headers.authorization?.replace('Bearer ', '') ?? '',
+            ) as { userId: string; tier?: string; exp?: number } | null;
+
+            if (!payload?.userId || !payload.exp) {
+              reply.status(401);
+              return { error: 'Invalid token' };
+            }
+
+            // Only allow refresh within 7 days of expiry
+            const expiredAgo = Date.now() / 1000 - payload.exp;
+            if (expiredAgo > 7 * 24 * 3600) {
+              reply.status(401);
+              return { error: 'Token too old to refresh. Please sign in again.' };
+            }
+
+            decoded = { userId: payload.userId, tier: payload.tier };
+          } else {
+            reply.status(401);
+            return { error: 'Invalid token' };
+          }
+        }
+
+        // Verify user still exists
+        const user = fastify.context.db.prepare(
+          `SELECT * FROM users WHERE id = ?`,
+        ).get(decoded.userId) as any;
+
+        if (!user) {
+          reply.status(401);
+          return { error: 'User not found' };
+        }
+
+        const token = fastify.jwt.sign({
+          userId: user.id,
+          tier: user.tier,
+        });
+
+        return {
+          token,
+          user: {
+            id: user.id,
+            telegramId: user.telegram_id ? String(user.telegram_id) : null,
+            username: user.username,
+            firstName: user.first_name,
+            lastName: user.last_name,
+            tier: user.tier,
+            email: user.email ?? null,
+            walletAddress: user.wallet_address ?? null,
+            authProvider: user.auth_provider ?? 'telegram',
+          },
+        };
+      } catch {
+        reply.status(401);
+        return { error: 'Token refresh failed' };
+      }
+    },
   );
 
   // Development login (skip in production)
@@ -851,7 +918,6 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
 
         const token = fastify.jwt.sign({
           userId: user.id,
-          telegramId: user.telegram_id,
           tier: user.tier,
         });
 
@@ -859,11 +925,14 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
           token,
           user: {
             id: user.id,
-            telegramId: user.telegram_id,
+            telegramId: user.telegram_id ? String(user.telegram_id) : null,
             username: user.username,
             firstName: user.first_name,
             lastName: user.last_name,
             tier: user.tier,
+            email: user.email ?? null,
+            walletAddress: user.wallet_address ?? null,
+            authProvider: user.auth_provider ?? 'telegram',
             onboardingComplete: true,
           },
         };

@@ -1,7 +1,10 @@
+export type WizardStepStatus = 'ready' | 'needs-attention' | 'not-configured';
+
 export interface WizardStep {
-  id: string;
+  id: 'keys' | 'telegram' | 'discord' | 'whatsapp';
   label: string;
-  status: 'ready' | 'needs-attention' | 'not-configured';
+  message: string;
+  status: WizardStepStatus;
   blocking: boolean;
   reasonCode: string | null;
   nextActions: string[];
@@ -9,6 +12,11 @@ export interface WizardStep {
 
 export interface WizardStatus {
   steps: WizardStep[];
+  completion?: {
+    persisted: boolean;
+    eligible: boolean;
+    reason: string | null;
+  };
   isComplete: boolean;
 }
 
@@ -40,31 +48,56 @@ export function stepStatusToLabel(status: WizardStep['status']): string {
   }
 }
 
-export function getBlockingSteps(
-  status: WizardStatus,
-): WizardStep[] {
-  return status.steps.filter(step => step.blocking);
+export function getBlockingSteps(status: WizardStatus): WizardStep[] {
+  return status.steps.filter((step) => step.blocking);
+}
+
+export function getBlockingSummary(status: WizardStatus): string {
+  const blockingSteps = getBlockingSteps(status);
+  if (blockingSteps.length === 0) {
+    return 'All blocking setup steps are ready. You can complete setup.';
+  }
+
+  if (blockingSteps.length === 1) {
+    return `${blockingSteps[0]?.label ?? 'A step'} must be fixed before setup can be completed.`;
+  }
+
+  return `${blockingSteps.length} setup steps must be fixed before setup can be completed.`;
+}
+
+function normalizeAction(action: string): string {
+  return action.trim().toLowerCase();
 }
 
 export function getNextActionLabels(
   actions: string[],
 ): { label: string; action: string }[] {
-  return actions.map(action => {
+  return actions.map((rawAction) => {
+    const action = normalizeAction(rawAction);
+
     switch (action) {
       case 'retry':
         return { label: 'Retry', action: 'retry' };
       case 'open provider':
-        return { label: 'Open Settings', action: 'open-provider' };
+      case 'open-provider':
+        return { label: 'Open Provider', action: 'open-provider' };
       case 'contact support':
-        return { label: 'Get Help', action: 'support' };
+      case 'contact-support':
+        return { label: 'Contact Support', action: 'contact-support' };
       default:
-        return { label: action, action };
+        return { label: rawAction, action };
     }
   });
 }
 
-export function isWizardComplete(
-  status: WizardStatus,
-): boolean {
+export function canCompleteWizard(status: WizardStatus): boolean {
+  if (status.completion) {
+    return status.completion.eligible;
+  }
+
+  return getBlockingSteps(status).length === 0;
+}
+
+export function isWizardComplete(status: WizardStatus): boolean {
   return status.isComplete;
 }

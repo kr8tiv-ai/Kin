@@ -29,6 +29,16 @@ declare module '@metaplex-foundation/umi' {
 
 declare module '@metaplex-foundation/mpl-toolbox' {
   export function setComputeUnitLimit(umi: any, params: any): any;
+  export function transferSol(umi: any, params: any): any;
+}
+
+declare module '@metaplex-foundation/mpl-token-metadata' {
+  export function mplTokenMetadata(): any;
+  export function fetchDigitalAsset(umi: any, mint: any): Promise<any>;
+  export function fetchAllDigitalAssetByOwner(umi: any, owner: any): Promise<any[]>;
+  export function createNft(umi: any, params: any): any;
+  export function verifyCollectionV1(umi: any, params: any): any;
+  export function transferV1(umi: any, params: any): any;
 }
 
 declare module 'bs58' {
@@ -121,4 +131,99 @@ declare module '@hapi/boom' {
     output: { statusCode: number; payload: any };
     constructor(message?: string, options?: any);
   }
+}
+
+declare module 'http-proxy-3' {
+  import type { IncomingMessage, ServerResponse } from 'http';
+  import type { Socket } from 'net';
+
+  interface ProxyServerOptions {
+    target?: string | { host: string; port: number };
+    ws?: boolean;
+    xfwd?: boolean;
+    changeOrigin?: boolean;
+    [key: string]: any;
+  }
+
+  interface ProxyServer {
+    web(req: IncomingMessage, res: ServerResponse, opts?: ProxyServerOptions): void;
+    ws(req: IncomingMessage, socket: Socket, head: Buffer, opts?: ProxyServerOptions): void;
+    on(event: string, listener: (...args: any[]) => void): this;
+    close(): void;
+  }
+
+  export function createProxyServer(opts?: ProxyServerOptions): ProxyServer;
+}
+
+declare module 'dockerode' {
+  interface ContainerCreateOptions {
+    Image?: string;
+    name?: string;
+    Cmd?: string[];
+    Env?: string[];
+    ExposedPorts?: Record<string, Record<string, never>>;
+    HostConfig?: {
+      CpuShares?: number;
+      Memory?: number;
+      PortBindings?: Record<string, Array<{ HostPort: string }>>;
+      RestartPolicy?: { Name: string; MaximumRetryCount?: number };
+      NetworkMode?: string;
+      Binds?: string[];
+    };
+    Labels?: Record<string, string>;
+    [key: string]: any;
+  }
+
+  interface ContainerInspectInfo {
+    Id: string;
+    Name: string;
+    State: {
+      Status: string;
+      Running: boolean;
+      Paused: boolean;
+      Restarting: boolean;
+      OOMKilled: boolean;
+      Dead: boolean;
+      Pid: number;
+      ExitCode: number;
+      Error: string;
+      StartedAt: string;
+      FinishedAt: string;
+    };
+    NetworkSettings: {
+      Ports: Record<string, Array<{ HostIp: string; HostPort: string }> | null>;
+    };
+    Config: {
+      Image: string;
+      Labels: Record<string, string>;
+    };
+    [key: string]: any;
+  }
+
+  interface Container {
+    id: string;
+    start(): Promise<void>;
+    stop(opts?: { t?: number }): Promise<void>;
+    remove(opts?: { force?: boolean; v?: boolean }): Promise<void>;
+    inspect(): Promise<ContainerInspectInfo>;
+    stats(opts?: { stream?: boolean }): Promise<any>;
+  }
+
+  interface ImageInfo {
+    Id: string;
+    RepoTags: string[];
+    [key: string]: any;
+  }
+
+  class Docker {
+    constructor(opts?: { socketPath?: string; host?: string; port?: number; protocol?: string });
+    createContainer(opts: ContainerCreateOptions): Promise<Container>;
+    getContainer(id: string): Container;
+    listContainers(opts?: { all?: boolean; filters?: any }): Promise<any[]>;
+    ping(): Promise<string>;
+    pull(image: string, opts?: any): Promise<NodeJS.ReadableStream>;
+    modem: { followProgress(stream: any, onFinished: (err: any, output: any) => void): void };
+  }
+
+  export default Docker;
 }

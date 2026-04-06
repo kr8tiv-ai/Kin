@@ -3,9 +3,30 @@ import type { FastifyInstance } from 'fastify';
 
 let server: FastifyInstance;
 let token = '';
+let userId = '';
+
+const ENV_KEYS = [
+  'TELEGRAM_BOT_TOKEN',
+  'GROQ_API_KEY',
+  'DISCORD_BOT_TOKEN',
+  'DISCORD_CLIENT_ID',
+  'WHATSAPP_AUTH_DIR',
+] as const;
+
+const previousEnv: Record<string, string | undefined> = {};
 
 describe('setup-wizard routes', () => {
   beforeAll(async () => {
+    for (const key of ENV_KEYS) {
+      previousEnv[key] = process.env[key];
+    }
+
+    process.env.TELEGRAM_BOT_TOKEN = 'tg-super-secret-test-token';
+    process.env.GROQ_API_KEY = 'groq-super-secret-test-key';
+    process.env.DISCORD_BOT_TOKEN = 'discord-test-token';
+    process.env.DISCORD_CLIENT_ID = 'discord-app-test-id';
+    process.env.WHATSAPP_AUTH_DIR = '.tmp-whatsapp-auth';
+
     const { createServer } = await import('../api/server.js');
     server = await createServer({
       environment: 'development',
@@ -22,10 +43,20 @@ describe('setup-wizard routes', () => {
       payload: { telegramId: 777001, firstName: 'WizardTest' },
     });
 
-    token = login.json().token;
+    const loginBody = login.json<{ token: string; user: { id: string } }>();
+    token = loginBody.token;
+    userId = loginBody.user.id;
   });
 
   afterAll(async () => {
+    for (const key of ENV_KEYS) {
+      if (previousEnv[key] === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = previousEnv[key];
+      }
+    }
+
     await server.close();
   });
 
@@ -39,7 +70,7 @@ describe('setup-wizard routes', () => {
       expect(response.statusCode).toBe(401);
     });
 
-    it('returns wizard status with auth', async () => {
+    it('returns deterministic step IDs and completion metadata', async () => {
       const response = await server.inject({
         method: 'GET',
         url: '/setup-wizard/status',
@@ -48,45 +79,40 @@ describe('setup-wizard routes', () => {
 
       expect(response.statusCode).toBe(200);
 
-      const body = response.json();
+      const body = response.json<{
+        steps: Array<{ id: string; message: string; nextActions: string[] }>;
+        completion: { persisted: boolean; eligible: boolean; reason: string | null };
+        isComplete: boolean;
+      }>();
 
-      expect(body.steps).toBeDefined();
-      expect(Array.isArray(body.steps)).toBe(true);
-      expect(body.steps.length).toBeGreaterThan(0);
+      expect(body.steps.map((step) => step.id)).toEqual([
+        'keys',
+        'telegram',
+        'discord',
+        'whatsapp',
+      ]);
 
-      const stepIds = body.steps.map((s: any) => s.id);
-      expect(stepIds).toContain('keys');
-      expect(stepIds).toContain('telegram');
-      expect(stepIds).toContain('discord');
-      expect(stepIds).toContain('whatsapp');
+      expect(body.steps.every((step) => typeof step.message === 'string')).toBe(true);
+      expect(body.steps.every((step) => Array.isArray(step.nextActions))).toBe(true);
+      expect(typeof body.completion.persisted).toBe('boolean');
+      expect(typeof body.completion.eligible).toBe('boolean');
+      expect(typeof body.isComplete).toBe('boolean');
     });
 
-    it('includes plain-language labels', async () => {
+    it('never exposes secret values in response body', async () => {
       const response = await server.inject({
         method: 'GET',
         url: '/setup-wizard/status',
         headers: { authorization: `Bearer ${token}` },
       });
 
-      const body = response.json();
-      const labels = body.steps.map((s: any) => s.label);
+      const bodyText = response.body;
 
-      expect(labels.some((l: string) => l.toLowerCase().includes('api key') || l.toLowerCase().includes('key'))).toBe(true);
-    });
-
-    it('never exposes secrets in response', async () => {
-      const response = await server.inject({
-        method: 'GET',
-        url: '/setup-wizard/status',
-        headers: { authorization: `Bearer ${token}` },
-      });
-
-      const bodyText = response.body.toLowerCase();
-
-      expect(bodyText).not.toContain('token=');
-      expect(bodyText).not.toContain('api_key');
-      expect(bodyText).not.toContain('secret');
-      expect(bodyText).not.toContain('sk-');
+      expect(bodyText).not.toContain('tg-super-secret-test-token');
+      expect(bodyText).not.toContain('groq-super-secret-test-key');
+      expect(bodyText.toLowerCase()).not.toContain('token=');
+      expect(bodyText.toLowerCase()).not.toContain('api_key=');
+      expect(bodyText.toLowerCase()).not.toContain('secret=');
     });
   });
 
@@ -100,60 +126,98 @@ describe('setup-wizard routes', () => {
       expect(response.statusCode).toBe(401);
     });
 
-    it('marks wizard complete for authenticated user', async () => {
+    it('rejects malformed completion payload', async () => {
       const response = await server.inject({
         method: 'POST',
         url: '/setup-wizard/complete',
-        headers: { authorization: `Bearer ${token}` },
+        headers: {
+          authorization: `Bearer ${token}`,
+          'content-type': 'application/json',
+        },
+        payload: {},
       });
 
-      expect(response.statusCode).toBe(200);
-
-      const body = response.json();
-      expect(body.success).toBe(true);
+      expect(response.statusCode).toBe(400);
     });
 
-    it('persists completion state', async () => {
-      await server.inject({
+    it('requires explicit confirmation', async () => {
+      const response = await server.inject({
         method: 'POST',
         url: '/setup-wizard/complete',
-        headers: { authorization: `Bearer ${token}` },
+        headers: {
+          authorization: `Bearer ${token}`,
+          'content-type': 'application/json',
+        },
+        payload: { confirmed: false },
       });
 
-      const statusResponse = await server.inject({
-        method: 'GET',
-        url: '/setup-wizard/status',
-        headers: { authorization: `Bearer ${token}` },
-      });
-
-      const body = statusResponse.json();
-      expect(body.isComplete).toBe(true);
+      expect(response.statusCode).toBe(400);
     });
 
-    it('requires keys to be ready before completion', async () => {
+    it('marks completion state and persists it for the authenticated user', async () => {
+      const completeResponse = await server.inject({
+        method: 'POST',
+        url: '/setup-wizard/complete',
+        headers: {
+          authorization: `Bearer ${token}`,
+          'content-type': 'application/json',
+        },
+        payload: { confirmed: true },
+      });
+
+      expect(completeResponse.statusCode).toBe(200);
+      const completeBody = completeResponse.json<{ success: boolean; isComplete: boolean }>();
+      expect(completeBody.success).toBe(true);
+      expect(completeBody.isComplete).toBe(true);
+
+      const persisted = server.context.db
+        .prepare('SELECT setup_wizard_complete FROM user_preferences WHERE user_id = ?')
+        .get(userId) as { setup_wizard_complete: number } | undefined;
+
+      expect(persisted?.setup_wizard_complete).toBe(1);
+
       const statusResponse = await server.inject({
         method: 'GET',
         url: '/setup-wizard/status',
         headers: { authorization: `Bearer ${token}` },
       });
 
-      const status = statusResponse.json();
-      const keysStep = status.steps.find((s: any) => s.id === 'keys');
-      
-      if (keysStep?.status !== 'ready') {
-        const completeResponse = await server.inject({
-          method: 'POST',
-          url: '/setup-wizard/complete',
-          headers: { authorization: `Bearer ${token}` },
-        });
+      const status = statusResponse.json<{
+        completion: { persisted: boolean; eligible: boolean };
+        isComplete: boolean;
+      }>();
 
-        expect(completeResponse.statusCode).toBe(400);
+      expect(status.completion.persisted).toBe(true);
+      expect(status.completion.eligible).toBe(true);
+      expect(status.isComplete).toBe(true);
+    });
+
+    it('fails closed when a required key is missing', async () => {
+      const previousGroq = process.env.GROQ_API_KEY;
+      delete process.env.GROQ_API_KEY;
+
+      const response = await server.inject({
+        method: 'POST',
+        url: '/setup-wizard/complete',
+        headers: {
+          authorization: `Bearer ${token}`,
+          'content-type': 'application/json',
+        },
+        payload: { confirmed: true },
+      });
+
+      if (previousGroq === undefined) {
+        delete process.env.GROQ_API_KEY;
+      } else {
+        process.env.GROQ_API_KEY = previousGroq;
       }
+
+      expect(response.statusCode).toBe(400);
     });
   });
 
-  describe('auth verify integration', () => {
-    it('includes setupWizardComplete in /auth/verify response', async () => {
+  describe('/auth/verify integration', () => {
+    it('includes setupWizardComplete in the auth payload', async () => {
       const response = await server.inject({
         method: 'GET',
         url: '/auth/verify',
@@ -162,8 +226,7 @@ describe('setup-wizard routes', () => {
 
       expect(response.statusCode).toBe(200);
 
-      const body = response.json();
-      expect(body.user).toBeDefined();
+      const body = response.json<{ user: { setupWizardComplete: boolean } }>();
       expect(typeof body.user.setupWizardComplete).toBe('boolean');
     });
   });

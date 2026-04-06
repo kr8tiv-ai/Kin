@@ -1,0 +1,45 @@
+# Docker Compose — Traefik Reverse Proxy + Wake Proxy
+# Provides subdomain-based routing for *.kin.kr8tiv.ai fleet instances.
+
+services:
+  traefik:
+    image: traefik:v3.2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./dynamic.yml:/etc/traefik/dynamic.yml:ro
+      - letsencrypt:/letsencrypt
+    environment:
+      - CF_API_EMAIL=${CF_API_EMAIL}
+      - CF_DNS_API_TOKEN=${CF_DNS_API_TOKEN}
+    networks:
+      - kin-fleet
+
+  wake-proxy:
+    build:
+      context: ../../
+      dockerfile: fleet/Dockerfile.wake-proxy
+    restart: unless-stopped
+    ports:
+      - "8090:8090"
+    environment:
+      - FLEET_DB_PATH=/data/fleet.db
+      - WAKE_PROXY_PORT=8090
+    volumes:
+      - fleet-data:/data
+    depends_on:
+      - traefik
+    networks:
+      - kin-fleet
+
+volumes:
+  letsencrypt:
+  fleet-data:
+
+networks:
+  kin-fleet:
+    driver: bridge

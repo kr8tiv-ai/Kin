@@ -41,6 +41,20 @@ export function Footer() {
           Telegram
         </a>
         <a
+          href="https://github.com/kr8tiv-ai"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-white/70 transition-colors duration-300 hover:text-[#00f0ff] mx-4"
+        >
+          GitHub
+        </a>
+        <a
+          href="/getting-started"
+          className="text-white/70 transition-colors duration-300 hover:text-[#00f0ff] mx-4"
+        >
+          Docs
+        </a>
+        <a
           href="https://www.meetyourkin.com/terms.html"
           target="_blank"
           rel="noopener noreferrer"

@@ -174,7 +174,51 @@ async function main() {
   }
 
   // ---------------------------------------------------------------------------
-  // 5. GET /chat/status → returns providers
+  // 5. GET /setup-wizard/status → returns setup wizard state shape
+  // ---------------------------------------------------------------------------
+  try {
+    const res = await server.inject({
+      method: 'GET',
+      url: '/setup-wizard/status',
+      headers: token ? { authorization: `Bearer ${token}` } : {},
+    });
+
+    if (res.statusCode === 200) {
+      const body = res.json<{
+        steps?: Array<{ id: string }>;
+        completion?: { eligible: boolean; persisted: boolean };
+      }>();
+
+      const stepIds = body.steps?.map((step) => step.id) ?? [];
+      const hasDeterministicSteps =
+        stepIds.includes('keys') &&
+        stepIds.includes('telegram') &&
+        stepIds.includes('discord') &&
+        stepIds.includes('whatsapp');
+
+      if (hasDeterministicSteps && body.completion) {
+        results.push(
+          pass(
+            'GET /setup-wizard/status → state',
+            `steps=${stepIds.join(', ')}`,
+          ),
+        );
+      } else {
+        results.push(
+          fail('GET /setup-wizard/status → state', 'missing step IDs or completion object'),
+        );
+      }
+    } else {
+      results.push(
+        fail('GET /setup-wizard/status → state', `got ${res.statusCode}: ${res.body}`),
+      );
+    }
+  } catch (err) {
+    results.push(fail('GET /setup-wizard/status → state', String(err)));
+  }
+
+  // ---------------------------------------------------------------------------
+  // 6. GET /chat/status → returns providers
   // ---------------------------------------------------------------------------
   try {
     const res = await server.inject({
@@ -199,7 +243,7 @@ async function main() {
   }
 
   // ---------------------------------------------------------------------------
-  // 6. GET /skills → returns array
+  // 7. GET /skills → returns array
   // ---------------------------------------------------------------------------
   try {
     const res = await server.inject({
@@ -223,7 +267,7 @@ async function main() {
   }
 
   // ---------------------------------------------------------------------------
-  // 6. GET /support/faq → returns array
+  // 8. GET /support/faq → returns array
   // ---------------------------------------------------------------------------
   try {
     const res = await server.inject({
@@ -247,7 +291,7 @@ async function main() {
   }
 
   // ---------------------------------------------------------------------------
-  // 7. POST /chat → returns response (OPTIONAL — requires GROQ_API_KEY)
+  // 9. POST /chat → returns response (OPTIONAL — requires GROQ_API_KEY)
   // ---------------------------------------------------------------------------
   const hasApiKey =
     !!process.env.GROQ_API_KEY ||

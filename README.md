@@ -360,12 +360,12 @@ npm install
 npm install --prefix web
 ```
 
-### 2. Run the Adaptive Installer (recommended)
+### 2. Run the Adaptive Installer
 
 Unix/macOS/WSL:
 ```bash
-./deploy-easy.sh --dry-run
-./deploy-easy.sh
+./deploy-easy.sh --dry-run   # preview what will happen
+./deploy-easy.sh             # run the installer
 ```
 
 Windows:
@@ -374,21 +374,27 @@ deploy-easy.bat --dry-run
 deploy-easy.bat
 ```
 
-The installer is deterministic and resumable. Safe local fixes can run automatically, while external actions require explicit confirmation.
+The installer is deterministic and resumable — it walks through environment checks, dependency setup, and first-run configuration. Safe local fixes run automatically; external actions (deploy triggers, secret rotation) require explicit confirmation.
 
-### 3. Start Development Servers
+### 3. Open the Dashboard
+
+Once the installer completes, open the dashboard at [http://localhost:3001](http://localhost:3001). The API server runs on port 3002 and the web frontend on port 3001 (see [Port Configuration](#port-configuration) below).
+
+### Development Setup (Manual)
+
+If you prefer manual control or need to run services individually:
 
 ```bash
-# API + Telegram bot
-npm run dev
+# API server (Fastify + SQLite)
+npx tsx api/server.ts          # starts on port 3002
 
-# Web frontend
-npm run dev --prefix web
+# Web frontend (Next.js 15)
+npm run dev --prefix web       # starts on port 3001
 ```
 
-> Legacy `setup.sh` / `setup.bat` remain as compatibility wrappers and now delegate to `deploy-easy`.
+> Legacy `setup.sh` / `setup.bat` remain as compatibility wrappers and delegate to `deploy-easy`.
 
-### 4. Docker Deployment (GHCR Pull-Based)
+### Docker Deployment (GHCR Pull-Based)
 
 ```bash
 docker compose pull
@@ -523,6 +529,32 @@ KIN is evaluated across these Bags Hackathon dimensions:
 | **Test Coverage** | 190+ tests | Passing |
 | **API Endpoints** | 55+ | Live |
 | **Fine-Tuning** | QLoRA pipeline | Ready |
+
+---
+
+## Port Configuration
+
+| Service | Port | Notes |
+|---------|------|-------|
+| Web frontend | 3001 | Next.js dev server |
+| API server | 3002 | Fastify + SQLite |
+
+`web/.env.local` bridges them with `NEXT_PUBLIC_API_URL=http://localhost:3002`. Next.js rewrites in `web/next.config.ts` proxy `/api/*` from 3001 → 3002.
+
+---
+
+## Contributing
+
+We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for:
+
+- Prerequisites and local dev setup
+- Code conventions (camelCase API responses, snake_case DB columns, Fastify plugin patterns)
+- Test and build commands
+- PR guidelines
+
+For the full architectural guide and agent contribution conventions, see [AGENTS.md](AGENTS.md).
+
+**Organization:** [kr8tiv-ai](https://github.com/kr8tiv-ai) — Issues and PRs welcome.
 
 ---
 

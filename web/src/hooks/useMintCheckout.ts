@@ -9,6 +9,7 @@
 
 import { useCallback, useState } from 'react';
 import { kinApi } from '@/lib/api';
+import { track } from '@/lib/analytics';
 import { getStoredWallet, createWallet } from '@/lib/wallet';
 
 interface UseMintCheckoutResult {
@@ -51,10 +52,13 @@ export function useMintCheckout(): UseMintCheckoutResult {
 
       // Step 3: Redirect to Stripe
       if (result.url) {
+        track('mint_checkout_redirect', { companionId });
         window.location.href = result.url;
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Checkout failed');
+      const message = err instanceof Error ? err.message : 'Checkout failed';
+      setError(message);
+      track('mint_checkout_failed', { companionId, error: message });
     } finally {
       setLoading(false);
     }

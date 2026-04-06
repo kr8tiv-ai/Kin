@@ -8,7 +8,13 @@
 
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
-  telegram_id BIGINT UNIQUE NOT NULL,
+  telegram_id BIGINT UNIQUE,            -- nullable: only set for Telegram users
+  email TEXT UNIQUE,                     -- nullable: set for email/Google users
+  google_id TEXT UNIQUE,                 -- nullable: set for Google OAuth users
+  wallet_address TEXT UNIQUE,            -- nullable: set for Solana wallet users
+  x_id TEXT UNIQUE,                      -- nullable: set for X (Twitter) OAuth users
+  password_hash TEXT,                    -- nullable: set for email/password users (scrypt)
+  auth_provider TEXT NOT NULL DEFAULT 'telegram', -- 'telegram', 'google', 'solana', 'email', 'x' or comma-separated
   username TEXT,
   first_name TEXT NOT NULL,
   last_name TEXT,
@@ -23,6 +29,10 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 CREATE INDEX IF NOT EXISTS idx_users_telegram_id ON users(telegram_id);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id);
+CREATE INDEX IF NOT EXISTS idx_users_wallet ON users(wallet_address);
+CREATE INDEX IF NOT EXISTS idx_users_x_id ON users(x_id);
 CREATE INDEX IF NOT EXISTS idx_users_tier ON users(tier);
 
 -- ============================================================================

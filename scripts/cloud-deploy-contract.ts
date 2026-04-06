@@ -57,7 +57,7 @@ export function assertGhcrContractExports(
   value: GhcrContractSurface,
 ): asserts value is {
   GHCR_REGISTRY: string;
-  GHCR_SERVICES: readonly Array<{ id: string; image: string }>;
+  GHCR_SERVICES: ReadonlyArray<{ id: string; image: string }>;
   buildGhcrImageRefs: typeof buildGhcrImageRefs;
 } {
   if (typeof value.buildGhcrImageRefs !== 'function') {

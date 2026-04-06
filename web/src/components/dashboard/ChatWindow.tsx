@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { ChatMarkdown } from '@/components/dashboard/ChatMarkdown';
 import { useChat, type ChatMessage } from '@/hooks/useChat';
+import { useTTS } from '@/hooks/useTTS';
 import { COMPANIONS, type CompanionData } from '@/lib/companions';
 import { cn } from '@/lib/utils';
 import { kinApi } from '@/lib/api';
@@ -82,9 +83,10 @@ interface ChatWindowProps {
 
 export function ChatWindow({ companionId, className }: ChatWindowProps) {
   const companion: CompanionData = COMPANIONS[companionId] ?? COMPANIONS['cipher']!;
-  const { messages, isLoading, error, sendMessage, clearMessages } = useChat({
+  const { messages, isLoading, isStreaming, error, sendMessage, retryLastMessage, clearMessages, historyLoading } = useChat({
     companionId,
   });
+  const tts = useTTS();
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -248,8 +250,20 @@ export function ChatWindow({ companionId, className }: ChatWindowProps) {
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4" aria-live="polite" aria-label="Chat messages">
+        {/* History loading */}
+        {historyLoading && (
+          <div className="flex items-center justify-center h-full">
+            <div className="flex items-center gap-2 text-white/30 text-sm">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="animate-spin">
+                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+              </svg>
+              Loading conversation...
+            </div>
+          </div>
+        )}
+
         {/* Empty state */}
-        {messages.length === 0 && !isLoading && (
+        {messages.length === 0 && !isLoading && !historyLoading && (
           <div className="flex flex-col items-center justify-center h-full text-center py-12">
             <motion.span
               className="text-5xl mb-4 block"
@@ -293,6 +307,7 @@ export function ChatWindow({ companionId, className }: ChatWindowProps) {
               message={msg}
               companion={companion}
               isNewest={msg.id === newestAssistantId}
+              tts={tts}
             />
           ))}
         </AnimatePresence>
@@ -320,14 +335,21 @@ export function ChatWindow({ companionId, className }: ChatWindowProps) {
           </motion.div>
         )}
 
-        {/* Error */}
+        {/* Error with retry */}
         {error && (
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="rounded-lg bg-magenta/10 border border-magenta/20 px-4 py-2 text-sm text-magenta"
+            className="rounded-lg bg-magenta/10 border border-magenta/20 px-4 py-3 text-sm text-magenta flex items-center justify-between gap-3"
           >
-            {error}
+            <span>{error}</span>
+            <button
+              type="button"
+              onClick={retryLastMessage}
+              className="shrink-0 rounded-md border border-magenta/30 bg-magenta/10 px-3 py-1 text-xs font-medium text-magenta transition-colors hover:bg-magenta/20"
+            >
+              Retry
+            </button>
           </motion.div>
         )}
 
@@ -403,10 +425,12 @@ function ChatBubble({
   message,
   companion,
   isNewest,
+  tts,
 }: {
   message: ChatMessage;
   companion: CompanionData;
   isNewest: boolean;
+  tts?: { speak: (id: string, text: string, companionId: string) => Promise<void>; stop: () => void; playingId: string | null; loading: boolean };
 }) {
   const isUser = message.role === 'user';
   const isAssistant = message.role === 'assistant';
@@ -414,11 +438,10 @@ function ChatBubble({
   const [reactions, setReactions] = useState<string[]>([]);
   const [showReactions, setShowReactions] = useState(false);
 
-  // Typewriter for newest assistant message
-  const { displayed, isDone } = useTypewriter(
-    message.content,
-    isAssistant && isNewest,
-  );
+  // Use real streaming content directly — no fake typewriter needed.
+  // isNewest with isStreaming means tokens are arriving in real-time.
+  const displayed = message.content;
+  const isDone = !(message as any).isStreaming;
 
   const handleCopy = useCallback(async () => {
     await navigator.clipboard.writeText(message.content);
@@ -487,12 +510,41 @@ function ChatBubble({
             })}
           </time>
 
-          {/* Copy button (assistant only) */}
+          {/* TTS + Copy buttons (assistant only) */}
           {isAssistant && isDone && (
+            <div className="absolute top-2 right-2 flex gap-0.5">
+            {tts && (
+              <button
+                type="button"
+                onClick={() => tts.playingId === message.id ? tts.stop() : tts.speak(message.id, message.content, companion.id)}
+                disabled={tts.loading}
+                className={cn(
+                  'rounded-md p-1 transition-all duration-200',
+                  tts.playingId === message.id
+                    ? 'text-cyan animate-pulse'
+                    : 'text-white/0 group-hover:text-white/30 hover:!text-white/60 hover:bg-white/5',
+                  tts.loading && 'opacity-50 cursor-wait',
+                )}
+                title={tts.playingId === message.id ? 'Stop playback' : 'Listen'}
+              >
+                {tts.playingId === message.id ? (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="6" y="4" width="4" height="16" />
+                    <rect x="14" y="4" width="4" height="16" />
+                  </svg>
+                ) : (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+                  </svg>
+                )}
+              </button>
+            )}
             <button
               type="button"
               onClick={handleCopy}
-              className="absolute top-2 right-2 rounded-md p-1 text-white/0 transition-all duration-200 group-hover:text-white/30 hover:!text-white/60 hover:bg-white/5"
+              className="rounded-md p-1 text-white/0 transition-all duration-200 group-hover:text-white/30 hover:!text-white/60 hover:bg-white/5"
               title="Copy message"
             >
               {copied ? (
@@ -506,6 +558,7 @@ function ChatBubble({
                 </svg>
               )}
             </button>
+            </div>
           )}
         </GlassCard>
 

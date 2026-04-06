@@ -6,6 +6,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { kinApi } from '@/lib/api';
+import { track } from '@/lib/analytics';
 import type { SoulConfig, CompanionSoul } from '@/lib/types';
 
 interface UseSoulReturn {
@@ -62,9 +63,12 @@ export function useSoul(companionId: string | null): UseSoulReturn {
       // Refresh soul data
       const updated = await kinApi.get<{ soul: CompanionSoul | null }>(`/soul/${companionId}`);
       setSoul(updated.soul);
+
+      track('soul_saved', { companionId, traitsCount: config.traits ? Object.keys(config.traits).length : 0 });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to save soul';
       setError(message);
+      track('soul_save_failed', { companionId, error: message });
       throw err;
     } finally {
       setSaving(false);
@@ -84,6 +88,7 @@ export function useSoul(companionId: string | null): UseSoulReturn {
       const updated = await kinApi.get<{ soul: CompanionSoul | null }>(`/soul/${companionId}`);
       setSoul(updated.soul);
 
+      track('soul_calibrated', { companionId, driftScore: res.driftScore, messageCount: res.messageCount });
       return res.driftScore;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Calibration failed');

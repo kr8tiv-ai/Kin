@@ -34,7 +34,8 @@
     "voice/**/*.ts",
     "runtime/**/*.ts",
     "scripts/**/*.ts",
-    "training/**/*.ts"
+    "training/**/*.ts",
+    "fleet/**/*.ts"
   ],
   "exclude": [
     "node_modules",

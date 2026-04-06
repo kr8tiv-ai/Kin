@@ -172,6 +172,28 @@ export interface InstallerStatusResponse {
   allowedRecoveryActions: string[];
 }
 
+export type SetupWizardStepStatus = 'ready' | 'needs-attention' | 'not-configured';
+
+export interface SetupWizardStep {
+  id: 'keys' | 'telegram' | 'discord' | 'whatsapp';
+  label: string;
+  message: string;
+  status: SetupWizardStepStatus;
+  blocking: boolean;
+  reasonCode: string | null;
+  nextActions: string[];
+}
+
+export interface SetupWizardStatusResponse {
+  steps: SetupWizardStep[];
+  completion: {
+    persisted: boolean;
+    eligible: boolean;
+    reason: string | null;
+  };
+  isComplete: boolean;
+}
+
 // ============================================================================
 // Skills Marketplace
 // ============================================================================
@@ -371,4 +393,30 @@ export interface TrainingEntriesResponse {
   total: number;
   page: number;
   pageSize: number;
+}
+
+// ============================================================================
+// Completion Gate Status
+// ============================================================================
+
+export interface CompletionGate {
+  id: string;
+  label: string;
+  ready: boolean;
+  description: string;
+  recoveryActions: string[];
+}
+
+export interface CompletionProgress {
+  completedGates: number;
+  totalGates: number;
+  summary: string;
+}
+
+export interface CompletionStatusResponse {
+  gates: CompletionGate[];
+  progress: CompletionProgress;
+  overallComplete: boolean;
+  blockingReasons: string[];
+  nextActions: string[];
 }

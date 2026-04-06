@@ -1,90 +1,71 @@
-export interface CompletionStatus {
-  installerReady: boolean;
-  installerStatus: string;
-  installerPhase: string;
-  wizardComplete: boolean;
-  wizardSteps: Array<{ id: string; status: string; blocking: boolean }>;
-  cloudReady: boolean;
-  cloudProvider: string | null;
-  overallComplete: boolean;
-  blockingReasons: string[];
-  nextActions: string[];
+import type { CompletionGate, CompletionProgress, CompletionStatusResponse } from './types.js';
+
+// --- Badge & label helpers ---
+
+export function gateStatusToBadgeColor(ready: boolean): 'cyan' | 'magenta' {
+  return ready ? 'cyan' : 'magenta';
 }
 
-export function completionStatusToProgressLabel(
-  status: CompletionStatus,
-): string {
-  if (status.overallComplete) {
-    return 'All set! Your KIN is ready.';
-  }
-
-  const steps: string[] = [];
-  
-  if (!status.installerReady) {
-    steps.push('Finish local setup');
-  }
-  
-  if (!status.wizardComplete) {
-    steps.push('Complete setup wizard');
-  }
-  
-  if (!status.cloudReady) {
-    steps.push('Deploy to cloud (optional)');
-  }
-
-  return steps.length > 0 
-    ? `Next: ${steps.join(', ')}`
-    : 'Setting up...';
+export function gateStatusToLabel(ready: boolean): string {
+  return ready ? 'Complete' : 'Needs Attention';
 }
 
-export function getProgressPercentage(status: CompletionStatus): number {
-  let complete = 0;
-  const total = 4;
+// --- Progress helpers ---
 
-  if (status.installerReady) complete++;
-  if (status.wizardComplete) complete++;
-  if (status.cloudReady) complete++;
-  if (status.overallComplete) complete++;
-
-  return Math.round((complete / total) * 100);
+export function progressToPercentage(progress: CompletionProgress): number {
+  if (progress.totalGates === 0) return 0;
+  return (progress.completedGates / progress.totalGates) * 100;
 }
 
-export function completionToBadgeColor(
-  complete: boolean,
-): 'cyan' | 'gold' | 'muted' {
-  return complete ? 'cyan' : 'gold';
+export function progressToLabel(progress: CompletionProgress): string {
+  return `${progress.completedGates} of ${progress.totalGates} setup gates complete`;
 }
 
-export function getRecoveryActions(
-  status: CompletionStatus,
-): { label: string; action: string; variant: 'primary' | 'outline' | 'ghost' }[] {
-  const actions: { label: string; action: string; variant: 'primary' | 'outline' | 'ghost' }[] = [];
+// --- Recovery action mapping ---
 
-  if (!status.installerReady) {
-    actions.push({ 
-      label: 'Continue Setup', 
-      action: '/dashboard/setup', 
-      variant: 'primary' 
-    });
-  } else if (!status.wizardComplete) {
-    actions.push({ 
-      label: 'Complete Wizard', 
-      action: '/dashboard/setup', 
-      variant: 'primary' 
-    });
-  } else if (!status.cloudReady) {
-    actions.push({ 
-      label: 'Deploy to Cloud', 
-      action: '/dashboard/projects/new', 
-      variant: 'outline' 
-    });
-  }
+function normalizeAction(action: string): string {
+  return action.trim().toLowerCase();
+}
 
-  actions.push({ 
-    label: 'Get Help', 
-    action: '/dashboard/help', 
-    variant: 'ghost' 
+const RECOVERY_ACTION_MAP: Record<string, string> = {
+  retry: 'Retry',
+  restart: 'Restart',
+  'contact-support': 'Contact Support',
+  'open-setup-wizard': 'Open Setup Wizard',
+  'check-deploy-status': 'Check Deploy Status',
+  'retry-deploy': 'Retry Deployment',
+};
+
+export function getGateRecoveryLabels(
+  actions: string[],
+): { label: string; action: string }[] {
+  return actions.map((rawAction) => {
+    const action = normalizeAction(rawAction);
+    const label = RECOVERY_ACTION_MAP[action];
+    return label ? { label, action } : { label: rawAction, action };
   });
+}
 
-  return actions;
+// --- Deployment completion eligibility ---
+
+export function canCompleteDeployment(status: CompletionStatusResponse): boolean {
+  // Eligible to mark complete when not already complete but all gates pass
+  if (status.overallComplete) return false;
+  return status.gates.every((gate) => gate.ready);
+}
+
+// --- Blocking summary ---
+
+export function getOverallBlockingSummary(status: CompletionStatusResponse): string {
+  const blockingGates = status.gates.filter((g) => !g.ready);
+
+  if (blockingGates.length === 0) {
+    return 'All setup gates are ready. You can complete setup.';
+  }
+
+  if (blockingGates.length === 1) {
+    return `${blockingGates[0]!.label} must be resolved before setup can be completed.`;
+  }
+
+  return `${blockingGates.length} setup gates must be resolved before setup can be completed.`;
 }

@@ -7,55 +7,46 @@
 
 import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+
 import { useAuth } from '@/providers/AuthProvider';
+import { getAuthRedirectPath } from '@/lib/auth-redirects';
 
 interface AuthGuardProps {
   children: React.ReactNode;
 }
 
 export function AuthGuard({ children }: AuthGuardProps) {
-  const { isAuthenticated, loading, onboardingComplete, setupWizardComplete, deploymentComplete } = useAuth();
+  const {
+    isAuthenticated,
+    loading,
+    onboardingComplete,
+    setupWizardComplete,
+    deploymentComplete,
+  } = useAuth();
+
   const router = useRouter();
   const pathname = usePathname();
 
+  const redirectPath = getAuthRedirectPath({
+    loading,
+    isAuthenticated,
+    onboardingComplete,
+    setupWizardComplete,
+    deploymentComplete,
+    pathname,
+  });
+
   useEffect(() => {
-    if (loading) return;
-
-    if (!isAuthenticated) {
-      router.push('/login');
+    if (!redirectPath) {
       return;
     }
 
-    // Redirect to onboarding if not complete and not already on /onboard
-    if (!onboardingComplete && !pathname.startsWith('/onboard')) {
-      router.push('/onboard');
+    if (redirectPath === pathname) {
       return;
     }
 
-    // If on /onboard but already completed onboarding, go to dashboard
-    if (onboardingComplete && pathname.startsWith('/onboard')) {
-      router.push('/dashboard');
-      return;
-    }
-
-    // Redirect to setup wizard if onboarding complete but setup wizard not complete
-    if (onboardingComplete && !setupWizardComplete && !pathname.startsWith('/dashboard/setup')) {
-      router.push('/dashboard/setup');
-      return;
-    }
-
-    // Redirect to setup if deployment not complete (unless already on setup or help)
-    if (deploymentComplete === false && !pathname.startsWith('/dashboard/setup') && !pathname.startsWith('/dashboard/help')) {
-      router.push('/dashboard/setup');
-      return;
-    }
-
-    // If on /dashboard/setup but wizard complete, go to dashboard
-    if (setupWizardComplete && pathname.startsWith('/dashboard/setup')) {
-      router.push('/dashboard');
-      return;
-    }
-  }, [loading, isAuthenticated, onboardingComplete, setupWizardComplete, deploymentComplete, pathname, router]);
+    router.push(redirectPath);
+  }, [pathname, redirectPath, router]);
 
   // Full-page loading skeleton while checking auth
   if (loading) {
@@ -85,33 +76,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
     );
   }
 
-  // Not authenticated — return nothing (redirect is in flight)
-  if (!isAuthenticated) {
-    return null;
-  }
-
-  // Waiting for onboarding redirect
-  if (!onboardingComplete && !pathname.startsWith('/onboard')) {
-    return null;
-  }
-
-  // On onboarding page but already complete — waiting for redirect
-  if (onboardingComplete && pathname.startsWith('/onboard')) {
-    return null;
-  }
-
-  // Waiting for setup wizard redirect
-  if (onboardingComplete && !setupWizardComplete && !pathname.startsWith('/dashboard/setup')) {
-    return null;
-  }
-
-  // On setup wizard page but already complete — waiting for redirect
-  if (setupWizardComplete && pathname.startsWith('/dashboard/setup')) {
-    return null;
-  }
-
-  // Waiting for deployment redirect
-  if (deploymentComplete === false && !pathname.startsWith('/dashboard/setup') && !pathname.startsWith('/dashboard/help')) {
+  if (redirectPath) {
     return null;
   }
 

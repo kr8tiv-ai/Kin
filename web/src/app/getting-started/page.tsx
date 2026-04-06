@@ -1,7 +1,6 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import Link from 'next/link';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { Button } from '@/components/ui/Button';
 
@@ -11,42 +10,54 @@ const steps = [
     title: 'Sign Up',
     description: 'Create your free account using Telegram, Google, or email.',
     href: '/login',
+    cta: 'Create Account',
   },
   {
     number: '02',
-    title: 'Set Up Your AI Brain',
-    description: 'Download Ollama and pull the Qwen3 model for local, private AI responses.',
+    title: 'Run the Installer',
+    description:
+      'Run deploy-easy.sh (Unix) or deploy-easy.bat (Windows). The adaptive installer handles Ollama, dependencies, and local setup automatically.',
     href: '/dashboard/setup',
+    cta: 'Open Setup',
   },
   {
     number: '03',
-    title: 'Configure Integrations',
-    description: 'Connect Telegram, Discord, or WhatsApp to chat with your KIN anywhere.',
+    title: 'Complete Setup Wizard',
+    description:
+      'Validate your API keys and connect messaging channels (Telegram, Discord, WhatsApp) at the Setup Wizard.',
     href: '/dashboard/setup',
+    cta: 'Open Wizard',
   },
   {
     number: '04',
     title: 'Deploy to Cloud (Optional)',
-    description: 'Deploy to Railway, Render, or Fly.io for 24/7 availability.',
-    href: '/dashboard/projects/new',
+    description:
+      'Deploy to Railway, Render, Fly.io, or Coolify for 24/7 availability. Follow the cloud deploy guides in the docs.',
+    href: '/docs',
+    cta: 'View Deploy Guides',
   },
 ];
 
 const localSteps = [
   {
-    title: 'Download Ollama',
-    command: 'curl -fsSL https://ollama.com/install.sh | sh',
-    description: 'Or download from ollama.com',
+    title: 'Clone & Install',
+    command: 'git clone https://github.com/your-org/kin.git && cd kin && npm install',
+    description: 'Clone the repository and install dependencies.',
   },
   {
-    title: 'Pull the model',
-    command: 'ollama pull qwen3:32b',
-    description: 'This downloads the AI brain (~20GB)',
+    title: 'Run the Adaptive Installer (Unix)',
+    command: './deploy-easy.sh',
+    description: 'Detects your environment, installs Ollama, pulls models, and configures everything.',
   },
   {
-    title: 'Start chatting',
+    title: 'Run the Adaptive Installer (Windows)',
+    command: 'deploy-easy.bat',
+    description: 'Same adaptive installer for Windows — handles Ollama, dependencies, and setup.',
+  },
+  {
+    title: 'Open the Dashboard',
     command: '',
-    description: 'Go to /dashboard/chat and say hello to your KIN!',
+    description: 'Go to http://localhost:3001 and say hello to your KIN!',
   },
 ];
 
@@ -87,7 +98,7 @@ export default function GettingStartedPage() {
                     </h3>
                     <p className="text-white/50 mb-4">{step.description}</p>
                     <Button variant="outline" size="sm" href={step.href}>
-                      {step.number === '01' ? 'Create Account' : 'Go There'}
+                      {step.cta}
                     </Button>
                   </div>
                 </div>
@@ -121,8 +132,12 @@ export default function GettingStartedPage() {
           </GlassCard>
         </motion.div>
 
-        <div className="text-center mt-12">
-          <p className="text-white/40 mb-4">Need help?</p>
+        <div className="text-center mt-12 space-y-4">
+          <p className="text-white/40 mb-2">Want to try before you install?</p>
+          <Button variant="primary" href="/demo">
+            Try Demo
+          </Button>
+          <p className="text-white/40 mt-6 mb-2">Need help?</p>
           <Button variant="ghost" href="/support">
             Contact Support
           </Button>

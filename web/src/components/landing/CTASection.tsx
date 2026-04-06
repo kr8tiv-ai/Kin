@@ -90,6 +90,12 @@ export function CTASection() {
           >
             Try Demo
           </Link>
+          <Link
+            href="/getting-started"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full border border-white/20 text-white/70 px-10 py-4 text-base font-semibold transition-all duration-200 hover:bg-white/10"
+          >
+            Self-Host
+          </Link>
         </motion.div>
       </div>
     </section>

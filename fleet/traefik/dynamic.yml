@@ -1,0 +1,23 @@
+# Traefik Dynamic Configuration — KIN Fleet Routing
+# Wildcard router for *.kin.kr8tiv.ai → wake-proxy service.
+# The wake-proxy handles container wake-on-demand and proxies to the target instance.
+
+http:
+  routers:
+    kin-wildcard:
+      rule: "HostRegexp(`{subdomain:[a-z0-9-]+}.kin.kr8tiv.ai`)"
+      entryPoints:
+        - websecure
+      service: wake-proxy
+      tls:
+        certResolver: letsencrypt
+        domains:
+          - main: "kin.kr8tiv.ai"
+            sans:
+              - "*.kin.kr8tiv.ai"
+
+  services:
+    wake-proxy:
+      loadBalancer:
+        servers:
+          - url: "http://wake-proxy:8090"

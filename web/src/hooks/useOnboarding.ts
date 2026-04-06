@@ -83,6 +83,7 @@ export function useOnboarding() {
   }, []);
 
   const setCompanion = useCallback((companionId: string) => {
+    track('onboarding_companion_selected', { companionId });
     setState((prev) => ({ ...prev, selectedCompanionId: companionId }));
   }, []);
 

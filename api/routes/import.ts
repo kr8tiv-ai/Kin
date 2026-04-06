@@ -21,7 +21,7 @@ const importRoutes: FastifyPluginAsync = async (fastify) => {
       const importData = request.body.importData;
 
       if (!importData.version) {
-        return reply.status(400).send({ success: false, error: 'Invalid import file: missing version' });
+        return (reply as any).status(400).send({ success: false, error: 'Invalid import file: missing version' });
       }
 
       const results = {
@@ -118,7 +118,7 @@ const importRoutes: FastifyPluginAsync = async (fastify) => {
         };
       } catch (err) {
         fastify.log.error({ err }, 'Import failed');
-        return reply.status(500).send({ success: false, error: 'Import failed' });
+        return (reply as any).status(500).send({ success: false, error: 'Import failed' });
       }
     }
   );
