@@ -8,6 +8,7 @@
 
 import Docker from 'dockerode';
 import { FleetDb } from './db.js';
+import { CreditDb } from './credit-db.js';
 import {
   DEFAULT_CPU_SHARES,
   DEFAULT_MEMORY_MB,
@@ -89,23 +90,27 @@ export class ContainerManager {
   private docker: Docker | null = null;
   private readonly socketPath: string;
   private readonly fleetDb: FleetDb;
+  private readonly creditDb: CreditDb | null;
   private readonly logger: FleetLogger;
   private readonly ghcrOwner: string;
 
   /**
    * @param opts.dockerSocketPath  Path to the Docker socket (default: /var/run/docker.sock)
    * @param opts.fleetDb           FleetDb instance for state persistence
+   * @param opts.creditDb          Optional CreditDb for proxy token lifecycle
    * @param opts.logger            Optional structured logger
    * @param opts.ghcrOwner         GHCR image owner (default: 'kr8tiv-ai')
    */
   constructor(opts: {
     dockerSocketPath?: string;
     fleetDb: FleetDb;
+    creditDb?: CreditDb;
     logger?: FleetLogger;
     ghcrOwner?: string;
   }) {
     this.socketPath = opts.dockerSocketPath ?? DEFAULT_SOCKET_PATH;
     this.fleetDb = opts.fleetDb;
+    this.creditDb = opts.creditDb ?? null;
     this.logger = opts.logger ?? nullLogger;
     this.ghcrOwner = opts.ghcrOwner ?? 'kr8tiv-ai';
   }
@@ -240,6 +245,19 @@ export class ContainerManager {
         // Continue — images may already be available locally
       }
 
+      // Generate proxy token if credit metering is enabled
+      const proxyEnvVars: string[] = [];
+      if (this.creditDb) {
+        const proxyToken = this.creditDb.createProxyToken(userId, instance.id);
+        const proxyUrl = process.env.FRONTIER_PROXY_URL ?? 'http://frontier-proxy:8080';
+        proxyEnvVars.push(`FRONTIER_PROXY_URL=${proxyUrl}`);
+        proxyEnvVars.push(`FRONTIER_PROXY_TOKEN=${proxyToken}`);
+        this.logger.info('Proxy token generated for instance', {
+          instanceId: instance.id,
+          userId,
+        });
+      }
+
       const docker = this.getDocker();
 
       // Create api container
@@ -252,6 +270,7 @@ export class ContainerManager {
           'HOST=0.0.0.0',
           `PORT=${API_INTERNAL_PORT}`,
           'DATABASE_PATH=/app/data/kin.db',
+          ...proxyEnvVars,
         ],
         ExposedPorts: { [`${API_INTERNAL_PORT}/tcp`]: {} },
         HostConfig: {
@@ -279,6 +298,7 @@ export class ContainerManager {
           'HOSTNAME=0.0.0.0',
           `PORT=${WEB_INTERNAL_PORT}`,
           `NEXT_PUBLIC_API_URL=http://host.docker.internal:${apiPort}`,
+          ...proxyEnvVars,
         ],
         ExposedPorts: { [`${WEB_INTERNAL_PORT}/tcp`]: {} },
         HostConfig: {
@@ -439,6 +459,17 @@ export class ContainerManager {
           // May already be stopped — acceptable
         }
         await c.remove({ force: true });
+      }
+
+      // Revoke proxy tokens before deleting DB row
+      if (this.creditDb) {
+        const revoked = this.creditDb.revokeProxyTokens(instanceId);
+        if (revoked > 0) {
+          this.logger.info('Revoked proxy tokens for removed instance', {
+            instanceId,
+            tokensRevoked: revoked,
+          });
+        }
       }
 
       // Delete DB row

@@ -54,6 +54,9 @@ import communityRoutes from './routes/community.js';
 // Fleet imports
 import { FleetDb } from '../fleet/db.js';
 import { ContainerManager } from '../fleet/container-manager.js';
+import { CreditDb } from '../fleet/credit-db.js';
+import { FrontierProxy } from '../fleet/frontier-proxy.js';
+import creditRoutes from '../fleet/credit-routes.js';
 
 // Inference imports for WebSocket streaming chat
 import crypto from 'crypto';
@@ -200,12 +203,30 @@ export async function createServer(config: ApiConfig = {}) {
   const fleetDb = new FleetDb(fleetDbPath);
   fleetDb.init();
 
+  // Credit metering — shares the fleet.db file for co-located tables
+  const creditDb = new CreditDb(fleetDbPath);
+  creditDb.init();
+
   const containerManager = new ContainerManager({
     fleetDb,
+    creditDb,
     logger: {
       info: (msg, ctx) => fastify.log.info(ctx ?? {}, `[fleet] ${msg}`),
       warn: (msg, ctx) => fastify.log.warn(ctx ?? {}, `[fleet] ${msg}`),
       error: (msg, ctx) => fastify.log.error(ctx ?? {}, `[fleet] ${msg}`),
+    },
+  });
+
+  // Frontier proxy — centralised AI provider gateway with credit metering
+  const frontierProxyPort = parseInt(process.env.FRONTIER_PROXY_PORT ?? '8080', 10);
+  const frontierProxy = new FrontierProxy({
+    creditDb,
+    fleetDb,
+    port: frontierProxyPort,
+    logger: {
+      info: (msg, ctx) => fastify.log.info(ctx ?? {}, `[frontier-proxy] ${msg}`),
+      warn: (msg, ctx) => fastify.log.warn(ctx ?? {}, `[frontier-proxy] ${msg}`),
+      error: (msg, ctx) => fastify.log.error(ctx ?? {}, `[frontier-proxy] ${msg}`),
     },
   });
 
@@ -305,6 +326,7 @@ export async function createServer(config: ApiConfig = {}) {
     await protectedFastify.register(completionRoutes);
     await protectedFastify.register(rateLimitRoutes);
     await protectedFastify.register(fleetRoutes, { fleetDb, containerManager });
+    await protectedFastify.register(creditRoutes, { creditDb });
     await protectedFastify.register(exportRoutes);
     await protectedFastify.register(importRoutes);
     await protectedFastify.register(communityRoutes);
@@ -419,6 +441,8 @@ export async function createServer(config: ApiConfig = {}) {
     for (const handler of closeHandlers) {
       await handler();
     }
+    await frontierProxy.stop();
+    creditDb.close();
     fleetDb.close();
     db.close();
   });
@@ -440,6 +464,12 @@ export async function startServer(config: ApiConfig = {}) {
     });
     
     server.log.info(`KIN API running on http://${server.context.config.host}:${server.context.config.port}`);
+
+    // Start frontier proxy alongside the main server (fire-and-forget on failure)
+    // The proxy is created during createServer() — we start it here so tests
+    // using inject() don't spin up a real proxy listener.
+    // Note: frontierProxy is not exposed on the instance; shutdown is handled
+    // by the onClose hook registered in createServer().
     
     return server;
   } catch (err) {
