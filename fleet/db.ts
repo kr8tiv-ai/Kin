@@ -18,6 +18,7 @@ import type {
   FleetListFilters,
   FleetStats,
   FleetHealthCheck,
+  TunnelStatus,
 } from './types.js';
 
 import {
@@ -50,6 +51,10 @@ function rowToInstance(row: Record<string, unknown>): FleetInstance {
       lastError: (row['last_error'] as string) ?? null,
     },
     lastError: (row['last_error'] as string) ?? null,
+    tunnelId: (row['tunnel_id'] as string) ?? null,
+    tunnelToken: (row['tunnel_token'] as string) ?? null,
+    tunnelStatus: (row['tunnel_status'] as TunnelStatus) ?? 'unconfigured',
+    dnsRecordId: (row['dns_record_id'] as string) ?? null,
     lastActivityAt: (row['last_activity_at'] as number) ?? null,
     createdAt: row['created_at'] as number,
     updatedAt: row['updated_at'] as number,
@@ -300,6 +305,52 @@ export class FleetDb {
   /** Update lifecycle status. */
   updateStatus(id: string, status: FleetInstanceStatus): FleetInstance | null {
     return this.updateInstance(id, { status });
+  }
+
+  // -------------------------------------------------------------------------
+  // Tunnel management
+  // -------------------------------------------------------------------------
+
+  /** Set all tunnel fields for an instance after provisioning. */
+  updateTunnelInfo(
+    instanceId: string,
+    tunnelId: string,
+    tunnelToken: string,
+    tunnelStatus: TunnelStatus,
+    dnsRecordId: string | null,
+  ): FleetInstance | null {
+    const now = Date.now();
+    this.db
+      .prepare(
+        `UPDATE fleet_instances
+            SET tunnel_id     = @tunnelId,
+                tunnel_token  = @tunnelToken,
+                tunnel_status = @tunnelStatus,
+                dns_record_id = @dnsRecordId,
+                updated_at    = @now
+          WHERE id = @instanceId`,
+      )
+      .run({ instanceId, tunnelId, tunnelToken, tunnelStatus, dnsRecordId, now });
+
+    return this.getInstance(instanceId);
+  }
+
+  /** Transition just the tunnel connection status. */
+  updateTunnelStatus(
+    instanceId: string,
+    status: TunnelStatus,
+  ): FleetInstance | null {
+    const now = Date.now();
+    this.db
+      .prepare(
+        `UPDATE fleet_instances
+            SET tunnel_status = @status,
+                updated_at    = @now
+          WHERE id = @instanceId`,
+      )
+      .run({ instanceId, status, now });
+
+    return this.getInstance(instanceId);
   }
 
   // -------------------------------------------------------------------------

@@ -18,6 +18,11 @@ CREATE TABLE IF NOT EXISTS fleet_instances (
   last_health_status TEXT   NOT NULL DEFAULT 'unknown'
     CHECK (last_health_status IN ('healthy', 'unhealthy', 'unknown')),
   last_error        TEXT,
+  tunnel_id         TEXT,
+  tunnel_token      TEXT,
+  tunnel_status     TEXT    NOT NULL DEFAULT 'unconfigured'
+    CHECK (tunnel_status IN ('unconfigured', 'provisioned', 'connected', 'disconnected')),
+  dns_record_id     TEXT,
   last_activity_at  INTEGER,
   created_at        INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000),
   updated_at        INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000)

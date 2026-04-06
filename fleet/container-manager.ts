@@ -9,6 +9,7 @@
 import Docker from 'dockerode';
 import { FleetDb } from './db.js';
 import { CreditDb } from './credit-db.js';
+import { TunnelManager } from './tunnel-manager.js';
 import {
   DEFAULT_CPU_SHARES,
   DEFAULT_MEMORY_MB,
@@ -91,6 +92,8 @@ export class ContainerManager {
   private readonly socketPath: string;
   private readonly fleetDb: FleetDb;
   private readonly creditDb: CreditDb | null;
+  private readonly tunnelManager: TunnelManager | null;
+  private readonly tunnelBaseDomain: string;
   private readonly logger: FleetLogger;
   private readonly ghcrOwner: string;
 
@@ -98,6 +101,8 @@ export class ContainerManager {
    * @param opts.dockerSocketPath  Path to the Docker socket (default: /var/run/docker.sock)
    * @param opts.fleetDb           FleetDb instance for state persistence
    * @param opts.creditDb          Optional CreditDb for proxy token lifecycle
+   * @param opts.tunnelManager     Optional TunnelManager for Cloudflare Tunnel lifecycle
+   * @param opts.tunnelBaseDomain  Base domain for tunnel subdomains (default: 'kin.kr8tiv.ai')
    * @param opts.logger            Optional structured logger
    * @param opts.ghcrOwner         GHCR image owner (default: 'kr8tiv-ai')
    */
@@ -105,12 +110,16 @@ export class ContainerManager {
     dockerSocketPath?: string;
     fleetDb: FleetDb;
     creditDb?: CreditDb;
+    tunnelManager?: TunnelManager;
+    tunnelBaseDomain?: string;
     logger?: FleetLogger;
     ghcrOwner?: string;
   }) {
     this.socketPath = opts.dockerSocketPath ?? DEFAULT_SOCKET_PATH;
     this.fleetDb = opts.fleetDb;
     this.creditDb = opts.creditDb ?? null;
+    this.tunnelManager = opts.tunnelManager ?? null;
+    this.tunnelBaseDomain = opts.tunnelBaseDomain ?? 'kin.kr8tiv.ai';
     this.logger = opts.logger ?? nullLogger;
     this.ghcrOwner = opts.ghcrOwner ?? 'kr8tiv-ai';
   }
@@ -258,6 +267,43 @@ export class ContainerManager {
         });
       }
 
+      // Create Cloudflare Tunnel if TunnelManager is configured (additive — failure is non-blocking)
+      const tunnelEnvVars: string[] = [];
+      if (this.tunnelManager) {
+        try {
+          const tunnelName = `kin-${subdomain}`;
+          const ollamaHostname = `ollama.${subdomain}.${this.tunnelBaseDomain}`;
+
+          this.logger.info('Creating tunnel for instance', {
+            instanceId: instance.id,
+            tunnelName,
+            ollamaHostname,
+          });
+
+          const { tunnelId, token } = await this.tunnelManager.createTunnel(tunnelName);
+          await this.tunnelManager.configureTunnel(tunnelId, ollamaHostname, 'http://localhost:11434');
+          const { recordId: dnsRecordId } = await this.tunnelManager.createDnsRecord(ollamaHostname, tunnelId);
+
+          this.fleetDb.updateTunnelInfo(instance.id, tunnelId, token, 'provisioned', dnsRecordId);
+          tunnelEnvVars.push(`OLLAMA_HOST=https://${ollamaHostname}`);
+
+          this.logger.info('Tunnel created for instance', {
+            instanceId: instance.id,
+            tunnelId,
+            dnsRecordId,
+          });
+        } catch (tunnelErr) {
+          const msg = tunnelErr instanceof Error ? tunnelErr.message : String(tunnelErr);
+          this.logger.error('Tunnel creation failed — continuing without tunnel', {
+            instanceId: instance.id,
+            error: msg,
+          });
+          this.fleetDb.updateInstance(instance.id, {
+            lastError: `Tunnel creation failed: ${msg}`,
+          });
+        }
+      }
+
       const docker = this.getDocker();
 
       // Create api container
@@ -271,6 +317,7 @@ export class ContainerManager {
           `PORT=${API_INTERNAL_PORT}`,
           'DATABASE_PATH=/app/data/kin.db',
           ...proxyEnvVars,
+          ...tunnelEnvVars,
         ],
         ExposedPorts: { [`${API_INTERNAL_PORT}/tcp`]: {} },
         HostConfig: {
@@ -459,6 +506,41 @@ export class ContainerManager {
           // May already be stopped — acceptable
         }
         await c.remove({ force: true });
+      }
+
+      // Clean up Cloudflare Tunnel + DNS (best-effort — failures don't block removal)
+      if (this.tunnelManager && instance.tunnelId) {
+        if (instance.dnsRecordId) {
+          try {
+            await this.tunnelManager.deleteDnsRecord(instance.dnsRecordId);
+            this.logger.info('Deleted DNS record for removed instance', {
+              instanceId,
+              dnsRecordId: instance.dnsRecordId,
+            });
+          } catch (dnsErr) {
+            const msg = dnsErr instanceof Error ? dnsErr.message : String(dnsErr);
+            this.logger.warn('DNS record cleanup failed — continuing removal', {
+              instanceId,
+              dnsRecordId: instance.dnsRecordId,
+              error: msg,
+            });
+          }
+        }
+
+        try {
+          await this.tunnelManager.deleteTunnel(instance.tunnelId);
+          this.logger.info('Deleted tunnel for removed instance', {
+            instanceId,
+            tunnelId: instance.tunnelId,
+          });
+        } catch (tunErr) {
+          const msg = tunErr instanceof Error ? tunErr.message : String(tunErr);
+          this.logger.warn('Tunnel cleanup failed — continuing removal', {
+            instanceId,
+            tunnelId: instance.tunnelId,
+            error: msg,
+          });
+        }
       }
 
       // Revoke proxy tokens before deleting DB row

@@ -18,6 +18,13 @@ export type FleetInstanceStatus =
   | 'error'
   | 'removing';
 
+/** Tunnel connection states for Cloudflare Tunnel integration */
+export type TunnelStatus =
+  | 'unconfigured'
+  | 'provisioned'
+  | 'connected'
+  | 'disconnected';
+
 /** Default CPU shares per container (Docker relative weight, 1024 = 1 core) */
 export const DEFAULT_CPU_SHARES = 256;
 
@@ -97,6 +104,14 @@ export interface FleetInstance {
   healthCheck: FleetHealthCheck;
   /** Last error message for error status */
   lastError: string | null;
+  /** Cloudflare Tunnel ID (null when unconfigured) */
+  tunnelId: string | null;
+  /** Cloudflare Tunnel token for cloudflared connector auth (null when unconfigured) */
+  tunnelToken: string | null;
+  /** Tunnel connection status */
+  tunnelStatus: TunnelStatus;
+  /** Cloudflare DNS CNAME record ID for cleanup (null when unconfigured) */
+  dnsRecordId: string | null;
   /** Last request/activity timestamp (ms since epoch), null if never active */
   lastActivityAt: number | null;
   /** Creation timestamp (ms since epoch) */

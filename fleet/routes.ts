@@ -17,6 +17,7 @@
 import { FastifyPluginAsync } from 'fastify';
 import { FleetDb } from './db.js';
 import { ContainerManager } from './container-manager.js';
+import { TunnelManager } from './tunnel-manager.js';
 import { MAX_INSTANCES } from './types.js';
 import type { FleetInstance } from './types.js';
 
@@ -38,6 +39,7 @@ function isValidSubdomain(value: unknown): value is string {
 export interface FleetRouteOptions {
   fleetDb: FleetDb;
   containerManager: ContainerManager;
+  tunnelManager?: TunnelManager;
 }
 
 // ---------------------------------------------------------------------------
@@ -48,7 +50,7 @@ const fleetRoutesPlugin: FastifyPluginAsync<FleetRouteOptions> = async (
   fastify,
   opts,
 ) => {
-  const { fleetDb, containerManager } = opts;
+  const { fleetDb, containerManager, tunnelManager } = opts;
 
   // =========================================================================
   // POST /fleet/provision
@@ -246,6 +248,79 @@ const fleetRoutesPlugin: FastifyPluginAsync<FleetRouteOptions> = async (
 
       const updated = await containerManager.checkHealth(instance.id);
       return updated;
+    },
+  );
+
+  // =========================================================================
+  // GET /fleet/instances/:id/tunnel — Tunnel status (never exposes tunnelToken)
+  // =========================================================================
+
+  fastify.get<{ Params: { id: string } }>(
+    '/fleet/instances/:id/tunnel',
+    async (request, reply) => {
+      const instance = fleetDb.getInstance(request.params.id);
+      if (!instance) {
+        reply.status(404);
+        return { error: 'Instance not found' };
+      }
+
+      return {
+        tunnelId: instance.tunnelId,
+        tunnelStatus: instance.tunnelStatus,
+        tunnelEndpoint: instance.tunnelId
+          ? `https://ollama.${instance.subdomain}.kin.kr8tiv.ai`
+          : null,
+      };
+    },
+  );
+
+  // =========================================================================
+  // POST /fleet/instances/:id/tunnel/refresh — Re-check via Cloudflare API
+  // =========================================================================
+
+  fastify.post<{ Params: { id: string } }>(
+    '/fleet/instances/:id/tunnel/refresh',
+    async (request, reply) => {
+      const instance = fleetDb.getInstance(request.params.id);
+      if (!instance) {
+        reply.status(404);
+        return { error: 'Instance not found' };
+      }
+
+      if (!instance.tunnelId) {
+        reply.status(400);
+        return { error: 'No tunnel configured for this instance' };
+      }
+
+      if (!tunnelManager) {
+        reply.status(503);
+        return { error: 'Tunnel management not available (Cloudflare credentials not configured)' };
+      }
+
+      try {
+        const cfStatus = await tunnelManager.getTunnelStatus(instance.tunnelId);
+
+        // Map Cloudflare status to our tunnel_status enum
+        let mappedStatus: 'connected' | 'disconnected' | 'provisioned' = 'provisioned';
+        if (cfStatus.status === 'healthy' && cfStatus.connections.length > 0) {
+          mappedStatus = 'connected';
+        } else if (cfStatus.status === 'inactive' || cfStatus.connections.length === 0) {
+          mappedStatus = 'disconnected';
+        }
+
+        const updated = fleetDb.updateTunnelStatus(instance.id, mappedStatus);
+
+        return {
+          tunnelId: updated!.tunnelId,
+          tunnelStatus: updated!.tunnelStatus,
+          cloudflareStatus: cfStatus.status,
+          connections: cfStatus.connections.length,
+        };
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        reply.status(502);
+        return { error: `Failed to refresh tunnel status: ${msg}` };
+      }
     },
   );
 };

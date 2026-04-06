@@ -146,8 +146,16 @@ export class OllamaClient {
   constructor(config: OllamaConfig = {}) {
     const host = config.host ?? process.env.OLLAMA_HOST ?? '127.0.0.1';
     const port = config.port ?? parseInt(process.env.OLLAMA_PORT ?? '11434', 10);
-    
-    this.baseUrl = `http://${host}:${port}`;
+
+    // If host is already a full URL (e.g. https://ollama.alice.kin.kr8tiv.ai),
+    // use it directly — this enables tunnel-based access from cloud containers.
+    if (host.startsWith('http://') || host.startsWith('https://')) {
+      // Strip any trailing slash for consistency
+      this.baseUrl = host.replace(/\/+$/, '');
+    } else {
+      this.baseUrl = `http://${host}:${port}`;
+    }
+
     this.defaultModel = config.defaultModel ?? process.env.OLLAMA_MODEL ?? 'llama3.2';
     this.timeout = config.timeout ?? 30000;
     this.maxRetries = config.maxRetries ?? 3;

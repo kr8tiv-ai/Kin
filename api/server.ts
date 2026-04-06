@@ -54,6 +54,7 @@ import communityRoutes from './routes/community.js';
 // Fleet imports
 import { FleetDb } from '../fleet/db.js';
 import { ContainerManager } from '../fleet/container-manager.js';
+import { TunnelManager, type TunnelManagerConfig } from '../fleet/tunnel-manager.js';
 import { CreditDb } from '../fleet/credit-db.js';
 import { FrontierProxy } from '../fleet/frontier-proxy.js';
 import creditRoutes from '../fleet/credit-routes.js';
@@ -207,9 +208,31 @@ export async function createServer(config: ApiConfig = {}) {
   const creditDb = new CreditDb(fleetDbPath);
   creditDb.init();
 
+  // Cloudflare Tunnel integration (optional — requires all three env vars)
+  let tunnelManager: TunnelManager | undefined;
+  const cfApiToken = process.env.CLOUDFLARE_API_TOKEN;
+  const cfAccountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+  const cfZoneId = process.env.CLOUDFLARE_ZONE_ID;
+
+  if (cfApiToken && cfAccountId && cfZoneId) {
+    const tunnelConfig: TunnelManagerConfig = {
+      apiToken: cfApiToken,
+      accountId: cfAccountId,
+      zoneId: cfZoneId,
+      baseDomain: process.env.TUNNEL_BASE_DOMAIN ?? 'kin.kr8tiv.ai',
+    };
+    tunnelManager = new TunnelManager(tunnelConfig);
+    fastify.log.info('[fleet] Cloudflare Tunnel integration enabled');
+  } else {
+    fastify.log.warn(
+      '[fleet] Cloudflare Tunnel integration disabled — set CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, and CLOUDFLARE_ZONE_ID to enable',
+    );
+  }
+
   const containerManager = new ContainerManager({
     fleetDb,
     creditDb,
+    tunnelManager,
     logger: {
       info: (msg, ctx) => fastify.log.info(ctx ?? {}, `[fleet] ${msg}`),
       warn: (msg, ctx) => fastify.log.warn(ctx ?? {}, `[fleet] ${msg}`),
@@ -325,7 +348,7 @@ export async function createServer(config: ApiConfig = {}) {
     await protectedFastify.register(setupWizardRoutes);
     await protectedFastify.register(completionRoutes);
     await protectedFastify.register(rateLimitRoutes);
-    await protectedFastify.register(fleetRoutes, { fleetDb, containerManager });
+    await protectedFastify.register(fleetRoutes, { fleetDb, containerManager, tunnelManager });
     await protectedFastify.register(creditRoutes, { creditDb });
     await protectedFastify.register(exportRoutes);
     await protectedFastify.register(importRoutes);
