@@ -47,3 +47,6 @@ check_gsd.py
 .trae/
 .windsurf/
 $null
+
+# ── GSD baseline (auto-generated) ──
+.gsd-id
