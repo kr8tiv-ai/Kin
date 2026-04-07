@@ -33,13 +33,13 @@ jobs:
       matrix:
         include:
           - service: api
-            image: kin-api
+            image: krtc-api
             dockerfile: docker/Dockerfile.api
           - service: web
-            image: kin-web
+            image: krtc-web
             dockerfile: docker/Dockerfile.web
           - service: inference
-            image: kin-inference
+            image: krtc-inference
             dockerfile: docker/Dockerfile.inference
 
     steps:
