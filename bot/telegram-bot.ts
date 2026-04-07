@@ -8,6 +8,7 @@ import { Bot, GrammyError, HttpError, Context, session, SessionFlavor, InlineKey
 import { autoRetry } from '@grammyjs/auto-retry';
 import { ConversationFlavor, conversations, createConversation } from '@grammyjs/conversations';
 import { buildCompanionPrompt } from '../inference/companion-prompts.js';
+import { createTypingIndicator } from './utils/typing.js';
 import { FallbackHandler } from '../inference/fallback-handler.js';
 import { supervisedChat } from '../inference/supervisor.js';
 import { conversationStore, type ConversationMemory } from './memory/conversation-store.js';
@@ -683,9 +684,13 @@ export function createKINBot(config: BotConfig) {
       return;
     }
 
-    // Show typing indicator
-    await ctx.api.sendChatAction(ctx.chat.id, 'typing');
+    // Typing indicator — refreshes every 4s (Telegram typing expires ~5s)
+    const typing = createTypingIndicator({
+      showFn: async () => { await ctx.api.sendChatAction(ctx.chat.id, 'typing'); },
+      intervalMs: 4000,
+    });
 
+    typing.start();
     try {
       // Check if message triggers a skill (before LLM)
       const matchedSkill = skillRouter.matchSkill(message);
@@ -757,6 +762,8 @@ export function createKINBot(config: BotConfig) {
       console.error('Error handling message:', error);
       const errorMsg = CIPHER_ERROR_MESSAGES[Math.floor(Math.random() * CIPHER_ERROR_MESSAGES.length)];
       await ctx.reply(errorMsg!);
+    } finally {
+      typing.stop();
     }
   });
 

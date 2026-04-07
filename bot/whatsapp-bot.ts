@@ -37,6 +37,7 @@ import { getVoicePipeline, VoicePipelineError } from '../voice/index.js';
 import { createSkillRouter, registerCompanionAbilities } from './skills/index.js';
 import type { SkillContext } from './skills/index.js';
 import { detectLanguage, getLanguagePromptAddition } from './utils/language.js';
+import { createTypingIndicator } from './utils/typing.js';
 import { recordActivity } from './handlers/progress.js';
 import { getDb } from '../db/connection.js';
 import {
@@ -199,12 +200,18 @@ export async function handleTextMessage(
     return;
   }
 
-  // Typing indicator
-  await sock.sendPresenceUpdate('composing', jid);
-
   // Track activity for progress/gamification (fire-and-forget, mirrors Telegram)
   recordActivity(userId);
 
+  // Typing indicator — refreshes every 25s (WhatsApp composing lasts ~30s).
+  // clearFn sends 'paused' on stop so presence resets automatically.
+  const typing = createTypingIndicator({
+    showFn: async () => { await sock.sendPresenceUpdate('composing', jid); },
+    clearFn: async () => { await sock.sendPresenceUpdate('paused', jid); },
+    intervalMs: 25000,
+  });
+
+  typing.start();
   try {
     const companionId = session.companionId;
 
@@ -223,7 +230,6 @@ export async function handleTextMessage(
       if (result && result.type !== 'error') {
         await conversationStore.addMessage(userId, 'user', message, companionId);
         await conversationStore.addMessage(userId, 'assistant', result.content, companionId);
-        await sock.sendPresenceUpdate('paused', jid);
         await sock.sendMessage(jid, { text: result.content });
         return;
       }
@@ -266,14 +272,13 @@ export async function handleTextMessage(
     await conversationStore.addMessage(userId, 'user', message, companionId);
     await conversationStore.addMessage(userId, 'assistant', response, companionId);
 
-    // Clear typing and send
-    await sock.sendPresenceUpdate('paused', jid);
     await sock.sendMessage(jid, { text: response });
   } catch (error) {
     console.error('[whatsapp] Error handling text message:', error);
-    await sock.sendPresenceUpdate('paused', jid);
     const errorMsg = CIPHER_ERROR_MESSAGES[Math.floor(Math.random() * CIPHER_ERROR_MESSAGES.length)]!;
     await sock.sendMessage(jid, { text: errorMsg });
+  } finally {
+    typing.stop();
   }
 }
 
@@ -301,8 +306,14 @@ export async function handleAudioMessage(
     return;
   }
 
-  await sock.sendPresenceUpdate('composing', jid);
+  // Typing indicator — same pattern as handleTextMessage
+  const typing = createTypingIndicator({
+    showFn: async () => { await sock.sendPresenceUpdate('composing', jid); },
+    clearFn: async () => { await sock.sendPresenceUpdate('paused', jid); },
+    intervalMs: 25000,
+  });
 
+  typing.start();
   try {
     // Download audio from WhatsApp servers
     const audioBuffer = await downloadMediaMessage(
@@ -375,14 +386,14 @@ export async function handleAudioMessage(
     await conversationStore.addMessage(userId, 'assistant', response, companionId);
 
     // Send text reply (WhatsApp voice reply would need TTS + ogg encoding)
-    await sock.sendPresenceUpdate('paused', jid);
     await sock.sendMessage(jid, { text: response });
   } catch (error) {
     console.error('[whatsapp] Voice processing error:', error);
-    await sock.sendPresenceUpdate('paused', jid);
     await sock.sendMessage(jid, {
       text: "Hmm, I had trouble with that voice note. Mind sending it again or typing your message?",
     });
+  } finally {
+    typing.stop();
   }
 }
 

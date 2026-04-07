@@ -47,7 +47,7 @@ export interface InferenceMetrics {
 
 export interface ProviderMetrics extends InferenceMetrics {
   /** Provider name */
-  provider: 'local' | 'openai' | 'anthropic';
+  provider: string;
   /** Model name */
   model: string;
 }
@@ -58,7 +58,7 @@ export interface RequestMetric {
   /** Timestamp */
   timestamp: string;
   /** Provider used */
-  provider: 'local' | 'openai' | 'anthropic';
+  provider: string;
   /** Model used */
   model: string;
   /** Request latency in milliseconds */
@@ -298,7 +298,7 @@ export class MetricsCollector {
     const result = new Map<string, ProviderMetrics>();
     
     for (const [key, metrics] of byProvider) {
-      const [provider, model] = key.split(':') as ['local' | 'openai' | 'anthropic', string];
+      const [provider, model] = key.split(':') as [string, string];
       result.set(key, {
         provider,
         model,

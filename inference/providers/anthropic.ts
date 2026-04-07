@@ -15,6 +15,7 @@ import type {
   ProviderChatResponse,
   ProviderStreamChunk,
 } from './types.js';
+import { fetchWithTimeout, retryWithBackoff, HttpError } from '../retry.js';
 
 // ============================================================================
 // Spec
@@ -63,40 +64,46 @@ class AnthropicProvider implements FrontierProvider {
         content: m.content,
       }));
 
-    const response = await fetch(`${SPEC.apiBaseUrl}/messages`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': this.apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
+    return retryWithBackoff(async () => {
+      const response = await fetchWithTimeout(
+        `${SPEC.apiBaseUrl}/messages`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': this.apiKey!,
+            'anthropic-version': '2023-06-01',
+          },
+          body: JSON.stringify({
+            model: SPEC.modelId,
+            max_tokens: request.maxTokens ?? 4096,
+            temperature: request.temperature ?? 0.8,
+            ...(systemMessage ? { system: systemMessage } : {}),
+            messages: chatMessages,
+          }),
+        },
+        10_000, // 10s timeout for chat
+      );
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new HttpError(`[anthropic] API error ${response.status}: ${error}`, response.status);
+      }
+
+      const data = await response.json() as {
+        content: Array<{ type: string; text: string }>;
+        usage: { input_tokens: number; output_tokens: number };
+      };
+
+      return {
+        content: data.content?.[0]?.text ?? '',
+        inputTokens: data.usage?.input_tokens ?? 0,
+        outputTokens: data.usage?.output_tokens ?? 0,
         model: SPEC.modelId,
-        max_tokens: request.maxTokens ?? 4096,
-        temperature: request.temperature ?? 0.8,
-        ...(systemMessage ? { system: systemMessage } : {}),
-        messages: chatMessages,
-      }),
+        provider: 'anthropic',
+        latencyMs: performance.now() - start,
+      };
     });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`[anthropic] API error ${response.status}: ${error}`);
-    }
-
-    const data = await response.json() as {
-      content: Array<{ type: string; text: string }>;
-      usage: { input_tokens: number; output_tokens: number };
-    };
-
-    return {
-      content: data.content?.[0]?.text ?? '',
-      inputTokens: data.usage?.input_tokens ?? 0,
-      outputTokens: data.usage?.output_tokens ?? 0,
-      model: SPEC.modelId,
-      provider: 'anthropic',
-      latencyMs: performance.now() - start,
-    };
   }
 
   async *chatStream(request: ProviderChatRequest): AsyncGenerator<ProviderStreamChunk> {
@@ -113,27 +120,37 @@ class AnthropicProvider implements FrontierProvider {
         content: m.content,
       }));
 
-    const response = await fetch(`${SPEC.apiBaseUrl}/messages`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': this.apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: SPEC.modelId,
-        max_tokens: request.maxTokens ?? 4096,
-        temperature: request.temperature ?? 0.8,
-        ...(systemMessage ? { system: systemMessage } : {}),
-        messages: chatMessages,
-        stream: true,
-      }),
-    });
+    // Retry covers connection/initial response — once streaming starts,
+    // the caller handles mid-stream failures at a higher level.
+    const response = await retryWithBackoff(async () => {
+      const res = await fetchWithTimeout(
+        `${SPEC.apiBaseUrl}/messages`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': this.apiKey!,
+            'anthropic-version': '2023-06-01',
+          },
+          body: JSON.stringify({
+            model: SPEC.modelId,
+            max_tokens: request.maxTokens ?? 4096,
+            temperature: request.temperature ?? 0.8,
+            ...(systemMessage ? { system: systemMessage } : {}),
+            messages: chatMessages,
+            stream: true,
+          }),
+        },
+        15_000, // 15s timeout for stream initiation
+      );
 
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`[anthropic] API error ${response.status}: ${error}`);
-    }
+      if (!res.ok) {
+        const error = await res.text();
+        throw new HttpError(`[anthropic] API error ${res.status}: ${error}`, res.status);
+      }
+
+      return res;
+    });
 
     if (!response.body) {
       throw new Error('[anthropic] Response body is null — streaming not supported');

@@ -17,6 +17,8 @@ import { FallbackHandler, type Message } from '../../inference/fallback-handler.
 import { buildCompanionPrompt, buildSoulPrompt } from '../../inference/companion-prompts.js';
 import { getCompanionConfig } from '../../companions/config.js';
 import { scoreDrift, needsReinforcement, buildReinforcementPrefix } from '../../inference/soul-drift.js';
+import { getProviderHealth } from '../../inference/providers/circuit-breaker.js';
+import { getMetricsCollector } from '../../inference/metrics.js';
 
 // ============================================================================
 // Types
@@ -489,10 +491,27 @@ const chatRoutes: FastifyPluginAsync = async (fastify) => {
   });
 
   // ── GET /chat/status ───────────────────────────────────────────────────
-  // Returns which LLM providers are configured and available
+  // Returns provider config, circuit breaker health, and metrics summary
   fastify.get('/chat/status', async () => {
     const handler = getFallback();
     const availability = await handler.isFallbackAvailable();
+
+    // Circuit breaker health for each tracked provider
+    const circuitBreakers = getProviderHealth().map(cb => ({
+      providerId: cb.providerId,
+      state: cb.state,
+      failures: cb.failures,
+      healthy: cb.healthy,
+    }));
+
+    // Aggregate metrics summary
+    const collector = getMetricsCollector();
+    const summary = collector.getMetrics();
+    const metrics = {
+      totalRequests: summary.totalRequests,
+      successRate: summary.successRate,
+      avgLatencyMs: Math.round(summary.avgLatencyMs),
+    };
 
     return {
       providers: {
@@ -504,6 +523,8 @@ const chatRoutes: FastifyPluginAsync = async (fastify) => {
         : process.env.ANTHROPIC_API_KEY ? 'anthropic'
         : process.env.OPENAI_API_KEY ? 'openai'
         : 'none',
+      circuitBreakers,
+      metrics,
     };
   });
 

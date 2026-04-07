@@ -3,12 +3,15 @@
  *
  * Provides intelligent fallback from local to cloud LLMs with:
  * - OpenAI/Anthropic integration
+ * - Multi-provider iteration (tries all providers on failure)
  * - Route disclosure (tells user when using cloud)
  * - Cost tracking and estimation
  * - Graceful degradation
  *
  * @module inference/fallback-handler
  */
+
+import { fetchWithTimeout, retryWithBackoff, HttpError, isTransientError } from './retry.js';
 
 // ============================================================================
 // Types
@@ -355,7 +358,10 @@ export class FallbackHandler {
   }
 
   /**
-   * Execute directly on cloud provider
+   * Execute directly on cloud provider.
+   * Iterates through ALL providers in priority order — if the preferred
+   * provider fails, tries the next one until one succeeds or all have
+   * been exhausted.
    */
   private async executeCloud(
     messages: Message[],
@@ -369,60 +375,66 @@ export class FallbackHandler {
       if (!providerOrder.includes(p)) providerOrder.push(p);
     }
 
-    // Find first available provider
-    let provider: 'groq' | 'openai' | 'anthropic' | undefined;
-    let apiKey: string | undefined;
-    for (const p of providerOrder) {
-      const key = this.providerConfig[p]?.apiKey;
-      if (key) {
-        provider = p;
-        apiKey = key;
-        break;
-      }
-    }
+    // Filter to providers with API keys
+    const available = providerOrder.filter(p => !!this.providerConfig[p]?.apiKey);
 
-    if (!provider || !apiKey) {
+    if (available.length === 0) {
       throw new Error(`No API key configured for any provider (tried: ${providerOrder.join(', ')})`);
     }
 
-    const model = this.providerConfig[provider]?.model ?? DEFAULT_MODELS[provider];
+    // Iterate through available providers — try each until one succeeds
+    let lastError: unknown;
+    for (const provider of available) {
+      const apiKey = this.providerConfig[provider]!.apiKey!;
+      const model = this.providerConfig[provider]?.model ?? DEFAULT_MODELS[provider];
 
-    // Disclose routing
-    const disclosure = this.config.discloseRouting
-      ? this.formatDisclosure(reason, provider)
-      : undefined;
+      try {
+        const result = await retryWithBackoff(
+          () => this.executeProviderRequest(provider, messages, apiKey),
+          { maxRetries: 1, initialDelayMs: 500 },
+        );
 
-    const routing: RoutingDecision = {
-      route: 'fallback',
-      provider,
-      model,
-      reason,
-      disclosed: this.config.discloseRouting,
-    };
+        // Success — build routing + cost
+        const disclosure = this.config.discloseRouting
+          ? this.formatDisclosure(reason, provider)
+          : undefined;
 
-    this.notifyRouting(routing);
+        const routing: RoutingDecision = {
+          route: 'fallback',
+          provider,
+          model,
+          reason,
+          disclosed: this.config.discloseRouting,
+        };
 
-    // Execute request
-    const result = await this.executeProviderRequest(provider, messages, apiKey);
+        this.notifyRouting(routing);
 
-    // Track cost
-    const costRecord = this.createCostRecord(
-      provider,
-      model,
-      result.inputTokens,
-      result.outputTokens
-    );
+        const costRecord = this.createCostRecord(
+          provider,
+          model,
+          result.inputTokens,
+          result.outputTokens
+        );
 
-    if (this.config.trackCosts) {
-      this.costTracker.record(costRecord);
+        if (this.config.trackCosts) {
+          this.costTracker.record(costRecord);
+        }
+
+        return {
+          content: disclosure ? `${disclosure}\n\n${result.content}` : result.content,
+          routing,
+          cost: costRecord,
+          latencyMs: performance.now() - start,
+        };
+      } catch (err) {
+        lastError = err;
+        console.warn(`[fallback] Provider ${provider} failed, trying next:`, err instanceof Error ? err.message : err);
+        // Continue to next provider
+      }
     }
 
-    return {
-      content: disclosure ? `${disclosure}\n\n${result.content}` : result.content,
-      routing,
-      cost: costRecord,
-      latencyMs: performance.now() - start,
-    };
+    // All providers exhausted
+    throw lastError ?? new Error('All cloud providers failed');
   }
 
   /**
@@ -452,7 +464,7 @@ export class FallbackHandler {
     const baseUrl = this.providerConfig.openai?.baseUrl ?? 'https://api.openai.com/v1';
     const model = this.providerConfig.openai?.model ?? DEFAULT_MODELS.openai;
 
-    const response = await fetch(`${baseUrl}/chat/completions`, {
+    const response = await fetchWithTimeout(`${baseUrl}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -463,11 +475,11 @@ export class FallbackHandler {
         messages,
         max_tokens: 4096,
       }),
-    });
+    }, 10_000);
 
     if (!response.ok) {
       const error = await response.text();
-      throw new Error(`OpenAI API error: ${response.status} - ${error}`);
+      throw new HttpError(`OpenAI API error: ${response.status} - ${error}`, response.status);
     }
 
     const data = await response.json();
@@ -493,7 +505,7 @@ export class FallbackHandler {
     const system = messages.find(m => m.role === 'system')?.content;
     const chatMessages = messages.filter(m => m.role !== 'system');
 
-    const response = await fetch(`${baseUrl}/messages`, {
+    const response = await fetchWithTimeout(`${baseUrl}/messages`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -509,11 +521,11 @@ export class FallbackHandler {
           content: m.content,
         })),
       }),
-    });
+    }, 10_000);
 
     if (!response.ok) {
       const error = await response.text();
-      throw new Error(`Anthropic API error: ${response.status} - ${error}`);
+      throw new HttpError(`Anthropic API error: ${response.status} - ${error}`, response.status);
     }
 
     const data = await response.json();
@@ -535,7 +547,7 @@ export class FallbackHandler {
     const baseUrl = this.providerConfig.groq?.baseUrl ?? 'https://api.groq.com/openai/v1';
     const model = this.providerConfig.groq?.model ?? DEFAULT_MODELS.groq;
 
-    const response = await fetch(`${baseUrl}/chat/completions`, {
+    const response = await fetchWithTimeout(`${baseUrl}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -547,11 +559,11 @@ export class FallbackHandler {
         max_tokens: 4096,
         temperature: 0.8,
       }),
-    });
+    }, 10_000);
 
     if (!response.ok) {
       const error = await response.text();
-      throw new Error(`Groq API error: ${response.status} - ${error}`);
+      throw new HttpError(`Groq API error: ${response.status} - ${error}`, response.status);
     }
 
     const data = await response.json();
@@ -616,6 +628,7 @@ export class FallbackHandler {
 
   /**
    * Streaming chat — yields tokens one-at-a-time via async generator.
+   * Iterates through all available providers on connection failure.
    * Supports Groq, OpenAI (both use OpenAI-compatible SSE), and Anthropic.
    */
   async *chatStream(
@@ -630,33 +643,56 @@ export class FallbackHandler {
       if (!providerOrder.includes(p)) providerOrder.push(p);
     }
 
-    // Find first available provider
-    let provider: 'groq' | 'openai' | 'anthropic' | undefined;
-    let apiKey: string | undefined;
-    for (const p of providerOrder) {
-      const key = this.providerConfig[p]?.apiKey;
-      if (key) {
-        provider = p;
-        apiKey = key;
-        break;
-      }
-    }
+    // Filter to providers with API keys
+    const available = providerOrder.filter(p => !!this.providerConfig[p]?.apiKey);
 
-    if (!provider || !apiKey) {
+    if (available.length === 0) {
       throw new Error('No API key configured for streaming');
     }
 
-    const model = this.providerConfig[provider]?.model ?? DEFAULT_MODELS[provider];
     const maxTokens = options?.maxTokens ?? 4096;
     const temperature = options?.temperature ?? 0.8;
 
+    // Try each provider in order — yield from the first that connects
+    let lastError: unknown;
+    for (const provider of available) {
+      const apiKey = this.providerConfig[provider]!.apiKey!;
+      const model = this.providerConfig[provider]?.model ?? DEFAULT_MODELS[provider];
+
+      try {
+        yield* this.streamFromProvider(provider, apiKey, model, messages, maxTokens, temperature);
+        return; // Success — done
+      } catch (err) {
+        lastError = err;
+        console.warn(`[fallback] Stream provider ${provider} failed, trying next:`, err instanceof Error ? err.message : err);
+        // Continue to next provider
+      }
+    }
+
+    // All providers exhausted
+    throw lastError ?? new Error('All streaming providers failed');
+  }
+
+  /**
+   * Stream tokens from a specific provider.
+   * Connection phase uses fetchWithTimeout; once streaming starts, tokens
+   * are yielded until the provider signals completion.
+   */
+  private async *streamFromProvider(
+    provider: 'groq' | 'openai' | 'anthropic',
+    apiKey: string,
+    model: string,
+    messages: Message[],
+    maxTokens: number,
+    temperature: number,
+  ): AsyncGenerator<string> {
     if (provider === 'groq' || provider === 'openai') {
       // OpenAI-compatible SSE streaming (Groq + OpenAI)
       const baseUrl = provider === 'groq'
         ? (this.providerConfig.groq?.baseUrl ?? 'https://api.groq.com/openai/v1')
         : (this.providerConfig.openai?.baseUrl ?? 'https://api.openai.com/v1');
 
-      const response = await fetch(`${baseUrl}/chat/completions`, {
+      const response = await fetchWithTimeout(`${baseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -669,11 +705,11 @@ export class FallbackHandler {
           temperature,
           stream: true,
         }),
-      });
+      }, 15_000);
 
       if (!response.ok) {
         const error = await response.text();
-        throw new Error(`${provider} streaming error: ${response.status} - ${error}`);
+        throw new HttpError(`${provider} streaming error: ${response.status} - ${error}`, response.status);
       }
 
       const reader = response.body!.getReader();
@@ -707,7 +743,7 @@ export class FallbackHandler {
       const system = messages.find((m) => m.role === 'system')?.content;
       const chatMessages = messages.filter((m) => m.role !== 'system');
 
-      const response = await fetch(`${baseUrl}/messages`, {
+      const response = await fetchWithTimeout(`${baseUrl}/messages`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -724,11 +760,11 @@ export class FallbackHandler {
           })),
           stream: true,
         }),
-      });
+      }, 15_000);
 
       if (!response.ok) {
         const error = await response.text();
-        throw new Error(`Anthropic streaming error: ${response.status} - ${error}`);
+        throw new HttpError(`Anthropic streaming error: ${response.status} - ${error}`, response.status);
       }
 
       const reader = response.body!.getReader();

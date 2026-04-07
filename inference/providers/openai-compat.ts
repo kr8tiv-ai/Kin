@@ -15,6 +15,7 @@ import type {
   ProviderChatResponse,
   ProviderStreamChunk,
 } from './types.js';
+import { fetchWithTimeout, retryWithBackoff, HttpError } from '../retry.js';
 
 // ============================================================================
 // Base Class
@@ -42,38 +43,44 @@ export class OpenAICompatProvider implements FrontierProvider {
 
     const start = performance.now();
 
-    const response = await fetch(`${this.spec.apiBaseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.apiKey}`,
-      },
-      body: JSON.stringify({
+    return retryWithBackoff(async () => {
+      const response = await fetchWithTimeout(
+        `${this.spec.apiBaseUrl}/chat/completions`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.apiKey!}`,
+          },
+          body: JSON.stringify({
+            model: this.spec.modelId,
+            messages: request.messages,
+            max_tokens: request.maxTokens ?? 4096,
+            temperature: request.temperature ?? 0.8,
+          }),
+        },
+        10_000, // 10s timeout for chat
+      );
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new HttpError(`[${this.id}] API error ${response.status}: ${error}`, response.status);
+      }
+
+      const data = await response.json() as {
+        choices: Array<{ message: { content: string } }>;
+        usage?: { prompt_tokens: number; completion_tokens: number };
+      };
+
+      return {
+        content: data.choices[0]?.message?.content ?? '',
+        inputTokens: data.usage?.prompt_tokens ?? 0,
+        outputTokens: data.usage?.completion_tokens ?? 0,
         model: this.spec.modelId,
-        messages: request.messages,
-        max_tokens: request.maxTokens ?? 4096,
-        temperature: request.temperature ?? 0.8,
-      }),
+        provider: this.id,
+        latencyMs: performance.now() - start,
+      };
     });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`[${this.id}] API error ${response.status}: ${error}`);
-    }
-
-    const data = await response.json() as {
-      choices: Array<{ message: { content: string } }>;
-      usage?: { prompt_tokens: number; completion_tokens: number };
-    };
-
-    return {
-      content: data.choices[0]?.message?.content ?? '',
-      inputTokens: data.usage?.prompt_tokens ?? 0,
-      outputTokens: data.usage?.completion_tokens ?? 0,
-      model: this.spec.modelId,
-      provider: this.id,
-      latencyMs: performance.now() - start,
-    };
   }
 
   async *chatStream(request: ProviderChatRequest): AsyncGenerator<ProviderStreamChunk> {
@@ -81,26 +88,36 @@ export class OpenAICompatProvider implements FrontierProvider {
       throw new Error(`[${this.id}] API key not configured (set ${this.spec.apiKeyEnvVar})`);
     }
 
-    const response = await fetch(`${this.spec.apiBaseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.apiKey}`,
-      },
-      body: JSON.stringify({
-        model: this.spec.modelId,
-        messages: request.messages,
-        max_tokens: request.maxTokens ?? 4096,
-        temperature: request.temperature ?? 0.8,
-        stream: true,
-        stream_options: { include_usage: true },
-      }),
-    });
+    // Retry covers the connection/initial response — once streaming starts,
+    // we don't retry mid-stream (the caller handles that at a higher level).
+    const response = await retryWithBackoff(async () => {
+      const res = await fetchWithTimeout(
+        `${this.spec.apiBaseUrl}/chat/completions`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.apiKey!}`,
+          },
+          body: JSON.stringify({
+            model: this.spec.modelId,
+            messages: request.messages,
+            max_tokens: request.maxTokens ?? 4096,
+            temperature: request.temperature ?? 0.8,
+            stream: true,
+            stream_options: { include_usage: true },
+          }),
+        },
+        15_000, // 15s timeout for stream initiation
+      );
 
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`[${this.id}] API error ${response.status}: ${error}`);
-    }
+      if (!res.ok) {
+        const error = await res.text();
+        throw new HttpError(`[${this.id}] API error ${res.status}: ${error}`, res.status);
+      }
+
+      return res;
+    });
 
     if (!response.body) {
       throw new Error(`[${this.id}] Response body is null — streaming not supported`);

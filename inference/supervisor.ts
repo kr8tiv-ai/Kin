@@ -22,6 +22,7 @@ import { getProvider } from './providers/index.js';
 import type { FrontierProviderId } from './providers/types.js';
 import { getTrajectoryLogger } from './trajectory.js';
 import { isProviderHealthy, recordSuccess, recordFailure } from './providers/circuit-breaker.js';
+import { getMetricsCollector, type RequestMetric } from './metrics.js';
 import { getSupermemoryClient } from './memory/supermemory.js';
 import { extractObservations } from './observation-extractor.js';
 import { getTrainingDataCollector } from './training-data.js';
@@ -592,6 +593,23 @@ export async function supervisedChat(
       ).catch(() => {});
     }
   }
+
+  // Record inference metrics (in-memory, synchronous — no async overhead)
+  const metricsProvider = usedProvider ?? 'local';
+  const metricsModel = frontierModel ?? config.localModel;
+  const isSuccess = content !== (NO_LLM_FALLBACKS[companionId] ?? NO_LLM_FALLBACKS['cipher']!);
+  getMetricsCollector().record({
+    requestId: `sup-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    timestamp: new Date().toISOString(),
+    provider: metricsProvider,
+    model: metricsModel,
+    latencyMs,
+    inputTokens: trackedInputTokens,
+    outputTokens: trackedOutputTokens,
+    success: isSuccess,
+    costUsd: trackedCostUsd,
+    route: route === 'local' ? 'local' : 'fallback',
+  });
 
   // Trajectory persistence (fire-and-forget — non-blocking)
   getTrajectoryLogger().log({

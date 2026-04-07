@@ -18,11 +18,13 @@ import {
   SlashCommandBuilder,
   Events,
   ChannelType,
+  ActivityType,
   type Interaction,
   type Message as DiscordMessage,
   type ChatInputCommandInteraction,
 } from 'discord.js';
 import { buildCompanionPrompt, getAvailableCompanions } from '../inference/companion-prompts.js';
+import { createTypingIndicator } from './utils/typing.js';
 import { FallbackHandler } from '../inference/fallback-handler.js';
 import { supervisedChat } from '../inference/supervisor.js';
 import { conversationStore } from './memory/conversation-store.js';
@@ -618,15 +620,17 @@ async function handleMessage(
   // Track activity for progress/gamification (fire-and-forget per K013)
   recordActivity(userId);
 
-  // Show typing indicator (PartialGroupDMChannel lacks sendTyping — guard it)
-  try {
-    if ('sendTyping' in message.channel) {
-      await message.channel.sendTyping();
-    }
-  } catch {
-    // Non-critical -- continue without typing indicator
-  }
+  // Typing indicator — refreshes every 8s (Discord typing expires ~10s).
+  // PartialGroupDMChannel lacks sendTyping — use no-op showFn when unavailable.
+  const hasTyping = 'sendTyping' in message.channel;
+  const typing = createTypingIndicator({
+    showFn: hasTyping
+      ? async () => { await (message.channel as any).sendTyping(); }
+      : async () => {},
+    intervalMs: 8000,
+  });
 
+  typing.start();
   try {
     const response = await runInferencePipeline(userId, userName, content, session, fallback);
     const chunks = splitMessage(response);
@@ -652,6 +656,8 @@ async function handleMessage(
   } catch (error) {
     console.error('[discord] Error handling message:', error);
     await message.reply(randomErrorMessage());
+  } finally {
+    typing.stop();
   }
 }
 
@@ -718,6 +724,17 @@ export function createDiscordBot(config: DiscordBotConfig) {
   client.once(Events.ClientReady, (readyClient: any) => {
     console.log(`[discord] Logged in as ${readyClient.user.tag}`);
     console.log(`[discord] Serving ${readyClient.guilds.cache.size} guild(s)`);
+
+    // Set bot presence — visible in member list as "Playing /chat to start"
+    try {
+      readyClient.user.setPresence({
+        activities: [{ name: '/chat to start', type: ActivityType.Custom }],
+        status: 'online',
+      });
+    } catch {
+      // Non-critical — presence is cosmetic
+      console.warn('[discord] Failed to set bot presence');
+    }
   });
 
   // ==========================================================================

@@ -610,6 +610,9 @@ async function handleWsChat(
     VALUES (?, ?, 'user', ?)
   `).run(crypto.randomUUID(), conversationId, userMessage);
 
+  // Notify client that inference is starting (typing indicator for web UI)
+  connection.socket.send(JSON.stringify({ type: 'chat_typing', companionId }));
+
   // Stream response from Ollama
   const client = getOllamaClient();
   let fullResponse = '';
