@@ -73,6 +73,11 @@ import { ChannelDelivery } from '../inference/channel-delivery.js';
 import { createSkillRouter } from '../bot/skills/index.js';
 import { setSchedulerManager } from '../bot/skills/builtins/schedule.js';
 
+// Pipeline imports
+import { PipelineManager } from '../inference/pipeline-manager.js';
+import { setPipelineManager } from '../bot/skills/builtins/pipeline.js';
+import pipelineRoutes from './routes/pipelines.js';
+
 // Inference imports for WebSocket streaming chat
 import crypto from 'crypto';
 import { getOllamaClient, isLocalLlmAvailable, type ChatMessage } from '../inference/local-llm.js';
@@ -302,6 +307,35 @@ export async function createServer(config: ApiConfig = {}) {
     fastify.log.error(`[scheduler] Hydration failed: ${msg}`);
   }
 
+  // --------------------------------------------------------------------------
+  // Pipeline initialisation
+  // --------------------------------------------------------------------------
+
+  const pipelineManager = new PipelineManager(db, channelDelivery);
+
+  // Wire skill resolution — same resolveSkill callback as scheduler
+  pipelineManager.setSkillExecutor(async (skillName, ctx) => {
+    const skill = resolveSkill(skillName);
+    if (!skill) {
+      return { content: `Skill "${skillName}" not found`, type: 'error' as const };
+    }
+    return skill.execute(ctx);
+  });
+
+  // Wire the pipeline skill's PipelineManager reference
+  setPipelineManager(pipelineManager);
+
+  // Hydrate cron-triggered pipelines from DB
+  try {
+    const hydrated = pipelineManager.hydrateFromDb();
+    if (hydrated > 0) {
+      fastify.log.info(`[pipeline] Hydrated ${hydrated} cron-triggered pipeline(s)`);
+    }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    fastify.log.error(`[pipeline] Hydration failed: ${msg}`);
+  }
+
   // Store context
   fastify.decorate('context', {
     db,
@@ -414,6 +448,7 @@ export async function createServer(config: ApiConfig = {}) {
     await protectedFastify.register(dmSecurityRoutes);
     await protectedFastify.register(gmailAuthRoutes);
     await protectedFastify.register(schedulerRoutes, { schedulerManager });
+    await protectedFastify.register(pipelineRoutes, { pipelineManager });
   });
 
   // Webhook ingestion routes (HMAC-authenticated, no JWT)
@@ -529,6 +564,7 @@ export async function createServer(config: ApiConfig = {}) {
 
   fastify.addHook('onClose', async () => {
     schedulerManager.shutdown();
+    pipelineManager.shutdown();
     for (const handler of closeHandlers) {
       await handler();
     }

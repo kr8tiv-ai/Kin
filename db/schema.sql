@@ -773,3 +773,78 @@ CREATE TABLE IF NOT EXISTS webhook_triggers (
 
 CREATE INDEX IF NOT EXISTS idx_webhook_triggers_user ON webhook_triggers(user_id);
 CREATE INDEX IF NOT EXISTS idx_webhook_triggers_active ON webhook_triggers(is_active);
+
+-- ---------------------------------------------------------------------------
+-- Workflow Pipelines — multi-step skill composition
+-- ---------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS workflow_pipelines (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  companion_id TEXT NOT NULL REFERENCES companions(id),
+  name TEXT NOT NULL,
+  description TEXT,
+  steps TEXT NOT NULL DEFAULT '[]',        -- JSON array of { skillName, skillArgs?, label? }
+  trigger_type TEXT NOT NULL DEFAULT 'manual'
+    CHECK (trigger_type IN ('manual', 'cron')),
+  cron_expression TEXT,                    -- nullable: only set for cron-triggered pipelines
+  timezone TEXT NOT NULL DEFAULT 'UTC',
+  delivery_channel TEXT NOT NULL CHECK (delivery_channel IN ('telegram', 'whatsapp', 'discord', 'api')),
+  delivery_recipient_id TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'active'
+    CHECK (status IN ('active', 'paused', 'archived')),
+  last_run_at INTEGER,
+  run_count INTEGER NOT NULL DEFAULT 0,
+  error_count INTEGER NOT NULL DEFAULT 0,
+  last_error TEXT,
+  created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000),
+  updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000)
+);
+
+CREATE INDEX IF NOT EXISTS idx_workflow_pipelines_user ON workflow_pipelines(user_id);
+CREATE INDEX IF NOT EXISTS idx_workflow_pipelines_status ON workflow_pipelines(status);
+
+-- ---------------------------------------------------------------------------
+-- Pipeline Runs — execution history for workflow pipelines
+-- ---------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS pipeline_runs (
+  id TEXT PRIMARY KEY,
+  pipeline_id TEXT NOT NULL REFERENCES workflow_pipelines(id) ON DELETE CASCADE,
+  status TEXT NOT NULL DEFAULT 'running'
+    CHECK (status IN ('running', 'completed', 'failed', 'partial')),
+  started_at INTEGER NOT NULL,
+  completed_at INTEGER,
+  steps_completed INTEGER NOT NULL DEFAULT 0,
+  steps_total INTEGER NOT NULL DEFAULT 0,
+  error TEXT,
+  final_output TEXT,
+  created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000)
+);
+
+CREATE INDEX IF NOT EXISTS idx_pipeline_runs_pipeline ON pipeline_runs(pipeline_id);
+CREATE INDEX IF NOT EXISTS idx_pipeline_runs_status ON pipeline_runs(status);
+
+-- ---------------------------------------------------------------------------
+-- Pipeline Step Results — per-step execution records within a run
+-- ---------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS pipeline_step_results (
+  id TEXT PRIMARY KEY,
+  run_id TEXT NOT NULL REFERENCES pipeline_runs(id) ON DELETE CASCADE,
+  step_index INTEGER NOT NULL,
+  skill_name TEXT NOT NULL,
+  input_message TEXT NOT NULL,
+  output_content TEXT,
+  output_type TEXT,
+  output_metadata TEXT,                    -- JSON blob
+  status TEXT NOT NULL DEFAULT 'running'
+    CHECK (status IN ('running', 'completed', 'failed')),
+  started_at INTEGER NOT NULL,
+  completed_at INTEGER,
+  duration_ms INTEGER,
+  error TEXT,
+  UNIQUE(run_id, step_index)
+);
+
+CREATE INDEX IF NOT EXISTS idx_pipeline_step_results_run ON pipeline_step_results(run_id);
