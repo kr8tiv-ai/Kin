@@ -19,6 +19,7 @@ import { getCompanionConfig } from '../../companions/config.js';
 import { scoreDrift, needsReinforcement, buildReinforcementPrefix } from '../../inference/soul-drift.js';
 import { getProviderHealth } from '../../inference/providers/circuit-breaker.js';
 import { getMetricsCollector } from '../../inference/metrics.js';
+import { loadUserTier, enforceMessageLimit } from '../middleware/subscription-gate.js';
 
 // ============================================================================
 // Types
@@ -177,6 +178,7 @@ const chatRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.post<{ Body: ChatBody }>('/chat', {
     schema: { body: chatBodySchema },
     config: { rateLimit: { max: 30, timeWindow: '1 minute' } },
+    preHandler: [enforceMessageLimit()],
   } as any, async (request, reply: FastifyReply) => {
     const userId = (request.user as { userId: string }).userId;
     const { companionId = 'cipher', message, conversationId: existingConvoId } = request.body;
@@ -242,6 +244,7 @@ const chatRoutes: FastifyPluginAsync = async (fastify) => {
 
     // Generate response via supervisor (two-brain architecture)
     const privacyMode = loadPrivacyMode(fastify.context.db, userId);
+    const userTier = loadUserTier(fastify.context.db, userId);
     const result = await supervisedChat(
       messages,
       companionId,
@@ -250,6 +253,7 @@ const chatRoutes: FastifyPluginAsync = async (fastify) => {
         taskType: 'chat',
         userId,
         privacyMode,
+        userTier,
         memoryFallback: async () => {
           const rows = fastify.context.db.prepare(`
             SELECT memory_type, content FROM memories
@@ -306,6 +310,7 @@ const chatRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.post<{ Body: ChatBody }>('/chat/stream', {
     schema: { body: chatBodySchema },
     config: { rateLimit: { max: 30, timeWindow: '1 minute' } },
+    preHandler: [enforceMessageLimit()],
   } as any, async (request, reply: FastifyReply) => {
     const userId = (request.user as { userId: string }).userId;
     const { companionId = 'cipher', message, conversationId: existingConvoId } = request.body;
@@ -435,6 +440,7 @@ const chatRoutes: FastifyPluginAsync = async (fastify) => {
       // Streaming failed — fall back to non-streaming supervisor call
       try {
         const streamPrivacyMode = loadPrivacyMode(fastify.context.db, userId);
+        const streamUserTier = loadUserTier(fastify.context.db, userId);
         const result = await supervisedChat(
           messages,
           companionId,
@@ -443,6 +449,7 @@ const chatRoutes: FastifyPluginAsync = async (fastify) => {
             taskType: 'chat',
             userId,
             privacyMode: streamPrivacyMode,
+            userTier: streamUserTier,
             memoryFallback: async () => {
               const rows = fastify.context.db.prepare(`
                 SELECT memory_type, content FROM memories

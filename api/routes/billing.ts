@@ -143,7 +143,7 @@ const billingRoutes: FastifyPluginAsync = async (fastify) => {
     const messagesToday = (fastify.context.db.prepare(`
       SELECT COUNT(*) as count FROM messages m
       JOIN conversations c ON c.id = m.conversation_id
-      WHERE c.user_id = ? AND m.role = 'user' AND m.created_at >= datetime(?, 'unixepoch')
+      WHERE c.user_id = ? AND m.role = 'user' AND m.timestamp >= ? * 1000
     `).get(userId, Math.floor(todayStart.getTime() / 1000)) as any)?.count ?? 0;
 
     const activeCompanions = (fastify.context.db.prepare(`
