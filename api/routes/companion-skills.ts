@@ -15,6 +15,8 @@
 
 import { FastifyPluginAsync, FastifyReply } from 'fastify';
 import crypto from 'crypto';
+import { pinJSON } from '../lib/ipfs-pin.js';
+import { anchorHash } from '../lib/chain-anchor.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -258,13 +260,33 @@ const companionSkillsRoutes: FastifyPluginAsync = async (fastify) => {
       payloadStr,
     );
 
+    // Fire-and-forget: pin to IPFS then anchor hash on-chain (K013 pattern)
+    (async () => {
+      try {
+        const pinResult = await pinJSON(payload, snapshotId);
+        if (pinResult) {
+          fastify.context.db.prepare(
+            `UPDATE companion_snapshots SET ipfs_cid = ? WHERE id = ?`,
+          ).run(pinResult.cid, snapshotId);
+        }
+
+        const anchorResult = await anchorHash(contentHash);
+        if (anchorResult) {
+          fastify.context.db.prepare(
+            `UPDATE companion_snapshots SET solana_tx_sig = ?, is_on_chain = 1 WHERE id = ?`,
+          ).run(anchorResult.txSig, snapshotId);
+        }
+      } catch {
+        // Never block the response — side-effect failures are silent (K013)
+      }
+    })().catch(() => {});
+
     return {
       id: snapshotId,
       contentHash,
       skillCount: skills.length,
       totalLevels: payload.totalSkillLevels,
       snapshotType,
-      // IPFS pinning would happen here in production
       ipfsCid: null,
       isOnChain: false,
     };

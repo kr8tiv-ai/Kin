@@ -363,6 +363,41 @@ export interface NftTransfer {
 }
 
 // ============================================================================
+// Trait Verification (IPFS + On-Chain)
+// ============================================================================
+
+export interface TraitSkill {
+  skillId: string;
+  skillName: string;
+  skillDisplayName: string;
+  skillCategory: string;
+  skillLevel: number;
+  xp: number;
+  xpToNextLevel: number;
+  isPortable: boolean;
+  usageCount: number;
+  accruedAt: string;
+  lastUsedAt: string | null;
+}
+
+export interface TraitSnapshot {
+  id: string;
+  contentHash: string;
+  ipfsCid: string | null;
+  solanaTxSig: string | null;
+  isOnChain: boolean;
+  createdAt: string;
+}
+
+export interface TraitResponse {
+  companionId: string;
+  mintAddress: string;
+  skills: TraitSkill[];
+  latestSnapshot: TraitSnapshot | null;
+  totalSkillLevels: number;
+}
+
+// ============================================================================
 // Training Curation
 // ============================================================================
 

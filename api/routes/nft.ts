@@ -87,6 +87,71 @@ const nftRoutes: FastifyPluginAsync = async (fastify) => {
     };
   });
 
+  // Get NFT traits: skills + latest snapshot with IPFS/chain status
+  fastify.get<{ Params: NFTParams }>('/nft/:mintAddress/traits', async (request, reply) => {
+    const { mintAddress } = request.params;
+
+    // Look up NFT ownership by mint address
+    const nft = fastify.context.db.prepare(`
+      SELECT companion_id, user_id FROM nft_ownership
+      WHERE mint_address = ?
+    `).get(mintAddress) as { companion_id: string; user_id: string } | undefined;
+
+    if (!nft) {
+      reply.status(404);
+      return { error: 'NFT not found' };
+    }
+
+    // Latest companion snapshot
+    const snapshot = fastify.context.db.prepare(`
+      SELECT id, content_hash, ipfs_cid, solana_tx_sig, is_on_chain, created_at
+      FROM companion_snapshots
+      WHERE companion_id = ? AND user_id = ?
+      ORDER BY created_at DESC LIMIT 1
+    `).get(nft.companion_id, nft.user_id) as any | undefined;
+
+    // All portable skills for this companion
+    const skills = fastify.context.db.prepare(`
+      SELECT cs.skill_id, cs.skill_level, cs.xp, cs.xp_to_next_level,
+             cs.is_portable, cs.usage_count, cs.accrued_at, cs.last_used_at,
+             s.name AS skill_name, s.display_name AS skill_display_name,
+             s.category AS skill_category
+      FROM companion_skills cs
+      JOIN skills s ON s.id = cs.skill_id
+      WHERE cs.companion_id = ? AND cs.user_id = ?
+      ORDER BY cs.skill_level DESC, cs.xp DESC
+    `).all(nft.companion_id, nft.user_id) as any[];
+
+    const totalSkillLevels = skills.reduce((sum: number, s: any) => sum + s.skill_level, 0);
+
+    return {
+      companionId: nft.companion_id,
+      mintAddress,
+      skills: skills.map((s: any) => ({
+        skillId: s.skill_id,
+        skillName: s.skill_name,
+        skillDisplayName: s.skill_display_name,
+        skillCategory: s.skill_category,
+        skillLevel: s.skill_level,
+        xp: s.xp,
+        xpToNextLevel: s.xp_to_next_level,
+        isPortable: s.is_portable === 1,
+        usageCount: s.usage_count,
+        accruedAt: new Date(s.accrued_at).toISOString(),
+        lastUsedAt: s.last_used_at ? new Date(s.last_used_at).toISOString() : null,
+      })),
+      latestSnapshot: snapshot ? {
+        id: snapshot.id,
+        contentHash: snapshot.content_hash,
+        ipfsCid: snapshot.ipfs_cid ?? null,
+        solanaTxSig: snapshot.solana_tx_sig ?? null,
+        isOnChain: snapshot.is_on_chain === 1,
+        createdAt: new Date(snapshot.created_at).toISOString(),
+      } : null,
+      totalSkillLevels,
+    };
+  });
+
   // Initiate mint (placeholder - actual Solana integration required)
   fastify.post<{ Body: { companionId: string; wallet: string } }>(
     '/nft/mint',

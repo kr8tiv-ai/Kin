@@ -12,6 +12,7 @@ import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { getCompanion } from '@/lib/companions';
 import { useCompanions } from '@/hooks/useCompanions';
+import { useTraits } from '@/hooks/useTraits';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -61,6 +62,22 @@ const COMPANION_TRAITS: Record<string, { label: string; value: number }[]> = {
 };
 
 // ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function formatRelativeTime(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const seconds = Math.floor(diff / 1000);
+  if (seconds < 60) return 'just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
+// ---------------------------------------------------------------------------
 // Page Component
 // ---------------------------------------------------------------------------
 
@@ -82,6 +99,13 @@ export default function CompanionDetailPage({
   const isOwned = !!ownedEntry;
   const isActive = ownedEntry?.isActive ?? false;
   const traits = COMPANION_TRAITS[id] ?? COMPANION_TRAITS['cipher']!;
+
+  // Fetch live skill/trait data (safe to call before early return — hooks must be unconditional)
+  const {
+    skills: liveSkills,
+    snapshot,
+    loading: traitsLoading,
+  } = useTraits(id, ownedEntry?.nftMintAddress);
 
   // Gate: if user doesn't own this companion, show Mint to Unlock
   if (!isOwned) {
@@ -287,6 +311,91 @@ export default function CompanionDetailPage({
             </div>
           ))}
         </div>
+      </GlassCard>
+
+      {/* Verified Traits — Live skills with IPFS/chain proof */}
+      <GlassCard className="p-6" hover={false}>
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="font-display text-lg font-semibold text-white">
+            Verified Traits
+          </h2>
+          {snapshot?.createdAt && (
+            <span className="text-xs text-white/30 font-mono">
+              Last verified {formatRelativeTime(snapshot.createdAt)}
+            </span>
+          )}
+        </div>
+
+        {/* Skill bars */}
+        {traitsLoading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-8 rounded-lg bg-white/5 animate-pulse" />
+            ))}
+          </div>
+        ) : liveSkills.length === 0 ? (
+          <p className="text-white/40 text-sm py-4 text-center">
+            No skills accrued yet — start chatting to level up!
+          </p>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2">
+            {liveSkills.map((skill) => {
+              const percent = skill.xpToNextLevel > 0
+                ? Math.min(100, Math.round((skill.xp / skill.xpToNextLevel) * 100))
+                : 100;
+              return (
+                <div key={skill.skillId}>
+                  <div className="flex items-center justify-between text-sm mb-1.5">
+                    <span className="text-white/60">{skill.skillDisplayName}</span>
+                    <span className="font-mono text-white/40">Lv.{skill.skillLevel}</span>
+                  </div>
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-white/5">
+                    <motion.div
+                      className={`h-full rounded-full ${
+                        skill.skillLevel >= 5 ? 'bg-cyan' : skill.skillLevel >= 3 ? 'bg-gold' : 'bg-magenta'
+                      }`}
+                      initial={{ width: 0 }}
+                      animate={{ width: `${percent}%` }}
+                      transition={{ duration: 0.8, delay: 0.2 }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* IPFS + On-chain badges */}
+        {(snapshot?.ipfsCid || snapshot?.solanaTxSig) && (
+          <div className="flex flex-wrap items-center gap-3 mt-5 pt-4 border-t border-white/5">
+            {snapshot.ipfsCid && (
+              <a
+                href={`https://gateway.pinata.cloud/ipfs/${snapshot.ipfsCid}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-full border border-cyan/30 bg-cyan/10 px-3 py-1 text-[11px] font-mono text-cyan hover:bg-cyan/20 transition-colors"
+              >
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"/>
+                </svg>
+                IPFS Proof
+              </a>
+            )}
+            {snapshot.solanaTxSig && (
+              <a
+                href={`https://explorer.solana.com/tx/${snapshot.solanaTxSig}${process.env.NEXT_PUBLIC_SOLANA_NETWORK === 'mainnet-beta' ? '' : '?cluster=devnet'}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-full border border-[#AB6DFE]/30 bg-[#AB6DFE]/10 px-3 py-1 text-[11px] font-mono text-[#AB6DFE] hover:bg-[#AB6DFE]/20 transition-colors"
+              >
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"/>
+                </svg>
+                On-Chain Verified
+              </a>
+            )}
+          </div>
+        )}
       </GlassCard>
 
       {/* Abilities / What This KIN Can Do */}
