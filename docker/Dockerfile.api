@@ -18,6 +18,8 @@ COPY training/ training/
 COPY voice/ voice/
 COPY website/ website/
 COPY db/ db/
+COPY fleet/ fleet/
+COPY solana/ solana/
 RUN npm run build
 
 FROM node:20-alpine AS runtime
