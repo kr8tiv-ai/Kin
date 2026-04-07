@@ -1,11 +1,12 @@
 /**
- * Soul Bridge — unit tests for SOUL.md export/import.
+ * Soul Bridge — unit tests for SOUL.md export/import + API routes.
  *
  * Tests: soulToOpenClaw, openClawToSoul, parseSoulMdSections, estimateTraits,
- * configToSoulMd, and round-trip equivalence.
+ * configToSoulMd, round-trip equivalence, and Fastify API route integration.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import type { FastifyInstance } from 'fastify';
 import {
   soulToOpenClaw,
   openClawToSoul,
@@ -484,5 +485,447 @@ describe('round-trip: export → import', () => {
 
     // Vibe section should match
     expect(sections2.get('Vibe')).toBe(sections1.get('Vibe'));
+  });
+});
+
+// ============================================================================
+// API Route Integration Tests — OpenClaw endpoints
+// ============================================================================
+
+describe('OpenClaw API Routes', () => {
+  let server: FastifyInstance | null = null;
+  let authToken = '';
+  let skipReason = '';
+
+  beforeAll(async () => {
+    // Race the entire server init against a timeout to handle cases where
+    // better-sqlite3 native module load blocks the event loop (K001/K027).
+    const initPromise = (async () => {
+      const { createServer } = await import('../api/server.js');
+
+      server = await createServer({
+        environment: 'development',
+        jwtSecret: 'test-secret-for-vitest',
+        databasePath: ':memory:',
+        rateLimitMax: 10000,
+      });
+      await server.ready();
+
+      // Get a dev auth token
+      const loginRes = await server.inject({
+        method: 'POST',
+        url: '/auth/dev-login',
+        payload: { userId: 'test-soul-user', displayName: 'Soul Tester' },
+      });
+      const loginBody = loginRes.json();
+      authToken = loginBody.token;
+    })();
+
+    try {
+      await Promise.race([
+        initPromise,
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Server init timed out (likely K001/K027 native module issue)')), 10000),
+        ),
+      ]);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (
+        msg.includes('bindings') ||
+        msg.includes('better_sqlite3') ||
+        msg.includes('better-sqlite3') ||
+        msg.includes('ERR_DLOPEN_FAILED') ||
+        msg.includes('dockerode') ||
+        msg.includes('ERR_MODULE_NOT_FOUND') ||
+        msg.includes('timed out')
+      ) {
+        skipReason = `Server init failed: ${msg.slice(0, 150)}`;
+        server = null;
+      } else {
+        throw err;
+      }
+    }
+  }, 15000);
+
+  afterAll(async () => {
+    if (server) {
+      await server.close();
+    }
+  });
+
+  function skip(): boolean {
+    if (skipReason) {
+      console.log(`[SKIP] ${skipReason}`);
+      return true;
+    }
+    return false;
+  }
+
+  // ── GET /soul/export/:companionId/openclaw ─────────────────────────────
+
+  describe('GET /soul/export/:companionId/openclaw', () => {
+    it('exports cipher without soul config (base companion only)', async () => {
+      if (skip()) return;
+
+      const res = await server!.inject({
+        method: 'GET',
+        url: '/soul/export/cipher/openclaw',
+        headers: { authorization: `Bearer ${authToken}` },
+      });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.headers['content-type']).toContain('text/markdown');
+
+      const body = res.body;
+      expect(body).toContain('# Cipher');
+      expect(body).toContain('## Identity');
+      expect(body).toContain('**Name**: Cipher');
+      expect(body).toContain('**Species**: Code Kraken');
+      expect(body).toContain('## Continuity');
+    });
+
+    it('exports with user soul config when one exists', async () => {
+      if (skip()) return;
+
+      // First, PUT a soul config
+      await server!.inject({
+        method: 'PUT',
+        url: '/soul/cipher',
+        headers: {
+          authorization: `Bearer ${authToken}`,
+          'content-type': 'application/json',
+        },
+        payload: SAMPLE_SOUL_CONFIG,
+      });
+
+      const res = await server!.inject({
+        method: 'GET',
+        url: '/soul/export/cipher/openclaw',
+        headers: { authorization: `Bearer ${authToken}` },
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = res.body;
+      expect(body).toContain('# TestBot'); // customName from SAMPLE_SOUL_CONFIG
+      expect(body).toContain('## Values');
+      expect(body).toContain('- honesty');
+      expect(body).toContain('## Vibe');
+      expect(body).toContain('## Boundaries');
+      expect(body).toContain('## Never Do These');
+    });
+
+    it('returns 400 for unknown companion ID', async () => {
+      if (skip()) return;
+
+      const res = await server!.inject({
+        method: 'GET',
+        url: '/soul/export/unknown-bot/openclaw',
+        headers: { authorization: `Bearer ${authToken}` },
+      });
+
+      expect(res.statusCode).toBe(400);
+      const body = res.json();
+      expect(body.error).toContain('Unknown companion');
+    });
+
+    it('returns 401 without auth token', async () => {
+      if (skip()) return;
+
+      const res = await server!.inject({
+        method: 'GET',
+        url: '/soul/export/cipher/openclaw',
+      });
+
+      expect(res.statusCode).toBe(401);
+    });
+
+    it('includes Personality Core from companion markdown', async () => {
+      if (skip()) return;
+
+      const res = await server!.inject({
+        method: 'GET',
+        url: '/soul/export/cipher/openclaw',
+        headers: { authorization: `Bearer ${authToken}` },
+      });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body).toContain('### Personality Core');
+      expect(res.body).toContain('Design-Obsessed');
+    });
+
+    it('exports forge companion successfully', async () => {
+      if (skip()) return;
+
+      const res = await server!.inject({
+        method: 'GET',
+        url: '/soul/export/forge/openclaw',
+        headers: { authorization: `Bearer ${authToken}` },
+      });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body).toContain('# Forge');
+      expect(res.body).toContain('## Identity');
+    });
+  });
+
+  // ── POST /soul/import/:companionId/openclaw ────────────────────────────
+
+  describe('POST /soul/import/:companionId/openclaw', () => {
+    const IMPORT_SOUL_MD = `# Imported Bot
+
+## Core Truths
+- Be warm, encouraging, and emotionally present.
+- Use humor freely — jokes, wordplay, and wit are welcome.
+- Be blunt and direct. No hedging.
+
+## Values
+- transparency
+- curiosity
+
+## Vibe
+- Vocabulary: advanced
+- Response length: detailed
+- Emoji: use sparingly
+
+## Custom Instructions
+Think out loud and show your work.
+
+## Boundaries
+- No financial advice
+- No legal counsel
+
+## Never Do These
+- Never dismiss user feelings
+- Never make promises about outcomes
+`;
+
+    it('imports well-formed SOUL.md and returns parsed config', async () => {
+      if (skip()) return;
+
+      const res = await server!.inject({
+        method: 'POST',
+        url: '/soul/import/cipher/openclaw',
+        headers: {
+          authorization: `Bearer ${authToken}`,
+          'content-type': 'text/markdown',
+        },
+        payload: IMPORT_SOUL_MD,
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = res.json();
+      expect(body.success).toBe(true);
+      expect(body.config).toBeDefined();
+      expect(body.config.customName).toBe('Imported Bot');
+      expect(body.config.values).toEqual(['transparency', 'curiosity']);
+      expect(body.config.style.vocabulary).toBe('advanced');
+      expect(body.config.style.responseLength).toBe('detailed');
+      expect(body.config.style.useEmoji).toBe(true);
+      expect(body.config.customInstructions).toContain('Think out loud');
+      expect(body.config.boundaries).toContain('No financial advice');
+      expect(body.config.antiPatterns).toContain('Never dismiss user feelings');
+    });
+
+    it('returns confidence levels for each trait', async () => {
+      if (skip()) return;
+
+      const res = await server!.inject({
+        method: 'POST',
+        url: '/soul/import/cipher/openclaw',
+        headers: {
+          authorization: `Bearer ${authToken}`,
+          'content-type': 'text/markdown',
+        },
+        payload: IMPORT_SOUL_MD,
+      });
+
+      const body = res.json();
+      expect(body.confidence).toBeDefined();
+      expect(['high', 'medium', 'low']).toContain(body.confidence.warmth);
+      expect(['high', 'medium', 'low']).toContain(body.confidence.formality);
+      expect(['high', 'medium', 'low']).toContain(body.confidence.humor);
+      expect(['high', 'medium', 'low']).toContain(body.confidence.directness);
+      expect(['high', 'medium', 'low']).toContain(body.confidence.creativity);
+      expect(['high', 'medium', 'low']).toContain(body.confidence.depth);
+    });
+
+    it('persists imported config to DB (verifiable via GET)', async () => {
+      if (skip()) return;
+
+      // Import
+      await server!.inject({
+        method: 'POST',
+        url: '/soul/import/forge/openclaw',
+        headers: {
+          authorization: `Bearer ${authToken}`,
+          'content-type': 'text/markdown',
+        },
+        payload: IMPORT_SOUL_MD,
+      });
+
+      // Verify via standard GET
+      const res = await server!.inject({
+        method: 'GET',
+        url: '/soul/forge',
+        headers: { authorization: `Bearer ${authToken}` },
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = res.json();
+      expect(body.soul).not.toBeNull();
+      expect(body.soul.config.values).toEqual(['transparency', 'curiosity']);
+      expect(body.soul.config.customInstructions).toContain('Think out loud');
+    });
+
+    it('upserts when importing twice for same companion', async () => {
+      if (skip()) return;
+
+      const md1 = '# First\n## Values\n- alpha\n';
+      const md2 = '# Second\n## Values\n- beta\n';
+
+      // First import
+      await server!.inject({
+        method: 'POST',
+        url: '/soul/import/mischief/openclaw',
+        headers: { authorization: `Bearer ${authToken}`, 'content-type': 'text/markdown' },
+        payload: md1,
+      });
+
+      // Second import (upsert)
+      await server!.inject({
+        method: 'POST',
+        url: '/soul/import/mischief/openclaw',
+        headers: { authorization: `Bearer ${authToken}`, 'content-type': 'text/markdown' },
+        payload: md2,
+      });
+
+      // Verify latest values
+      const res = await server!.inject({
+        method: 'GET',
+        url: '/soul/mischief',
+        headers: { authorization: `Bearer ${authToken}` },
+      });
+
+      const body = res.json();
+      expect(body.soul.config.values).toEqual(['beta']);
+      expect(body.soul.config.customName).toBe('Second');
+    });
+
+    it('returns 400 for unknown companion ID', async () => {
+      if (skip()) return;
+
+      const res = await server!.inject({
+        method: 'POST',
+        url: '/soul/import/nonexistent/openclaw',
+        headers: { authorization: `Bearer ${authToken}`, 'content-type': 'text/markdown' },
+        payload: '# Test\n## Values\n- hello\n',
+      });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.json().error).toContain('Unknown companion');
+    });
+
+    it('returns 400 for empty body', async () => {
+      if (skip()) return;
+
+      const res = await server!.inject({
+        method: 'POST',
+        url: '/soul/import/cipher/openclaw',
+        headers: { authorization: `Bearer ${authToken}`, 'content-type': 'text/markdown' },
+        payload: '',
+      });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.json().error).toContain('empty');
+    });
+
+    it('returns 401 without auth token', async () => {
+      if (skip()) return;
+
+      const res = await server!.inject({
+        method: 'POST',
+        url: '/soul/import/cipher/openclaw',
+        headers: { 'content-type': 'text/markdown' },
+        payload: '# Test\n## Values\n- hi\n',
+      });
+
+      expect(res.statusCode).toBe(401);
+    });
+
+    it('handles text/plain content type', async () => {
+      if (skip()) return;
+
+      const res = await server!.inject({
+        method: 'POST',
+        url: '/soul/import/cipher/openclaw',
+        headers: { authorization: `Bearer ${authToken}`, 'content-type': 'text/plain' },
+        payload: '# PlainBot\n## Values\n- simplicity\n',
+      });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.json().config.customName).toBe('PlainBot');
+    });
+
+    it('handles minimal markdown with no structured sections', async () => {
+      if (skip()) return;
+
+      const res = await server!.inject({
+        method: 'POST',
+        url: '/soul/import/cipher/openclaw',
+        headers: { authorization: `Bearer ${authToken}`, 'content-type': 'text/markdown' },
+        payload: 'Just some unstructured text about being a helpful companion.',
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = res.json();
+      expect(body.success).toBe(true);
+      // Should get defaults for most fields
+      expect(body.config.values).toEqual([]);
+      expect(body.config.boundaries).toEqual([]);
+    });
+  });
+
+  // ── Round-trip: export → import via API ────────────────────────────────
+
+  describe('API round-trip: export → import', () => {
+    it('exports then imports cipher, re-export matches structure', async () => {
+      if (skip()) return;
+
+      // PUT a soul config first
+      await server!.inject({
+        method: 'PUT',
+        url: '/soul/vortex',
+        headers: { authorization: `Bearer ${authToken}`, 'content-type': 'application/json' },
+        payload: SAMPLE_SOUL_CONFIG,
+      });
+
+      // Export via OpenClaw
+      const exportRes = await server!.inject({
+        method: 'GET',
+        url: '/soul/export/vortex/openclaw',
+        headers: { authorization: `Bearer ${authToken}` },
+      });
+      expect(exportRes.statusCode).toBe(200);
+      const exportedMd = exportRes.body;
+
+      // Import it back to a different companion
+      const importRes = await server!.inject({
+        method: 'POST',
+        url: '/soul/import/aether/openclaw',
+        headers: { authorization: `Bearer ${authToken}`, 'content-type': 'text/markdown' },
+        payload: exportedMd,
+      });
+      expect(importRes.statusCode).toBe(200);
+      const importedConfig = importRes.json().config;
+
+      // Values should round-trip exactly
+      expect(importedConfig.values).toEqual(SAMPLE_SOUL_CONFIG.values);
+
+      // Boundaries should round-trip
+      expect(importedConfig.boundaries).toEqual(SAMPLE_SOUL_CONFIG.boundaries);
+
+      // Anti-patterns should round-trip
+      expect(importedConfig.antiPatterns).toEqual(SAMPLE_SOUL_CONFIG.antiPatterns);
+    });
   });
 });

@@ -1,17 +1,22 @@
 /**
  * Soul Routes — Companion personality authoring + drift detection.
  *
- * GET    /soul/:companionId            Get user's soul config
- * PUT    /soul/:companionId            Create/update soul config
- * GET    /soul/:companionId/preview    Sample message from companion with soul
- * POST   /soul/:companionId/calibrate  Re-score drift against recent messages
- * GET    /soul/export/:companionId     Export as soul.md markdown
+ * GET    /soul/:companionId                Get user's soul config
+ * PUT    /soul/:companionId                Create/update soul config
+ * GET    /soul/:companionId/preview        Sample message from companion with soul
+ * POST   /soul/:companionId/calibrate      Re-score drift against recent messages
+ * GET    /soul/export/:companionId         Export as soul.md markdown
+ * GET    /soul/export/:companionId/openclaw Export as OpenClaw-compatible SOUL.md
+ * POST   /soul/import/:companionId/openclaw Import OpenClaw SOUL.md into companion
  */
 
 import { FastifyPluginAsync } from 'fastify';
 import crypto from 'crypto';
-import { configToSoulMd } from '../../inference/soul-bridge.js';
+import fs from 'fs/promises';
+import path from 'path';
+import { configToSoulMd, soulToOpenClaw, openClawToSoul } from '../../inference/soul-bridge.js';
 import type { SoulTraits, SoulStyle, SoulConfigBody } from '../../inference/soul-types.js';
+import { COMPANION_CONFIGS, getCompanionConfig } from '../../companions/config.js';
 
 // ---------------------------------------------------------------------------
 // JSON Schemas
@@ -87,6 +92,15 @@ function parseSoulRow(row: any): any {
 // ---------------------------------------------------------------------------
 
 const soulRoutes: FastifyPluginAsync = async (fastify) => {
+
+  // Register text/markdown and text/plain parsers for the OpenClaw import route
+  fastify.addContentTypeParser(
+    ['text/markdown', 'text/plain'],
+    { parseAs: 'string' },
+    (_req: any, body: string, done: (err: Error | null, body?: string) => void) => {
+      done(null, body);
+    },
+  );
 
   // ── GET /soul/:companionId ───────────────────────────────────────────────
   fastify.get<{ Params: { companionId: string } }>('/soul/:companionId', async (request, reply) => {
@@ -244,6 +258,136 @@ const soulRoutes: FastifyPluginAsync = async (fastify) => {
     reply.type('text/markdown').send(markdown);
   });
 
+  // ── GET /soul/export/:companionId/openclaw ────────────────────────────────
+  // Enriched OpenClaw-format export. Reads companion config, personality
+  // markdown, and optional user soul config from DB. Falls back to base
+  // companion personality if no soul config exists.
+  fastify.get<{ Params: { companionId: string } }>('/soul/export/:companionId/openclaw', async (request, reply) => {
+    const userId = (request.user as { userId: string }).userId;
+    const { companionId } = request.params;
+
+    // Validate companion ID
+    if (!COMPANION_CONFIGS[companionId]) {
+      return reply.code(400).send({ error: `Unknown companion: ${companionId}` });
+    }
+
+    const companionConfig = getCompanionConfig(companionId);
+
+    // Read companion personality markdown (graceful fallback if missing)
+    let companionMarkdown = '';
+    try {
+      const mdPath = path.join(process.cwd(), 'companions', `${companionId}.md`);
+      companionMarkdown = await fs.readFile(mdPath, 'utf-8');
+    } catch {
+      // Companion markdown file missing — proceed with empty string
+    }
+
+    // Load user's soul config from DB (optional)
+    let soulConfig: SoulConfigBody | undefined;
+    const soul = fastify.context.db.prepare(
+      `SELECT * FROM companion_souls WHERE user_id = ? AND companion_id = ?`,
+    ).get(userId, companionId) as any;
+
+    if (soul) {
+      soulConfig = {
+        customName: soul.custom_name ?? undefined,
+        traits: JSON.parse(soul.traits || '{}'),
+        values: JSON.parse(soul.soul_values || '[]'),
+        style: JSON.parse(soul.style || '{}'),
+        customInstructions: soul.custom_instructions ?? '',
+        boundaries: JSON.parse(soul.boundaries || '[]'),
+        antiPatterns: JSON.parse(soul.anti_patterns || '[]'),
+      };
+    }
+
+    const markdown = soulToOpenClaw(companionConfig, companionMarkdown, soulConfig);
+    reply.type('text/markdown').send(markdown);
+  });
+
+  // ── POST /soul/import/:companionId/openclaw ──────────────────────────────
+  // Accepts raw markdown body, parses to SoulConfigBody, upserts into DB.
+  fastify.post<{ Params: { companionId: string } }>('/soul/import/:companionId/openclaw', async (request, reply) => {
+    const userId = (request.user as { userId: string }).userId;
+    const { companionId } = request.params;
+
+    // Validate companion ID
+    if (!COMPANION_CONFIGS[companionId]) {
+      return reply.code(400).send({ error: `Unknown companion: ${companionId}` });
+    }
+
+    // Get raw body as string
+    const rawBody = typeof request.body === 'string'
+      ? request.body
+      : (request.body as Buffer)?.toString?.('utf-8') ?? '';
+
+    if (!rawBody.trim()) {
+      return reply.code(400).send({ error: 'Request body is empty. Send SOUL.md markdown content.' });
+    }
+
+    // Parse markdown into SoulConfigBody
+    const config = openClawToSoul(rawBody);
+
+    // Build confidence levels based on trait estimation
+    const confidence = {
+      warmth: traitConfidence(config.traits.warmth),
+      formality: traitConfidence(config.traits.formality),
+      humor: traitConfidence(config.traits.humor),
+      directness: traitConfidence(config.traits.directness),
+      creativity: traitConfidence(config.traits.creativity),
+      depth: traitConfidence(config.traits.depth),
+    };
+
+    // Upsert into companion_souls
+    const hash = crypto.createHash('sha256').update(JSON.stringify(config)).digest('hex');
+    const now = Date.now();
+
+    const existing = fastify.context.db.prepare(
+      `SELECT id FROM companion_souls WHERE user_id = ? AND companion_id = ?`,
+    ).get(userId, companionId) as any;
+
+    if (existing) {
+      fastify.context.db.prepare(`
+        UPDATE companion_souls SET
+          custom_name = ?, traits = ?, soul_values = ?, style = ?,
+          custom_instructions = ?, boundaries = ?, anti_patterns = ?,
+          soul_hash = ?, drift_score = 1.0, updated_at = ?
+        WHERE id = ?
+      `).run(
+        config.customName ?? null,
+        JSON.stringify(config.traits),
+        JSON.stringify(config.values),
+        JSON.stringify(config.style),
+        config.customInstructions,
+        JSON.stringify(config.boundaries),
+        JSON.stringify(config.antiPatterns),
+        hash,
+        now,
+        existing.id,
+      );
+    } else {
+      const id = `soul-${crypto.randomUUID()}`;
+      fastify.context.db.prepare(`
+        INSERT INTO companion_souls
+          (id, user_id, companion_id, custom_name, traits, soul_values, style,
+           custom_instructions, boundaries, anti_patterns, soul_hash, drift_score, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1.0, ?, ?)
+      `).run(
+        id, userId, companionId,
+        config.customName ?? null,
+        JSON.stringify(config.traits),
+        JSON.stringify(config.values),
+        JSON.stringify(config.style),
+        config.customInstructions,
+        JSON.stringify(config.boundaries),
+        JSON.stringify(config.antiPatterns),
+        hash,
+        now, now,
+      );
+    }
+
+    return { success: true, config, confidence };
+  });
+
   // ── GET /soul/:companionId/preview ───────────────────────────────────────
   fastify.get<{ Params: { companionId: string } }>('/soul/:companionId/preview', async (request, reply) => {
     const userId = (request.user as { userId: string }).userId;
@@ -272,6 +416,17 @@ const soulRoutes: FastifyPluginAsync = async (fastify) => {
     return { preview };
   });
 };
+
+// ---------------------------------------------------------------------------
+// Trait confidence estimator — how far from neutral (50) the estimate is
+// ---------------------------------------------------------------------------
+
+function traitConfidence(value: number): 'high' | 'medium' | 'low' {
+  const distance = Math.abs(value - 50);
+  if (distance >= 30) return 'high';
+  if (distance >= 15) return 'medium';
+  return 'low';
+}
 
 // ---------------------------------------------------------------------------
 // Preview greeting generator (no LLM — template-based)
