@@ -1,7 +1,7 @@
 /**
  * Frontier Provider Registry — Central provider management
  *
- * Registers all 7 providers (6 frontier + Groq free tier).
+ * Registers all 11 providers (6 frontier + Groq free tier + 4 additional).
  * Provides lookup by provider ID and companion ID.
  *
  * @module inference/providers
@@ -15,6 +15,10 @@ import { xaiProvider } from './xai.js';
 import { moonshotProvider } from './moonshot.js';
 import { zaiProvider } from './zai.js';
 import { groqProvider } from './groq.js';
+import { deepseekProvider } from './deepseek.js';
+import { mistralProvider } from './mistral.js';
+import { togetherProvider } from './together.js';
+import { fireworksProvider } from './fireworks.js';
 
 // ============================================================================
 // Registry
@@ -34,6 +38,10 @@ function initializeProviders(): void {
     moonshotProvider,
     zaiProvider,
     groqProvider,
+    deepseekProvider,
+    mistralProvider,
+    togetherProvider,
+    fireworksProvider,
   ];
 
   for (const provider of providers) {

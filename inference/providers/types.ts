@@ -18,7 +18,11 @@ export type FrontierProviderId =
   | 'google'     // Gemini 3.1 Pro — powers Mischief
   | 'xai'        // Grok 4.20 — powers Forge
   | 'moonshot'   // Kimi K2.5 — powers Aether
-  | 'zai';       // GLM-4.6 — powers Catalyst
+  | 'zai'        // GLM-4.6 — powers Catalyst
+  | 'deepseek'   // DeepSeek R1
+  | 'mistral'    // Mistral Large
+  | 'together'   // Together AI Llama 3.3 70B
+  | 'fireworks'; // Fireworks Llama 3.3 70B
 
 // ============================================================================
 // Model Specification
