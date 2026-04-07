@@ -20,19 +20,24 @@ import makeWASocket, {
   getContentType,
   downloadMediaMessage,
   type WASocket,
+  type WAMessage,
   type BaileysEventMap,
 } from '@whiskeysockets/baileys';
 import { Boom } from '@hapi/boom';
 import path from 'path';
 import fs from 'fs';
 
-import { buildCompanionPrompt } from '../inference/companion-prompts.js';
+import { buildCompanionPrompt, getAvailableCompanions } from '../inference/companion-prompts.js';
 import { FallbackHandler } from '../inference/fallback-handler.js';
 import { supervisedChat } from '../inference/supervisor.js';
 import { conversationStore } from './memory/conversation-store.js';
 import { sanitizeInput, detectJailbreak } from './utils/sanitize.js';
 import { checkRateLimit, RATE_LIMITS } from './utils/rate-limit.js';
 import { getVoicePipeline, VoicePipelineError } from '../voice/index.js';
+import { createSkillRouter, registerCompanionAbilities } from './skills/index.js';
+import type { SkillContext } from './skills/index.js';
+import { detectLanguage, getLanguagePromptAddition } from './utils/language.js';
+import { recordActivity } from './handlers/progress.js';
 
 // ============================================================================
 // Types
@@ -43,7 +48,7 @@ export interface WhatsAppBotConfig {
   authDir: string;
 }
 
-interface UserSession {
+export interface UserSession {
   userId: string;
   companionId: string;
   lastActivity: Date;
@@ -64,7 +69,7 @@ const MAX_RECONNECT_DELAY_MS = 60_000;
 const BASE_RECONNECT_DELAY_MS = 2_000;
 
 /** In-character error messages (Cipher personality) */
-const CIPHER_ERROR_MESSAGES = [
+export const CIPHER_ERROR_MESSAGES = [
   "Hmm, my brain's a bit foggy right now. Give me a sec and try again?",
   "Oops, I tripped over something in my code cave. Mind sending that again?",
   "My tentacles got tangled up -- one more time?",
@@ -86,12 +91,12 @@ When responding to voice messages:
 // Per-User Session Store (in-memory, keyed by phone number)
 // ============================================================================
 
-const sessions = new Map<string, UserSession>();
+export const sessions = new Map<string, UserSession>();
 
 /**
  * Get or create a user session keyed by phone number (JID).
  */
-function getSession(jid: string): UserSession {
+export function getSession(jid: string): UserSession {
   const userId = jidToUserId(jid);
   let session = sessions.get(userId);
   if (!session) {
@@ -111,7 +116,7 @@ function getSession(jid: string): UserSession {
  * Extract a stable user ID from a WhatsApp JID.
  * Strips the @s.whatsapp.net suffix to get the raw phone number.
  */
-function jidToUserId(jid: string): string {
+export function jidToUserId(jid: string): string {
   return jid.replace(/@s\.whatsapp\.net$/, '').replace(/@g\.us$/, '');
 }
 
@@ -138,13 +143,20 @@ function createFallbackInstance(): FallbackHandler {
 }
 
 // ============================================================================
+// Skill Router (shared singleton, mirrors Telegram pattern)
+// ============================================================================
+
+const skillRouter = createSkillRouter();
+registerCompanionAbilities(skillRouter);
+
+// ============================================================================
 // Message Handlers
 // ============================================================================
 
 /**
  * Handle an incoming text message through the full inference pipeline.
  */
-async function handleTextMessage(
+export async function handleTextMessage(
   sock: WASocket,
   jid: string,
   rawText: string,
@@ -180,18 +192,47 @@ async function handleTextMessage(
   // Typing indicator
   await sock.sendPresenceUpdate('composing', jid);
 
-  try {
-    // Get conversation history
-    const history = await conversationStore.getHistory(userId, 20);
+  // Track activity for progress/gamification (fire-and-forget, mirrors Telegram)
+  recordActivity(userId);
 
-    // Build system prompt with active companion personality
+  try {
     const companionId = session.companionId;
 
+    // Check if message triggers a skill (before LLM inference)
+    const matchedSkill = skillRouter.matchSkill(message);
+    if (matchedSkill) {
+      const history = await conversationStore.getHistory(userId, 20, companionId);
+      const skillCtx: SkillContext = {
+        message,
+        userId,
+        userName: pushName || 'Friend',
+        conversationHistory: history.map((m) => ({ role: m.role, content: m.content })),
+        env: process.env as Record<string, string | undefined>,
+      };
+      const result = await skillRouter.executeSkill(matchedSkill.name, skillCtx);
+      if (result && result.type !== 'error') {
+        await conversationStore.addMessage(userId, 'user', message, companionId);
+        await conversationStore.addMessage(userId, 'assistant', result.content, companionId);
+        await sock.sendPresenceUpdate('paused', jid);
+        await sock.sendMessage(jid, { text: result.content });
+        return;
+      }
+      // If skill returned error, fall through to LLM
+    }
+
+    // Get conversation history (with correct companion)
+    const history = await conversationStore.getHistory(userId, 20, companionId);
+
+    // Detect language for multi-language support
+    const lang = detectLanguage(message);
+    const langAddition = getLanguagePromptAddition(lang);
+
+    // Build system prompt with active companion personality + language addition
     const systemPrompt = buildCompanionPrompt(companionId, {
       userName: pushName || 'Friend',
       taskContext: { type: 'chat' },
       timeContext: new Date().toLocaleString('en-US', { weekday: 'long', hour: 'numeric', minute: 'numeric' }),
-    });
+    }) + langAddition;
 
     const messages = [
       { role: 'system' as const, content: systemPrompt },
@@ -211,9 +252,9 @@ async function handleTextMessage(
     });
     const response = result.content;
 
-    // Store in conversation history
-    await conversationStore.addMessage(userId, 'user', message);
-    await conversationStore.addMessage(userId, 'assistant', response);
+    // Store in conversation history (with correct companion)
+    await conversationStore.addMessage(userId, 'user', message, companionId);
+    await conversationStore.addMessage(userId, 'assistant', response, companionId);
 
     // Clear typing and send
     await sock.sendPresenceUpdate('paused', jid);
@@ -230,10 +271,10 @@ async function handleTextMessage(
  * Handle an incoming audio/voice message.
  * Transcribes via the shared voice pipeline, then runs the full inference loop.
  */
-async function handleAudioMessage(
+export async function handleAudioMessage(
   sock: WASocket,
   jid: string,
-  message: proto.IWebMessageInfo,
+  message: WAMessage,
   pushName: string,
   fallback: FallbackHandler,
 ): Promise<void> {
@@ -293,9 +334,9 @@ async function handleAudioMessage(
 
     console.log(`[whatsapp] Transcribed voice from ${userId}: "${transcription.slice(0, 80)}..."`);
 
-    // Get conversation history
-    const history = await conversationStore.getHistory(userId, 10);
+    // Get conversation history (with correct companion)
     const companionId = session.companionId;
+    const history = await conversationStore.getHistory(userId, 10, companionId);
 
     // Build prompt with voice personality
     const systemPrompt = buildCompanionPrompt(companionId, {
@@ -319,9 +360,9 @@ async function handleAudioMessage(
     });
     const response = result.content;
 
-    // Store messages
-    await conversationStore.addMessage(userId, 'user', transcription);
-    await conversationStore.addMessage(userId, 'assistant', response);
+    // Store messages (with correct companion)
+    await conversationStore.addMessage(userId, 'user', transcription, companionId);
+    await conversationStore.addMessage(userId, 'assistant', response, companionId);
 
     // Send text reply (WhatsApp voice reply would need TTS + ogg encoding)
     await sock.sendPresenceUpdate('paused', jid);
@@ -339,7 +380,7 @@ async function handleAudioMessage(
  * Handle an incoming image message.
  * Acknowledges receipt but explains text-only support for now.
  */
-async function handleImageMessage(
+export async function handleImageMessage(
   sock: WASocket,
   jid: string,
   caption: string | undefined,
@@ -367,7 +408,7 @@ async function handleImageMessage(
  * Check if a message is a command and handle it.
  * Returns true if a command was handled, false if regular chat.
  */
-async function handleCommand(
+export async function handleCommand(
   sock: WASocket,
   jid: string,
   text: string,
@@ -441,7 +482,7 @@ async function handleCommand(
 
     case 'switch': {
       const target = (args[0] ?? '').toLowerCase();
-      const validCompanions = ['cipher', 'mischief', 'vortex', 'forge', 'aether', 'catalyst'];
+      const validCompanions = getAvailableCompanions();
 
       if (!target || !validCompanions.includes(target)) {
         await sock.sendMessage(jid, {
@@ -504,7 +545,11 @@ async function handleCommand(
  * @param config - Bot configuration (auth directory path)
  * @returns Object with the socket, a shutdown function, and session info
  */
-export async function createWhatsAppBot(config: WhatsAppBotConfig = { authDir: DEFAULT_AUTH_DIR }) {
+export async function createWhatsAppBot(config: WhatsAppBotConfig = { authDir: DEFAULT_AUTH_DIR }): Promise<{
+  sock: WASocket;
+  shutdown: () => Promise<void>;
+  sessions: Map<string, UserSession>;
+}> {
   const authDir = path.resolve(config.authDir);
 
   // Ensure auth directory exists
@@ -530,7 +575,7 @@ export async function createWhatsAppBot(config: WhatsAppBotConfig = { authDir: D
       version,
       auth: {
         creds: state.creds,
-        keys: makeCacheableSignalKeyStore(state.keys, console),
+        keys: makeCacheableSignalKeyStore(state.keys),
       },
       printQRInTerminal: true,
       generateHighQualityLinkPreview: false,

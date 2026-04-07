@@ -107,31 +107,7 @@ declare module 'discord.js' {
   export type ChatInputCommandInteraction = any;
 }
 
-declare module '@whiskeysockets/baileys' {
-  export default function makeWASocket(config: any): any;
-  export function useMultiFileAuthState(folder: string): Promise<any>;
-  export const DisconnectReason: { loggedOut: number; [key: string]: number };
-  export function fetchLatestBaileysVersion(): Promise<{ version: number[] }>;
-  export function makeCacheableSignalKeyStore(keys: any, logger: any): any;
-  export function getContentType(content: any): string | undefined;
-  export function downloadMediaMessage(message: any, type: string, options?: any): Promise<Buffer>;
-  export const proto: any;
-  export namespace proto {
-    type IWebMessageInfo = any;
-  }
-  export type WAMessageContent = any;
-  export type WAMessageKey = any;
-  export type WASocket = any;
-  export type BaileysEventMap = any;
-}
 
-declare module '@hapi/boom' {
-  export function isBoom(err: any): boolean;
-  export class Boom extends Error {
-    output: { statusCode: number; payload: any };
-    constructor(message?: string, options?: any);
-  }
-}
 
 declare module 'http-proxy-3' {
   import type { IncomingMessage, ServerResponse } from 'http';
