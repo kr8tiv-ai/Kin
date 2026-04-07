@@ -44,8 +44,7 @@
     "@metaplex-foundation/mpl-token-metadata": "^3.3.0",
     "@metaplex-foundation/mpl-candy-machine": "^6.1.0",
     "@metaplex-foundation/mpl-toolbox": "^0.9.4",
-    "bs58": "^6.0.0",
-    "http-proxy-3": "^3.0.0"
+    "bs58": "^6.0.0"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.12",
