@@ -569,3 +569,31 @@ export interface ImportArchiveResult {
   fileArtifacts: FileArtifactResult;
   modelRestoration: ModelRestorationResult;
 }
+
+// ============================================================================
+// Revenue Reports & Distributions
+// ============================================================================
+
+export interface RevenueReport {
+  id: string;
+  periodStart: number;   // epoch ms
+  periodEnd: number;     // epoch ms
+  subscriptionRevenue: number;  // cents
+  mintRevenue: number;
+  rebindingRevenue: number;
+  totalRevenue: number;
+  surplusAllocated: number;
+  status: string;
+  createdAt: number;     // epoch ms
+  distributions?: RevenueDistribution[];
+}
+
+export interface RevenueDistribution {
+  id: string;
+  reportId: string;
+  userId: string;
+  genesisTier: string;
+  rewardPercent: number;
+  amount: number;        // cents
+  createdAt: number;     // epoch ms
+}

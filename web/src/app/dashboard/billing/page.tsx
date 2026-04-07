@@ -8,6 +8,7 @@
 import { motion } from 'framer-motion';
 import { useAuth } from '@/providers/AuthProvider';
 import { useBilling } from '@/hooks/useBilling';
+import { useMyDistributions } from '@/hooks/useRevenue';
 import { useToast } from '@/providers/ToastProvider';
 import { track } from '@/lib/analytics';
 import { GlassCard } from '@/components/ui/GlassCard';
@@ -161,6 +162,9 @@ export default function BillingPage() {
           max={limits.companions}
         />
       </GlassCard>
+
+      {/* Genesis Revenue Share — shown only for holders */}
+      <GenesisRevenueShare />
 
       {/* Genesis Mint Section */}
       <div>
@@ -424,6 +428,108 @@ export default function BillingPage() {
         </div>
       </GlassCard>
     </motion.div>
+  );
+}
+
+// --- Feature comparison row ---
+
+// --- Genesis Revenue Share section ---
+
+function tierBadgeColor(tier: string): 'cyan' | 'magenta' | 'gold' | 'muted' {
+  switch (tier) {
+    case 'egg': return 'cyan';
+    case 'hatchling': return 'magenta';
+    case 'elder': return 'gold';
+    default: return 'muted';
+  }
+}
+
+function centsToUsd(cents: number): string {
+  return `$${(cents / 100).toFixed(2)}`;
+}
+
+function formatEpochDate(epochMs: number): string {
+  return new Date(epochMs).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
+function GenesisRevenueShare() {
+  const { data, loading } = useMyDistributions();
+
+  // Loading state — render a small skeleton
+  if (loading) {
+    return <Skeleton variant="card" />;
+  }
+
+  const distributions = data?.distributions ?? [];
+
+  // No distributions — user is either not Genesis or hasn't received any yet.
+  // We still don't know for certain they're Genesis without a separate genesis_tier
+  // field on the user. But we can show the section only when there are distributions,
+  // keeping it invisible for non-Genesis users (who get an empty array from the API).
+  if (distributions.length === 0) {
+    return null;
+  }
+
+  // Derive tier info from the first distribution
+  const tier = distributions[0].genesisTier;
+  const rewardPercent = distributions[0].rewardPercent;
+  const genesisTierInfo = GENESIS_TIERS.find((t) => t.id === tier);
+  const totalEarned = distributions.reduce((sum, d) => sum + d.amount, 0);
+
+  return (
+    <GlassCard className="p-6" hover={false} glow="gold">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <span className="text-2xl">{genesisTierInfo?.emoji ?? '🐲'}</span>
+          <div>
+            <h2 className="font-display text-lg font-semibold text-white">
+              Your Revenue Share
+            </h2>
+            <div className="flex items-center gap-2 mt-0.5">
+              <Badge color={tierBadgeColor(tier)}>
+                {tier.charAt(0).toUpperCase() + tier.slice(1)} Genesis
+              </Badge>
+              <span className="text-sm text-white/50">{rewardPercent}% surplus allocation</span>
+            </div>
+          </div>
+        </div>
+        <div className="text-right">
+          <p className="text-xs text-white/40">Total earned</p>
+          <p className="font-display text-xl font-bold text-gold">{centsToUsd(totalEarned)}</p>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-white/10">
+              <th className="px-4 py-2 text-left font-medium text-white/50">Date</th>
+              <th className="px-4 py-2 text-right font-medium text-white/50">Reward %</th>
+              <th className="px-4 py-2 text-right font-medium text-white/50">Amount</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/5">
+            {distributions.slice(0, 12).map((dist) => (
+              <tr key={dist.id}>
+                <td className="px-4 py-2 text-white/70">{formatEpochDate(dist.createdAt)}</td>
+                <td className="px-4 py-2 text-right text-white/70">{dist.rewardPercent}%</td>
+                <td className="px-4 py-2 text-right text-white font-medium">{centsToUsd(dist.amount)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {distributions.length > 12 && (
+        <p className="text-xs text-white/30 mt-2 text-center">
+          Showing latest 12 of {distributions.length} distributions.
+        </p>
+      )}
+    </GlassCard>
   );
 }
 
