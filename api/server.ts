@@ -42,6 +42,7 @@ import supportChatRoutes from './routes/support-chat.js';
 import companionSkillsRoutes from './routes/companion-skills.js';
 import soulRoutes from './routes/soul.js';
 import voiceRoutes from './routes/voice.js';
+import voiceIntroRoutes from './routes/voice-intro.js';
 import modelRoutes from './routes/models.js';
 import trainingRoutes from './routes/training.js';
 import installerRoutes from './routes/installer.js';
@@ -581,6 +582,7 @@ export async function createServer(config: ApiConfig = {}) {
     await protectedFastify.register(companionSkillsRoutes);
     await protectedFastify.register(soulRoutes);
     await protectedFastify.register(voiceRoutes);
+    await protectedFastify.register(voiceIntroRoutes);
     await protectedFastify.register(modelRoutes);
     await protectedFastify.register(trainingRoutes);
     await protectedFastify.register(installerRoutes);
