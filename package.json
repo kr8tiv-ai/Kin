@@ -22,7 +22,8 @@
     "smoke": "tsx scripts/smoke.ts",
     "health:check": "python scripts/health_monitor_daemon.py --once",
     "health:daemon": "python scripts/health_monitor_daemon.py",
-    "validate:cloud-deploy-contract": "node scripts/validate-cloud-deploy-contract.cjs"
+    "validate:cloud-deploy-contract": "node scripts/validate-cloud-deploy-contract.cjs",
+    "doctor": "tsx scripts/doctor.ts"
   },
   "dependencies": {
     "@fastify/cors": "^10.0.1",
