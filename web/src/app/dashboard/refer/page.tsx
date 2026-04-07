@@ -15,7 +15,7 @@ import { Leaderboard } from '@/components/dashboard/Leaderboard';
 
 export default function ReferPage() {
   const { user } = useAuth();
-  const { stats, leaderboard, loading, error, refresh } = useReferral();
+  const { stats, leaderboard, loading, generating, error, refresh } = useReferral();
 
   if (loading) {
     return (
@@ -42,7 +42,9 @@ export default function ReferPage() {
     );
   }
 
-  const code = stats?.referralCode ?? 'KIN-XXXX';
+  // Determine if freeUntil is in the future
+  const freeUntilDate = user?.freeUntil ? new Date(user.freeUntil) : null;
+  const hasFreeTime = freeUntilDate && freeUntilDate > new Date();
 
   return (
     <motion.div
@@ -62,7 +64,19 @@ export default function ReferPage() {
       </div>
 
       {/* Referral Code */}
-      <ReferralCode code={code} />
+      {stats?.referralCode ? (
+        <ReferralCode code={stats.referralCode} />
+      ) : (
+        <GlassCard className="flex items-center justify-center p-6" hover={false}>
+          <div className="flex items-center gap-3 text-white/50">
+            <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            <span>Generating your referral code…</span>
+          </div>
+        </GlassCard>
+      )}
 
       {/* Stats Cards */}
       <div className="grid gap-4 sm:grid-cols-3">
@@ -85,6 +99,16 @@ export default function ReferPage() {
           </p>
         </GlassCard>
       </div>
+
+      {/* Free Until Badge */}
+      {hasFreeTime && (
+        <GlassCard className="flex items-center gap-3 border-gold/20 bg-gold/5 p-4" hover={false}>
+          <span className="text-lg">🎁</span>
+          <p className="text-sm font-medium text-gold">
+            Free until {freeUntilDate!.toLocaleDateString()}
+          </p>
+        </GlassCard>
+      )}
 
       {/* Leaderboard */}
       <Leaderboard

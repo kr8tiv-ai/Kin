@@ -1,68 +1,103 @@
-# KIN by KR8TIV — We Build You A Friend
+<div align="center">
 
-> AI companions powered by frontier models. Each KIN has its own brain, persistent memory, voice, and personality — owned as an NFT on Solana. 57 unique 3D characters across 6 bloodlines.
+# KIN by KR8TIV
 
-[![Bags Hackathon 2026](https://img.shields.io/badge/Bags_Hackathon-2026-FF00AA?style=for-the-badge)](https://bags.fm/hackathon)
-[![Built on Bags](https://img.shields.io/badge/Built%20on-Bags.fm-FF00AA?style=for-the-badge)](https://bags.fm)
-[![Next.js 15](https://img.shields.io/badge/Next.js-15-black?style=for-the-badge&logo=next.js)](https://nextjs.org)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?style=for-the-badge&logo=typescript)](https://typescriptlang.org)
-[![Solana](https://img.shields.io/badge/Solana-NFTs-9945FF?style=for-the-badge&logo=solana)](https://solana.com)
-[![License](https://img.shields.io/badge/License-MIT-00F0FF?style=for-the-badge)](LICENSE)
+### *We Build You A Friend*
 
-**Website:** [meetyourkin.com](https://meetyourkin.com) | **Hackathon:** [Bags Global Hackathon](https://bags.fm/hackathon) — $4M Developer Fund
-**Organization:** [kr8tiv-ai](https://github.com/kr8tiv-ai) | **Builder:** [Matt Haynes](https://github.com/Matt-Aurora-Ventures)
+<img src="https://img.shields.io/badge/BAGS_HACKATHON-2026-FF00AA?style=for-the-badge&labelColor=1a1a2e" alt="Bags Hackathon 2026" />
+<img src="https://img.shields.io/badge/$4M_DEVELOPER_FUND-ACTIVE-00F0FF?style=for-the-badge&labelColor=1a1a2e" alt="$4M Developer Fund" />
+
+<br />
+
+[![Built on Bags](https://img.shields.io/badge/Built%20on-Bags.fm-FF00AA?style=flat-square&logo=data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyMCAyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIxMCIgY3k9IjEwIiByPSI4IiBmaWxsPSIjRkYwMEFBIi8+PC9zdmc+)](https://bags.fm)
+[![Next.js 15](https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=next.js)](https://nextjs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://typescriptlang.org)
+[![Solana](https://img.shields.io/badge/Solana-NFTs-9945FF?style=flat-square&logo=solana&logoColor=white)](https://solana.com)
+[![Fastify](https://img.shields.io/badge/Fastify-5-000000?style=flat-square&logo=fastify&logoColor=white)](https://fastify.dev)
+[![Three.js](https://img.shields.io/badge/Three.js-3D-000000?style=flat-square&logo=three.js&logoColor=white)](https://threejs.org)
+[![Tests](https://img.shields.io/badge/Tests-200%2B_passing-00C853?style=flat-square)](tests/)
+[![License](https://img.shields.io/badge/License-MIT-00F0FF?style=flat-square)](LICENSE)
 
 ---
 
+**AI companions powered by frontier models.**
+**Each KIN has its own brain, persistent memory, voice, and personality — owned as an NFT on Solana.**
+**57 unique 3D characters across 6 bloodlines.**
+
+[Website](https://meetyourkin.com) | [Hackathon](https://bags.fm/hackathon) | [Apply](https://bags.fm/apply) | [Organization](https://github.com/kr8tiv-ai)
+
+---
+
+</div>
+
 ## What is KIN?
 
-KIN is a consumer AI companion platform where users adopt, chat with, and grow alongside personalized AI friends. Each companion is a **unique NFT** with its own **frontier AI brain**, persistent intelligent memory, voice capabilities, and skills that transfer with NFT ownership. No crypto knowledge needed — just pick a friend and start talking.
+KIN is a consumer AI companion platform where users **adopt, chat with, and grow alongside** personalized AI friends. Each companion is a **unique NFT** with its own **frontier AI brain**, persistent intelligent memory, voice capabilities, and skills that transfer with NFT ownership.
 
-The collection spans **6 bloodlines** with **57 individually crafted 3D characters**, each generated from original 2D artwork using AI-powered 3D synthesis. Every character ships as a production-ready GLB model rendered in real-time via Three.js/WebGL in the dashboard.
+No crypto knowledge needed — just pick a friend and start talking.
 
-### Why KIN Wins
+The collection spans **6 bloodlines** with **57 individually crafted 3D characters**, each generated from original 2D artwork using AI-powered 3D synthesis. Every character ships as a production-ready GLB model rendered in real-time via Three.js/WebGL.
 
-| Differentiator | Detail |
-|---------------|--------|
-| **Multi-Brain Architecture** | Each companion runs on a different frontier AI model (GPT-5.4, Claude Opus 4.6, Gemini 3.1 Pro, Grok 4.20, Kimi K2.5, GLM-4.6) |
-| **Soul Authoring** | Users shape personality via trait sliders — warmth, humor, formality, curiosity — with drift detection that keeps the AI on-character |
-| **Skill Portability** | Skills accrue to companions and transfer with NFT sales — the new owner inherits everything the companion learned |
-| **Local-First Privacy** | Ollama integration means conversations can stay on-device. Cloud is opt-in, not required |
-| **57 Unique 3D Characters** | AI-generated from original artwork, rendered in real-time WebGL with interactive rotation |
-| **Companion Abilities** | 6 domain-specific skills (code gen, social content, data analysis, architecture review, creative writing, habit coaching) powered by local models |
-| **Privacy-First Training** | Opt-in conversation curation → QLoRA fine-tuning pipeline → custom Ollama models per companion |
-| **Multi-Platform** | Web dashboard, Telegram bot, Discord bot, WhatsApp — same AI, same memory, everywhere |
+---
+
+## Why KIN Wins
+
+<table>
+<tr><td width="30%"><b>Multi-Brain Architecture</b></td><td>Each companion runs on a different frontier AI model — GPT-5.4, Claude Opus 4.6, Gemini 3.1 Pro, Grok 4.20, Kimi K2.5, GLM-4.6</td></tr>
+<tr><td><b>Soul Authoring</b></td><td>Users shape personality via trait sliders — warmth, humor, formality, curiosity — with drift detection that keeps the AI on-character</td></tr>
+<tr><td><b>Skill Portability</b></td><td>Skills accrue to companions and transfer with NFT sales — the new owner inherits everything the companion learned</td></tr>
+<tr><td><b>Local-First Privacy</b></td><td>Ollama integration means conversations can stay on-device. Cloud is opt-in, not required</td></tr>
+<tr><td><b>57 Unique 3D Characters</b></td><td>AI-generated from original artwork, rendered in real-time WebGL with interactive rotation</td></tr>
+<tr><td><b>Companion Abilities</b></td><td>6 domain-specific skills powered by local models — code gen, social content, data analysis, architecture review, creative writing, habit coaching</td></tr>
+<tr><td><b>Privacy-First Training</b></td><td>Opt-in conversation curation, QLoRA fine-tuning pipeline, custom Ollama models per companion</td></tr>
+<tr><td><b>Multi-Platform</b></td><td>Web dashboard, Telegram bot, Discord bot, WhatsApp — same AI, same memory, everywhere</td></tr>
+</table>
 
 ---
 
 ## The Six Bloodlines
 
-| Bloodline | Species | AI Brain | Specialization | Variations |
-|-----------|---------|----------|----------------|------------|
-| **Cipher** | Code Kraken | OpenAI GPT-5.4 | Web design, frontend, creative technology | 10 |
-| **Mischief** | Glitch Pup | Google Gemini 3.1 Pro | Family, personal branding, social media | 10 |
-| **Vortex** | Teal Dragon | Anthropic Claude Opus 4.6 | Content strategy, brand voice, analytics | 10 |
-| **Forge** | Cyber Unicorn | xAI Grok 4.20 | Code review, debugging, architecture (2M context) | 10 |
-| **Aether** | Frost Ape | Moonshot Kimi K2.5 | Creative writing, storytelling, prose editing | 10 |
-| **Catalyst** | Cosmic Blob | Z.ai GLM-4.6 | Financial literacy, habit formation, life optimization | 7 |
+<table>
+<tr>
+<th>Bloodline</th><th>Species</th><th>AI Brain</th><th>Specialization</th><th>#</th>
+</tr>
+<tr>
+<td><b>Cipher</b></td><td>Code Kraken</td><td>OpenAI GPT-5.4</td><td>Web design, frontend, creative tech</td><td>10</td>
+</tr>
+<tr>
+<td><b>Mischief</b></td><td>Glitch Pup</td><td>Google Gemini 3.1 Pro</td><td>Family, personal branding, social</td><td>10</td>
+</tr>
+<tr>
+<td><b>Vortex</b></td><td>Teal Dragon</td><td>Anthropic Claude Opus 4.6</td><td>Content strategy, brand voice, analytics</td><td>10</td>
+</tr>
+<tr>
+<td><b>Forge</b></td><td>Cyber Unicorn</td><td>xAI Grok 4.20</td><td>Code review, debugging, architecture</td><td>10</td>
+</tr>
+<tr>
+<td><b>Aether</b></td><td>Frost Ape</td><td>Moonshot Kimi K2.5</td><td>Creative writing, storytelling, prose</td><td>10</td>
+</tr>
+<tr>
+<td><b>Catalyst</b></td><td>Cosmic Blob</td><td>Z.ai GLM-4.6</td><td>Financial literacy, habits, life optimization</td><td>7</td>
+</tr>
+</table>
 
-Free tier uses **Groq Qwen 3 32B** for all companions (500K tokens/day, $0 cost).
+> Free tier uses **Groq Qwen 3 32B** for all companions (500K tokens/day, $0 cost).
 
 ---
 
 ## Live Demo Flow
 
 ```
-1. Visit meetyourkin.com
-2. Sign up (Google, Email, Solana wallet, X, or Telegram)
-3. Onboarding: choose your companion -> author their soul -> done
-4. Chat with your KIN — personality matches your soul editor settings
-5. Soul Editor: adjust traits -> watch the AI's tone shift in real-time
-6. Skills Marketplace: install calculator, weather, web search, more
-7. Collection: view all 6 companions in 3D WebGL with interactive rotation
-8. Mint: pay SOL -> companion NFT appears in your wallet
-9. Progress: earn XP, unlock badges, maintain streaks
-10. Share: tweet your KIN's stats for viral growth
+ 1.  Visit meetyourkin.com
+ 2.  Sign up (Google, Email, Solana wallet, X, or Telegram)
+ 3.  Onboarding: choose your companion -> author their soul -> done
+ 4.  Chat with your KIN — personality matches your soul editor settings
+ 5.  Soul Editor: adjust traits -> watch the AI's tone shift in real-time
+ 6.  Skills Marketplace: install calculator, weather, web search, more
+ 7.  Collection: view all 6 companions in 3D WebGL with interactive rotation
+ 8.  Mint: pay SOL -> companion NFT appears in your wallet
+ 9.  Progress: earn XP, unlock badges, maintain streaks
+10.  Share: tweet your KIN's stats for viral growth
 ```
 
 ---
@@ -77,8 +112,8 @@ Free tier uses **Groq Qwen 3 32B** for all companions (500K tokens/day, $0 cost)
                     +--------+----------+
                              |
                     +--------v----------+
-                    |   Fastify 5 API   |  26+ routes, JWT auth
-                    |   50+ endpoints   |  Rate limiting, CORS
+                    |   Fastify 5 API   |  28+ route files, JWT auth
+                    |   55+ endpoints   |  Rate limiting, CORS
                     +--------+----------+
                              |
               +--------------+--------------+
@@ -116,17 +151,17 @@ The Soul Editor lets users set personality traits. A SHA-256 hash of the soul co
 
 ### Training Pipeline (Fine-Tuning)
 
-Each companion can be fine-tuned on its own conversation history to become more personalized over time:
+Each companion can be fine-tuned on its own conversation history:
 
-1. **Curation Dashboard** — Admin UI at `/dashboard/training` to review, approve, and filter conversation data with privacy controls
-2. **Privacy-Gated Collection** — Only conversations from users who opted in are eligible. PII is stripped before export.
-3. **JSONL Export** — Curated data exports to instruction-following format compatible with any fine-tuning framework
-4. **QLoRA Fine-Tuning** — Unsloth-powered 4-bit quantized training script (`training/fine-tune.py`) runs on consumer GPUs (16GB VRAM)
-5. **Ollama Deployment** — Auto-generates Modelfiles and deploys fine-tuned models to Ollama for immediate local inference
+| Step | Description |
+|------|-------------|
+| **Curation** | Admin UI at `/dashboard/training` to review, approve, and filter conversation data |
+| **Privacy Gate** | Only opted-in conversations are eligible. PII is stripped before export |
+| **JSONL Export** | Instruction-following format compatible with any fine-tuning framework |
+| **QLoRA Training** | Unsloth-powered 4-bit quantized training on consumer GPUs (16GB VRAM) |
+| **Ollama Deploy** | Auto-generates Modelfiles and deploys to Ollama for immediate local inference |
 
 ### Companion Abilities
-
-Each companion has domain-specific abilities powered by their local Ollama model:
 
 | Companion | Ability | Triggers |
 |-----------|---------|----------|
@@ -137,36 +172,31 @@ Each companion has domain-specific abilities powered by their local Ollama model
 | **Aether** | Creative Writing | `write story`, `creative writing`, `worldbuild` |
 | **Catalyst** | Habit Coaching | `habit`, `goal setting`, `routine`, `accountability` |
 
-Abilities auto-resolve the correct model — branded fine-tuned model (`kin-{companionId}`) if available, otherwise the default local model.
-
 ### Privacy Controls
 
-Users control their data with a two-option privacy toggle during onboarding and in settings:
+Two-option privacy toggle during onboarding and in settings:
 - **Standard Mode** — Conversations may be used for companion improvement (opt-in training data)
-- **Maximum Privacy** — All inference stays local via Ollama. No data leaves the device. Training data collection disabled.
+- **Maximum Privacy** — All inference stays local via Ollama. No data leaves the device.
 
 ---
 
 ## Tech Stack
 
-| Layer | Technology | Version |
+| Layer | Technology | Details |
 |-------|-----------|---------|
-| **Frontend** | Next.js | 15.5.14 |
-| **UI** | React | 19.0.0 |
-| **Styling** | Tailwind CSS | 4.0.15 |
-| **3D Rendering** | Three.js + React Three Fiber + Drei | 0.183.2 |
-| **Animations** | Framer Motion | 11.18.0 |
-| **Backend** | Fastify | 5.1.0 |
-| **Database** | better-sqlite3 | 11.7.0 |
-| **Telegram Bot** | grammy | 1.33.0 |
-| **Local LLM** | Ollama SDK | 0.5.12 |
-| **Cloud LLM** | OpenAI SDK | 4.77.0 |
-| **Auth** | @fastify/jwt | 9.0.1 |
-| **Blockchain** | Solana Web3.js + Metaplex Umi | latest |
-| **Runtime** | Node.js | >= 20.0.0 |
-| **Language** | TypeScript | 5.7.2+ |
-| **Testing** | Vitest | 2.1.8 |
-| **Container** | Docker + Docker Compose | 3.8 |
+| **Frontend** | Next.js 15 + React 19 | 25+ pages, SSR, App Router |
+| **Styling** | Tailwind CSS 4 | Dark theme, responsive |
+| **3D** | Three.js + React Three Fiber | Real-time WebGL rendering |
+| **Animations** | Framer Motion | Page transitions, micro-interactions |
+| **Backend** | Fastify 5 | 55+ endpoints, JWT auth, rate limiting |
+| **Database** | better-sqlite3 | 20+ tables, FTS, seeds |
+| **Bots** | grammy / discord.js / Baileys | Telegram, Discord, WhatsApp |
+| **Local LLM** | Ollama SDK | On-device inference |
+| **Cloud LLM** | OpenAI + Anthropic + Google + xAI | Multi-provider routing |
+| **Blockchain** | Solana Web3.js + Metaplex Umi | NFT minting, ownership |
+| **Testing** | Vitest | 200+ tests |
+| **Containers** | Docker + Compose | GHCR pull-based deploy |
+| **Language** | TypeScript 5.7 | Strict mode, zero errors |
 
 ---
 
@@ -174,99 +204,84 @@ Users control their data with a two-option privacy toggle during onboarding and 
 
 ```
 Kin/
-├── api/                          # Fastify API server
-│   ├── server.ts                 # Main server, DB init, 28 route files
-│   ├── lib/solana-mint.ts        # Candy Machine NFT minting
-│   ├── middleware/               # Rate limiting, auth, token gating
-│   └── routes/                   # Auth, chat, soul, skills, NFT, training, support, etc.
-│
-├── web/                          # Next.js 15 frontend
-│   └── src/
-│       ├── app/                  # 25+ pages (dashboard, chat, collection, soul editor...)
-│       ├── components/           # 68+ components (3D viewer, chat, auth, dashboard...)
-│       ├── hooks/                # useAuth, useChat, useCompanions, useSoul...
-│       └── lib/                  # API client, types, utilities
-│
-├── inference/                    # Multi-provider AI engine
-│   ├── providers/                # 7 LLM providers (OpenAI, Anthropic, Google, xAI, Moonshot, Z.ai, Groq)
-│   ├── supervisor.ts             # Two-brain escalation architecture
-│   ├── soul-drift.ts             # Personality drift detection
-│   ├── companion-prompts.ts      # 6 distinct system prompts
-│   ├── fallback-handler.ts       # Local -> Cloud fallback chain
-│   ├── training-curation.ts      # Privacy-aware conversation curation for fine-tuning
-│   ├── trajectory.ts             # Inference trajectory logging
-│   ├── observation-extractor.ts  # Memory extraction from conversations
-│   └── memory/supermemory.ts     # Semantic memory client
-│
-├── training/                     # Model fine-tuning pipeline
-│   ├── train-companion.ts        # Full training orchestration (curate → export → fine-tune → deploy)
-│   ├── fine-tune.py              # Unsloth QLoRA fine-tuning script (4-bit quantization)
-│   ├── modelfile-generator.ts    # Ollama Modelfile generation per companion
-│   └── requirements.txt          # Python dependencies (unsloth, transformers, peft)
-│
-├── scripts/                      # Setup & deployment utilities
-│   ├── setup-companion.ts        # Companion setup wizard (model pull + config)
-│   └── publish-model.ts          # Publish fine-tuned models to Ollama registry
-│
-├── companions/config.ts          # 6 companion configs with frontier model assignments
-│
-├── bot/                          # Multi-platform bots
-│   ├── telegram-bot.ts           # Telegram (grammy) — 16 command handlers
-│   ├── discord-bot.ts            # Discord bot
-│   ├── whatsapp-bot.ts           # WhatsApp bot (Baileys)
-│   └── skills/                   # Companion ability system
-│       ├── companion-abilities.ts # 6 domain abilities wired to Ollama inference
-│       ├── ability-prompts.ts    # Domain-specific system prompts per companion
-│       ├── index.ts              # Skill registration + router
-│       └── types.ts              # SkillContext, SkillResult types
-│
-├── voice/                        # Voice pipeline
-│   ├── local-stt.ts              # Speech-to-text (Whisper)
-│   ├── local-tts.ts              # Text-to-speech (Piper)
-│   └── pipeline.ts               # Full voice conversation pipeline
-│
-├── solana/                       # Blockchain integration
-│   ├── index.ts                  # Solana utilities
-│   └── nft.ts                    # NFT operations
-│
-├── db/
-│   ├── connection.ts             # SQLite singleton
-│   └── schema.sql                # 20+ tables, seeds, indexes, FTS
-│
-├── runtime/                      # Health monitoring, watchdog, recovery
-├── packages/mission-control/     # React component library (Storybook-ready)
-├── packages/node-runtime/        # Node.js runtime package
-│
-├── assets/                       # NFT metadata + creature images
-│   ├── creatures/                # 27 creature portrait JPGs
-│   ├── eggs/                     # 5 Genesis egg JPGs
-│   └── kin-metadata/             # 6 companion JSON metadata files
-│
-├── 3d-assets/                    # Full 3D character collection
-│   ├── Aether - Frost Ape/       # 10 variations (GLB + OBJ + JPG each)
-│   ├── Catalyst - Cosmic Blob/   # 7 variations
-│   ├── Cipher - Code Kraken/     # 10 variations
-│   ├── Forge - Cyber Unicorn/    # 10 variations
-│   ├── Mischief - Glitch Pup/    # 10 variations
-│   └── Vortex - Teal Dragon/     # 10 variations
-│
-├── docker-compose.yml            # App + Ollama containers
-├── Dockerfile                    # Production build
-├── AGENTS.md                     # AI agent contribution guidelines
-├── package.json                  # Root dependencies
-├── tsconfig.json                 # TypeScript config
-└── vitest.config.ts              # Test config (190+ tests passing)
++-- api/                          # Fastify API server
+|   +-- server.ts                 # Main server, DB init, 28 route files
+|   +-- lib/                      # Archive builder, export/import, solana mint
+|   +-- middleware/                # Rate limiting, auth, token gating
+|   +-- routes/                   # Auth, chat, soul, skills, NFT, training, referral, eval...
+|
++-- web/                          # Next.js 15 frontend
+|   +-- src/
+|       +-- app/                  # 25+ pages (dashboard, chat, collection, soul editor, refer...)
+|       +-- components/           # 68+ components (3D viewer, chat, auth, fleet, migration...)
+|       +-- hooks/                # useAuth, useChat, useCompanions, useSoul, useReferral...
+|       +-- lib/                  # API client, types, utilities
+|
++-- inference/                    # Multi-provider AI engine
+|   +-- providers/                # 7 LLM providers
+|   +-- supervisor.ts             # Two-brain escalation
+|   +-- soul-drift.ts             # Personality drift detection
+|   +-- distill/                  # Knowledge distillation pipeline
+|   +-- eval/                     # Evaluation framework (benchmarks, scoring, comparison)
+|   +-- memory/supermemory.ts     # Semantic memory client
+|   +-- companion-prompts.ts      # 6 distinct system prompts
+|   +-- fallback-handler.ts       # Local -> Cloud fallback chain
+|   +-- training-curation.ts      # Privacy-aware data curation
+|   +-- advantage-detector.ts     # Local model advantage detection
+|
++-- training/                     # Model fine-tuning pipeline
+|   +-- train-companion.ts        # Full training orchestration
+|   +-- retrain-loop.ts           # Continuous retraining loop
+|   +-- fine-tune.py              # Unsloth QLoRA (4-bit quantization)
+|   +-- modelfile-generator.ts    # Ollama Modelfile generation
+|
++-- fleet/                        # Fleet management system
+|   +-- credit-db.ts              # Credit tracking database
+|   +-- credit-routes.ts          # Credit API routes
+|   +-- frontier-proxy.ts         # Frontier model proxy
+|   +-- tunnel-manager.ts         # Secure tunnel management
+|   +-- wake-proxy.ts             # Wake-on-demand proxy
+|
++-- bot/                          # Multi-platform bots
+|   +-- telegram-bot.ts           # Telegram (grammy) - 16 commands
+|   +-- discord-bot.ts            # Discord bot
+|   +-- whatsapp-bot.ts           # WhatsApp bot (Baileys)
+|   +-- skills/                   # Companion ability system
+|
++-- voice/                        # Voice pipeline (Whisper STT + Piper TTS)
++-- solana/                       # NFT minting, ownership verification
++-- db/                           # SQLite schema (20+ tables)
++-- runtime/                      # Health monitoring, watchdog, recovery
++-- scripts/                      # Setup, deployment, cloud deploy utilities
+|
++-- assets/                       # NFT metadata + creature images
+|   +-- creatures/                # 27 creature portrait JPGs
+|   +-- eggs/                     # 5 Genesis egg JPGs
+|   +-- kin-metadata/             # 6 companion JSON metadata files
+|
++-- 3d-assets/                    # Full 3D character collection (171 files)
+|   +-- Aether - Frost Ape/       # 10 variations (GLB + OBJ + JPG)
+|   +-- Catalyst - Cosmic Blob/   # 7 variations
+|   +-- Cipher - Code Kraken/     # 10 variations
+|   +-- Forge - Cyber Unicorn/    # 10 variations
+|   +-- Mischief - Glitch Pup/    # 10 variations
+|   +-- Vortex - Teal Dragon/     # 10 variations
+|
++-- docker-compose.yml            # Pull-based deploy (GHCR)
++-- Dockerfile                    # Production build
++-- vitest.config.ts              # Test config
++-- tsconfig.json                 # TypeScript strict mode
++-- package.json                  # Root dependencies
 ```
 
 ---
 
 ## 3D Asset Pipeline
 
-Every KIN character follows the same production pipeline:
-
-1. **Original Artwork** — Hand-designed 2D character concepts as high-resolution JPGs
-2. **AI 3D Generation** — Source artwork processed through [Tripo3D](https://studio.tripo3d.ai) for fully textured, production-ready 3D meshes
-3. **Multi-Format Export** — Each model ships in GLB (real-time rendering), OBJ (3D editing), and source JPG
+```
+Original 2D Artwork  -->  Tripo3D AI  -->  GLB + OBJ + JPG
+   (hand-designed)       (3D synthesis)    (171 production files)
+```
 
 | Format | Use Case |
 |--------|----------|
@@ -274,7 +289,7 @@ Every KIN character follows the same production pipeline:
 | **OBJ** | 3D editing in Blender, Maya, ZBrush, Cinema 4D |
 | **JPG** | Source artwork / canonical visual reference |
 
-**Total 3D Assets:** 171 files (57 characters x 3 formats)
+**Total:** 57 characters x 3 formats = **171 production-ready 3D assets**
 
 ---
 
@@ -301,7 +316,7 @@ Every KIN character follows the same production pipeline:
 
 ---
 
-## API Endpoints (50+)
+## API Endpoints (55+)
 
 | Route Group | Key Endpoints |
 |------------|---------------|
@@ -312,8 +327,13 @@ Every KIN character follows the same production pipeline:
 | **Skills** | `GET /skills`, `POST /skills/install`, `PUT /skills/toggle`, `POST /skills/request` |
 | **NFT** | `GET /nft/owned`, `POST /nft/verify` |
 | **Progress** | `GET /progress`, `POST /progress/streak` |
+| **Referral** | `GET /referral/code`, `POST /referral/redeem`, `GET /referral/stats` |
+| **Eval** | `POST /eval/run`, `GET /eval/results`, `GET /eval/compare` |
+| **Distill** | `POST /distill/start`, `GET /distill/status` |
+| **Retrain** | `POST /retrain/start`, `GET /retrain/status` |
+| **Advantage** | `GET /advantage/detect`, `POST /advantage/benchmark` |
+| **Training** | `GET /training/conversations`, `POST /training/curate`, `POST /training/export` |
 | **Support** | `POST /support/chat`, `GET /support/tickets` |
-| **Training** | `GET /training/conversations`, `POST /training/curate`, `GET /training/stats`, `POST /training/export` |
 | **Health** | `GET /health`, `GET /live`, `POST /heartbeat` |
 
 ---
@@ -327,19 +347,15 @@ Every KIN character follows the same production pipeline:
 
 ### $KR8TIV Token
 
-KIN is powered by the **$KR8TIV** token on Solana via Bags.fm. The token drives the entire kr8tiv-ai ecosystem — 75% of platform profit goes to stakers, 5% to charitable causes, 20% to ongoing development. Hold $KR8TIV to unlock premium companions, access frontier AI models, and earn fee-sharing revenue from the platform.
-
-### Fee-Sharing Revenue Model
-
-Platform revenue (NFT mints, skill marketplace, subscriptions) flows back to **$KR8TIV** holders through Bags.fm's fee-sharing infrastructure.
+KIN is powered by the **$KR8TIV** token on Solana via Bags.fm. The token drives the entire kr8tiv-ai ecosystem. Hold $KR8TIV to unlock premium companions, access frontier AI models, and earn fee-sharing revenue from the platform.
 
 ### 60 Genesis NFTs
 
 | Tier | Count | Mint Price | Perks |
 |------|-------|------------|-------|
-| Egg | 20 | 2.5 SOL | Base companion access |
-| Hatchling | 20 | 5.3 SOL | + Frontier model access |
-| Elder | 20 | 8.3 SOL | + All companions + priority skills |
+| **Egg** | 20 | 2.5 SOL | Base companion access |
+| **Hatchling** | 20 | 5.3 SOL | + Frontier model access |
+| **Elder** | 20 | 8.3 SOL | + All companions + priority skills |
 
 ---
 
@@ -362,46 +378,39 @@ npm install --prefix web
 
 ### 2. Run the Adaptive Installer
 
-Unix/macOS/WSL:
 ```bash
-./deploy-easy.sh --dry-run   # preview what will happen
-./deploy-easy.sh             # run the installer
-```
+# Unix/macOS/WSL
+./deploy-easy.sh --dry-run   # preview
+./deploy-easy.sh             # run
 
-Windows:
-```bat
+# Windows
 deploy-easy.bat --dry-run
 deploy-easy.bat
 ```
 
-The installer is deterministic and resumable — it walks through environment checks, dependency setup, and first-run configuration. Safe local fixes run automatically; external actions (deploy triggers, secret rotation) require explicit confirmation.
+The installer is deterministic and resumable — environment checks, dependency setup, and first-run configuration. Safe local fixes run automatically; external actions require explicit confirmation.
 
 ### 3. Open the Dashboard
 
-Once the installer completes, open the dashboard at [http://localhost:3001](http://localhost:3001). The API server runs on port 3002 and the web frontend on port 3001 (see [Port Configuration](#port-configuration) below).
+| Service | URL | Port |
+|---------|-----|------|
+| **Web Frontend** | http://localhost:3001 | 3001 |
+| **API Server** | http://localhost:3002 | 3002 |
 
-### Development Setup (Manual)
-
-If you prefer manual control or need to run services individually:
-
-```bash
-# API server (Fastify + SQLite)
-npx tsx api/server.ts          # starts on port 3002
-
-# Web frontend (Next.js 15)
-npm run dev --prefix web       # starts on port 3001
-```
-
-> Legacy `setup.sh` / `setup.bat` remain as compatibility wrappers and delegate to `deploy-easy`.
-
-### Docker Deployment (GHCR Pull-Based)
+### Manual Development
 
 ```bash
-docker compose pull
-docker compose up -d
+npx tsx api/server.ts          # API server (Fastify + SQLite)
+npm run dev --prefix web       # Web frontend (Next.js 15)
 ```
 
-Pin to a specific published build:
+### Docker Deployment
+
+```bash
+docker compose pull && docker compose up -d
+```
+
+Pin to a specific build:
 ```bash
 GHCR_OWNER=kr8tiv-ai KIN_IMAGE_TAG=sha-<short_sha> docker compose up -d
 ```
@@ -411,148 +420,79 @@ GHCR_OWNER=kr8tiv-ai KIN_IMAGE_TAG=sha-<short_sha> docker compose up -d
 ## Testing
 
 ```bash
-npm test          # 190+ tests passing (Vitest)
+npm test          # 200+ tests (Vitest)
 npm run typecheck # Zero TypeScript errors
 npm run build     # Production build verification
 ```
 
 ---
 
-## The kr8tiv-ai Ecosystem
-
-| Project | Description | Repo |
-|---------|-------------|------|
-| **KIN** | AI companion platform — this repo | [kr8tiv-ai/Kin](https://github.com/kr8tiv-ai/Kin) |
-| **PinkBrain Router** | Bags.fm fee-funded OpenRouter API credits for 300+ AI models | [kr8tiv-ai/PinkBrain-Router](https://github.com/kr8tiv-ai/PinkBrain-Router) |
-| **PinkBrain LP** | Auto-compounding Meteora DAMM v2 liquidity from Bags.fm fees | [kr8tiv-ai/PinkBrain-lp](https://github.com/kr8tiv-ai/PinkBrain-lp) |
-| **Runtime Truth Contracts** | Schema-first runtime contracts for multi-agent governance | [kr8tiv-ai/kr8tiv-runtime-truth-contracts](https://github.com/kr8tiv-ai/kr8tiv-runtime-truth-contracts) |
-| **Mission Control** | AI agent governance and evaluation dashboard | [kr8tiv-ai/kr8tiv-mission-control](https://github.com/kr8tiv-ai/kr8tiv-mission-control) |
-| **Jarvis** | Persistent context engine — 81+ active Solana trading strategies | [Matt-Aurora-Ventures/Jarvis](https://github.com/Matt-Aurora-Ventures/Jarvis) |
-
-### The $KR8TIV Token
-The ecosystem is anchored by **$KR8TIV** on Solana — the single token powering all kr8tiv-ai products including KIN, PinkBrain Router, and PinkBrain LP through Bags.fm fee-sharing infrastructure.
-
----
-
 ## Deployment
 
-### Recommended Stack (MVP — ~$5/month)
+### Recommended Stack (~$5/month for MVP)
 
 | Component | Solution | Cost |
 |-----------|----------|------|
-| API + Web | Hetzner CX22 (2 vCPU, 4GB) | $5/mo |
-| LLM | Groq free tier (500K tokens/day) | $0 |
-| RPC | Helius free tier (100K credits/day) | $0 |
-| Domain | meetyourkin.com (already owned) | $0 |
-| SSL | Let's Encrypt | $0 |
-| Web hosting | Vercel free tier (optional) | $0 |
+| **API + Web** | Hetzner CX22 (2 vCPU, 4GB) | $5/mo |
+| **LLM** | Groq free tier (500K tokens/day) | $0 |
+| **RPC** | Helius free tier (100K credits/day) | $0 |
+| **Domain** | meetyourkin.com | $0 |
+| **SSL** | Let's Encrypt | $0 |
 
-### GHCR Runtime Image Contract
+### GHCR Runtime Images
 
-The publish workflow (`.github/workflows/publish-ghcr.yml`) pushes three runtime images to GHCR on every `main` push:
+The publish workflow pushes three runtime images to GHCR on every `main` push:
 
-| Service | Latest Tag | Commit-Pinned Tag |
-|---------|------------|-------------------|
-| API | `ghcr.io/<owner>/kin-api:latest` | `ghcr.io/<owner>/kin-api:sha-<short_sha>` |
-| Web | `ghcr.io/<owner>/kin-web:latest` | `ghcr.io/<owner>/kin-web:sha-<short_sha>` |
-| Inference | `ghcr.io/<owner>/kin-inference:latest` | `ghcr.io/<owner>/kin-inference:sha-<short_sha>` |
+| Service | Image |
+|---------|-------|
+| **API** | `ghcr.io/kr8tiv-ai/kin-api:latest` |
+| **Web** | `ghcr.io/kr8tiv-ai/kin-web:latest` |
+| **Inference** | `ghcr.io/kr8tiv-ai/kin-inference:latest` |
 
-Tag contract is shared with `scripts/ghcr-contract.ts`:
-- Floating runtime channel: `latest`
-- Immutable rollout tag: `sha-<7 hex chars>`
+All images support commit-pinned tags: `sha-<7 hex chars>`
 
-### Pull-Based Docker Compose (No Local Build)
+### One-Click Cloud Deploy
 
-`docker-compose.yml` is now a pull-only deploy surface that consumes the GHCR runtime contract:
+- **Railway** — `railway.toml` + guide
+- **Render** — `render.yaml` + guide
+- **Fly.io** — `fly.toml` + guide
+- **Coolify** — `docker-compose.coolify.yml` + guide
 
-```bash
-# Optional overrides (defaults shown)
-export GHCR_OWNER=kr8tiv-ai
-export KIN_IMAGE_TAG=latest
-
-# Pull and run prebuilt runtime images
-docker compose pull
-docker compose up -d
-```
-
-Pin a deployment to a published workflow build:
-
-```bash
-export GHCR_OWNER=kr8tiv-ai
-export KIN_IMAGE_TAG=sha-1a2b3c4
-
-docker compose pull
-docker compose up -d
-```
-
-Sanity check:
-
-```bash
-curl http://localhost:3002/health
-```
-
-### One-Click Cloud Deploy Paths
-
-Use these deterministic one-click import paths. All providers consume GHCR runtime refs (`ghcr.io/<owner>/kin-<service>:<tag>`) and must prove live readiness via `GET /health` before claiming success.
-
-- **Railway** — `railway.toml` + guide: `docs/deploy/railway.md`
-- **Render** — `render.yaml` + guide: `docs/deploy/render.md`
-- **Fly.io** — `fly.toml` + guide: `docs/deploy/fly.md`
-- **Coolify** — `docker-compose.coolify.yml` + guide: `docs/deploy/coolify.md`
-
-Post-deploy proof command (per provider API URL):
-
-```bash
-curl -i https://<provider-api-url>/health
-```
-
-Pass condition: HTTP `200` from `/health`, then record evidence in `docs/deploy/cloud-proof-matrix.md`.
-
-#### External-Action Boundary (D010)
-
-Deploy triggers, secret entry/rotation (`JWT_SECRET`, bot tokens), domain cutovers, and production rollbacks are explicit human approvals inside each provider dashboard/CLI, not silent automation steps.
+All providers consume GHCR runtime refs and must prove readiness via `GET /health`.
 
 ---
 
-## Metrics & Scoring (Hackathon)
+## The kr8tiv-ai Ecosystem
 
-KIN is evaluated across these Bags Hackathon dimensions:
+| Project | Description |
+|---------|-------------|
+| **[KIN](https://github.com/kr8tiv-ai/Kin)** | AI companion platform (this repo) |
+| **[PinkBrain Router](https://github.com/kr8tiv-ai/PinkBrain-Router)** | Bags.fm fee-funded OpenRouter API credits for 300+ AI models |
+| **[PinkBrain LP](https://github.com/kr8tiv-ai/PinkBrain-lp)** | Auto-compounding Meteora DAMM v2 liquidity from Bags.fm fees |
+| **[Runtime Truth Contracts](https://github.com/kr8tiv-ai/kr8tiv-runtime-truth-contracts)** | Schema-first runtime contracts for multi-agent governance |
+| **[Mission Control](https://github.com/kr8tiv-ai/kr8tiv-mission-control)** | AI agent governance and evaluation dashboard |
+| **[Jarvis](https://github.com/Matt-Aurora-Ventures/Jarvis)** | Persistent context engine — 81+ active Solana trading strategies |
 
-| Metric | Target | Current |
-|--------|--------|---------|
-| **DAU** | 100+ | Pre-launch |
-| **MRR** | $500+ | Pre-launch |
-| **GitHub Stars** | 50+ | Growing |
-| **NFT Mints** | 60 Genesis | Ready to deploy |
-| **Token Volume** | Active trading | $KIN on Bags.fm |
-| **Multi-Platform** | Web + Telegram + Discord | Web + Telegram coded |
-| **Test Coverage** | 190+ tests | Passing |
-| **API Endpoints** | 55+ | Live |
-| **Fine-Tuning** | QLoRA pipeline | Ready |
+All projects are powered by **$KR8TIV** on Solana through Bags.fm fee-sharing infrastructure.
 
 ---
 
-## Port Configuration
+## Project Stats
 
-| Service | Port | Notes |
-|---------|------|-------|
-| Web frontend | 3001 | Next.js dev server |
-| API server | 3002 | Fastify + SQLite |
-
-`web/.env.local` bridges them with `NEXT_PUBLIC_API_URL=http://localhost:3002`. Next.js rewrites in `web/next.config.ts` proxy `/api/*` from 3001 → 3002.
+```
+  Files         200+       API Endpoints    55+
+  Tests         200+       3D Assets        171
+  Components    68+        DB Tables        20+
+  Pages         25+        LLM Providers    7
+  Bot Commands  16+        Bloodlines       6
+```
 
 ---
 
 ## Contributing
 
-We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for:
-
-- Prerequisites and local dev setup
-- Code conventions (camelCase API responses, snake_case DB columns, Fastify plugin patterns)
-- Test and build commands
-- PR guidelines
-
-For the full architectural guide and agent contribution conventions, see [AGENTS.md](AGENTS.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, code conventions, and PR guidelines.
+For architectural patterns and agent contribution rules, see [AGENTS.md](AGENTS.md).
 
 **Organization:** [kr8tiv-ai](https://github.com/kr8tiv-ai) — Issues and PRs welcome.
 
@@ -560,12 +500,14 @@ For the full architectural guide and agent contribution conventions, see [AGENTS
 
 ## Links
 
-- **Website:** [meetyourkin.com](https://meetyourkin.com)
-- **Hackathon:** [bags.fm/hackathon](https://bags.fm/hackathon)
-- **Apply:** [bags.fm/apply](https://bags.fm/apply)
-- **Bags API:** [dev.bags.fm](https://dev.bags.fm)
-- **Organization:** [github.com/kr8tiv-ai](https://github.com/kr8tiv-ai)
-- **Builder:** [github.com/Matt-Aurora-Ventures](https://github.com/Matt-Aurora-Ventures)
+| | |
+|---|---|
+| **Website** | [meetyourkin.com](https://meetyourkin.com) |
+| **Hackathon** | [bags.fm/hackathon](https://bags.fm/hackathon) |
+| **Apply** | [bags.fm/apply](https://bags.fm/apply) |
+| **Bags API** | [dev.bags.fm](https://dev.bags.fm) |
+| **Organization** | [github.com/kr8tiv-ai](https://github.com/kr8tiv-ai) |
+| **Builder** | [github.com/Matt-Aurora-Ventures](https://github.com/Matt-Aurora-Ventures) |
 
 ---
 
@@ -577,4 +519,10 @@ MIT License. See [LICENSE](LICENSE) for details.
 
 ---
 
-*"We Build You A Friend."* Built by [Matt Haynes](https://github.com/Matt-Aurora-Ventures) / [kr8tiv-ai](https://github.com/kr8tiv-ai)
+<div align="center">
+
+*"We Build You A Friend."*
+
+Built by [Matt Haynes](https://github.com/Matt-Aurora-Ventures) / [kr8tiv-ai](https://github.com/kr8tiv-ai)
+
+</div>

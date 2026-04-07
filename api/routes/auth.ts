@@ -246,6 +246,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
           onboardingComplete: prefs?.onboarding_complete === 1,
           setupWizardComplete: prefs?.setup_wizard_complete === 1,
           deploymentComplete: prefs?.deployment_complete === 1,
+          freeUntil: user.free_until ?? null,
         },
       };
     } catch {

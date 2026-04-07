@@ -36,8 +36,8 @@ beforeAll(async () => {
     await server.ready();
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
-    if (msg.includes('bindings') || msg.includes('better_sqlite3') || msg.includes('better-sqlite3')) {
-      skipReason = `better-sqlite3 native module not available: ${msg.slice(0, 120)}`;
+    if (msg.includes('bindings') || msg.includes('better_sqlite3') || msg.includes('better-sqlite3') || msg.includes('dockerode')) {
+      skipReason = `Native dependency not available: ${msg.slice(0, 120)}`;
     } else {
       // Re-throw unexpected errors so they surface properly
       throw err;

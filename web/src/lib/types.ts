@@ -16,6 +16,7 @@ export interface User {
   onboardingComplete?: boolean;
   setupWizardComplete?: boolean;
   deploymentComplete?: boolean;
+  freeUntil?: string | null;
 }
 
 export interface UserPreferences {
