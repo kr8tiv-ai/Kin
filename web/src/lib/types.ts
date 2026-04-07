@@ -420,3 +420,66 @@ export interface CompletionStatusResponse {
   blockingReasons: string[];
   nextActions: string[];
 }
+
+// ============================================================================
+// Fleet Dashboard
+// ============================================================================
+
+export interface ContainerResourceUsage {
+  cpuPercent: number;
+  memoryUsageBytes: number;
+  memoryLimitBytes: number;
+  memoryPercent: number;
+}
+
+export interface FleetInstanceResponse {
+  id: string;
+  userId: string;
+  subdomain: string;
+  status: 'provisioning' | 'running' | 'stopped' | 'error' | 'removing';
+  apiContainerId: string | null;
+  webContainerId: string | null;
+  apiPort: number | null;
+  webPort: number | null;
+  resourceLimits: { cpuShares: number; memoryMb: number };
+  healthCheck: {
+    lastCheckAt: number | null;
+    status: 'healthy' | 'unhealthy' | 'unknown';
+    lastError: string | null;
+  };
+  lastError: string | null;
+  tunnelId: string | null;
+  tunnelStatus: 'unconfigured' | 'provisioned' | 'connected' | 'disconnected';
+  lastActivityAt: number | null;
+  createdAt: number;
+  updatedAt: number;
+  resourceUsage?: {
+    api: ContainerResourceUsage | null;
+    web: ContainerResourceUsage | null;
+  };
+}
+
+export interface FleetStatusResponse {
+  totalInstances: number;
+  running: number;
+  stopped: number;
+  error: number;
+  provisioning: number;
+  removing: number;
+  instances: FleetInstanceResponse[];
+  lastUpdated: number;
+}
+
+export interface FleetCreditSummaryResponse {
+  totalUsers: number;
+  totalBalanceUsd: number;
+  byTier: Record<string, { count: number; totalBalanceUsd: number }>;
+}
+
+export interface CreditBalanceResponse {
+  userId: string;
+  balanceUsd: number;
+  tier: string;
+  createdAt: number;
+  updatedAt: number;
+}

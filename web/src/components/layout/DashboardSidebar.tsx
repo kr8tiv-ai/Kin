@@ -20,6 +20,7 @@ const TIER_COLORS: Record<string, string> = {
 const ADMIN_TIERS = new Set(['hero']);
 
 const ICONS: Record<string, string> = {
+  fleet: 'M5 12H3v8h2v-8zm4-4H7v12h2V8zm4-4h-2v16h2V4zm4 8h-2v8h2v-8zm4-2h-2v10h2V10z',
   admin: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z',
   training: 'M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z',
   overview: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1',
@@ -165,6 +166,25 @@ export function DashboardSidebar({ className, onNavigate }: DashboardSidebarProp
               </li>
             );
           })}
+
+          {/* Fleet — only visible to hero-tier users */}
+          {ADMIN_TIERS.has(tier) && (
+            <li>
+              <Link
+                href="/dashboard/fleet"
+                onClick={onNavigate}
+                className={cn(
+                  'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
+                  isActive('/dashboard/fleet')
+                    ? 'border-l-2 border-gold bg-gold/5 text-gold'
+                    : 'border-l-2 border-transparent text-gold/60 hover:bg-gold/5 hover:text-gold',
+                )}
+              >
+                <NavIcon name="fleet" />
+                Fleet
+              </Link>
+            </li>
+          )}
 
           {/* Training — only visible to hero-tier users */}
           {ADMIN_TIERS.has(tier) && (

@@ -5,6 +5,7 @@ export type InstallerPhase =
   | 'dependencies'
   | 'environment'
   | 'services'
+  | 'tunnel-connect'
   | 'verification'
   | 'complete';
 
@@ -13,6 +14,7 @@ export const INSTALLER_PHASE_ORDER: InstallerPhase[] = [
   'dependencies',
   'environment',
   'services',
+  'tunnel-connect',
   'verification',
   'complete',
 ];
@@ -53,6 +55,8 @@ export interface InstallerRunState {
   lastError?: string;
   pendingAction?: InstallerAction;
   blockedPhase?: InstallerPhase;
+  /** Cloudflare Tunnel token provisioned by fleet API during user signup */
+  tunnelToken?: string;
 }
 
 export interface PhaseResult {

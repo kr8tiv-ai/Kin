@@ -155,6 +155,18 @@ declare module 'http-proxy-3' {
   export function createProxyServer(opts?: ProxyServerOptions): ProxyServer;
 }
 
+declare module 'cloudflared' {
+  /** Absolute path to the cloudflared binary */
+  export const bin: string;
+  /** Download and install cloudflared to the given path */
+  export function install(bin: string): Promise<void>;
+  /** Service management for cloudflared system service */
+  export const service: {
+    /** Install cloudflared as a system service with the given tunnel token */
+    install(token: string): void;
+  };
+}
+
 declare module 'dockerode' {
   interface ContainerCreateOptions {
     Image?: string;
