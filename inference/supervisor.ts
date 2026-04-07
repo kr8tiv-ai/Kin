@@ -14,7 +14,8 @@
  * @module inference/supervisor
  */
 
-import { getOllamaClient, isLocalLlmAvailable, type ChatMessage } from './local-llm.js';
+import { getOllamaClient, isLocalLlmAvailable, type ChatMessage, type OllamaToolCall } from './local-llm.js';
+import { WEB_SEARCH_TOOL, ollamaWebSearch, isWebSearchAvailable } from './web-search.js';
 import { FallbackHandler, type Message, type FallbackResult } from './fallback-handler.js';
 import { getCompanionConfig, type CompanionConfig, type EscalationLevel } from '../companions/config.js';
 import { checkPersonality, patchResponse } from '../bot/utils/personality-check.js';
@@ -470,7 +471,7 @@ export async function supervisedChat(
       } catch {
         // Supervisor unavailable — try local as fallback
         if (localAvailable) {
-          content = await executeLocal(messages, config);
+          content = await executeLocal(messages, config, privacyMode);
           route = 'local_fallback_supervisor';
           usedProvider = 'local';
         } else {
@@ -485,7 +486,7 @@ export async function supervisedChat(
     // ── Local path ──
     if (localAvailable) {
       try {
-        content = await executeLocal(messages, config);
+        content = await executeLocal(messages, config, privacyMode);
         route = 'local';
         usedProvider = 'local';
       } catch {
@@ -645,20 +646,122 @@ export async function supervisedChat(
 // Internal Helpers
 // ============================================================================
 
+/** Maximum tool-call loop iterations to prevent infinite loops */
+const MAX_TOOL_CALL_ITERATIONS = 3;
+
 /**
- * Execute on local Ollama.
+ * Execute on local Ollama, with optional web search tool-calling support.
+ *
+ * When web search is available (OLLAMA_API_KEY set + non-private mode),
+ * passes the web_search tool definition so the model can request searches.
+ * Handles the tool-call response loop with a cap of 3 iterations.
  */
-async function executeLocal(messages: Message[], config: CompanionConfig): Promise<string> {
+async function executeLocal(
+  messages: Message[],
+  config: CompanionConfig,
+  privacyMode?: string,
+): Promise<string> {
   const client = getOllamaClient();
-  const result = await client.chat({
-    messages: messages as ChatMessage[],
-    model: config.localModel,
-    options: {
-      temperature: 0.8,
-      top_p: 0.9,
-    },
-  });
-  return result.message.content;
+  const webSearchEnabled = isWebSearchAvailable(privacyMode);
+  const apiKey = process.env.OLLAMA_API_KEY ?? '';
+
+  let chatMessages = messages as ChatMessage[];
+  let toolCallCount = 0;
+
+  for (let iteration = 0; iteration <= MAX_TOOL_CALL_ITERATIONS; iteration++) {
+    const result = await client.chat({
+      messages: chatMessages,
+      model: config.localModel,
+      options: {
+        temperature: 0.8,
+        top_p: 0.9,
+      },
+      ...(webSearchEnabled ? { tools: [WEB_SEARCH_TOOL] } : {}),
+    });
+
+    // If no tool calls, return the content directly
+    if (!result.message.tool_calls || result.message.tool_calls.length === 0) {
+      if (toolCallCount > 0) {
+        console.log(`[supervisor] Tool-call loop completed after ${toolCallCount} call(s)`);
+      }
+      return result.message.content;
+    }
+
+    // Cap iterations — return whatever content we have
+    if (iteration >= MAX_TOOL_CALL_ITERATIONS) {
+      console.warn(`[supervisor] Tool-call loop hit max iterations (${MAX_TOOL_CALL_ITERATIONS}), returning partial content`);
+      return result.message.content;
+    }
+
+    // Process tool calls — append assistant message with tool_calls, then tool responses
+    chatMessages = [
+      ...chatMessages,
+      { role: 'assistant' as const, content: result.message.content || '', tool_calls: result.message.tool_calls },
+    ];
+
+    for (const toolCall of result.message.tool_calls) {
+      const toolResponse = await handleToolCall(toolCall, apiKey, webSearchEnabled);
+      chatMessages = [
+        ...chatMessages,
+        { role: 'tool' as const, content: toolResponse },
+      ];
+      toolCallCount++;
+    }
+  }
+
+  // Should not reach here — the loop returns in all paths above
+  return '';
+}
+
+/**
+ * Handle a single tool call from the model.
+ * Returns the string content to send back as a tool-role message.
+ */
+async function handleToolCall(
+  toolCall: OllamaToolCall,
+  apiKey: string,
+  webSearchEnabled: boolean,
+): Promise<string> {
+  const { name, arguments: args } = toolCall.function;
+
+  if (name !== 'web_search') {
+    // Unknown tool — ignore gracefully
+    console.warn(`[supervisor] Model requested unknown tool: ${name}`);
+    return `Tool '${name}' is not available.`;
+  }
+
+  const query = typeof args?.query === 'string' ? args.query : String(args?.query ?? '');
+
+  // If web search is not actually available (API key missing), tell the model
+  if (!webSearchEnabled || !apiKey) {
+    console.log(`[web-search] Requested but not available (no API key or private mode)`);
+    return 'Web search is not available. Please answer based on your training data.';
+  }
+
+  // Execute the search
+  const start = performance.now();
+  try {
+    const result = await ollamaWebSearch(query, apiKey);
+    const latencyMs = performance.now() - start;
+    console.log(`[web-search] query="${query}" results=${result.results.length} latencyMs=${latencyMs.toFixed(0)}`);
+
+    if (result.results.length === 0) {
+      return 'No search results found for the query.';
+    }
+
+    // Format results for the model
+    const formatted = result.results
+      .slice(0, 5) // Limit to top 5 results to avoid context bloat
+      .map((r, i) => `[${i + 1}] ${r.title}\n${r.url}\n${r.content}`)
+      .join('\n\n');
+
+    return `Web search results for "${query}":\n\n${formatted}`;
+  } catch (err) {
+    const latencyMs = performance.now() - start;
+    const errMsg = err instanceof Error ? err.message : String(err);
+    console.error(`[web-search] Failed: query="${query}" error="${errMsg}" latencyMs=${latencyMs.toFixed(0)}`);
+    return 'Web search failed. Please answer based on your training data.';
+  }
 }
 
 /**
