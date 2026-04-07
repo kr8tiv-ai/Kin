@@ -143,6 +143,68 @@ declare module 'cloudflared' {
   };
 }
 
+declare module '@picovoice/porcupine-web' {
+  /** Built-in wake word keywords available without custom model training. */
+  export enum BuiltInKeyword {
+    Alexa = 'Alexa',
+    Americano = 'Americano',
+    Blueberry = 'Blueberry',
+    Bumblebee = 'Bumblebee',
+    Computer = 'Computer',
+    Grapefruit = 'Grapefruit',
+    Grasshopper = 'Grasshopper',
+    HeyGoogle = 'Hey Google',
+    HeyBarista = 'Hey Barista',
+    HeySiri = 'Hey Siri',
+    Jarvis = 'Jarvis',
+    OkGoogle = 'Ok Google',
+    Picovoice = 'Picovoice',
+    Porcupine = 'Porcupine',
+    Terminator = 'Terminator',
+  }
+
+  /** Detection result from Porcupine wake word engine. */
+  export interface PorcupineDetection {
+    /** Index of the detected keyword (0-based) */
+    index: number;
+    /** Label of the detected keyword */
+    label: string;
+  }
+
+  /** Porcupine Web Worker for wake word detection in a web audio context. */
+  export class PorcupineWorker {
+    /**
+     * Create a PorcupineWorker instance.
+     * @param accessKey Picovoice access key
+     * @param keywords Array of built-in keyword names or custom keyword objects
+     * @param detectionCallback Callback invoked on wake word detection
+     */
+    static create(
+      accessKey: string,
+      keywords: Array<BuiltInKeyword | { base64: string; label?: string }>,
+      detectionCallback: (detection: PorcupineDetection) => void,
+    ): Promise<PorcupineWorker>;
+
+    /** Start processing audio from the default microphone. */
+    start(): Promise<void>;
+
+    /** Stop processing audio. */
+    stop(): Promise<void>;
+
+    /** Release all resources held by the worker. */
+    release(): Promise<void>;
+
+    /** The sample rate expected by the engine (typically 16000). */
+    readonly sampleRate: number;
+
+    /** The frame length expected by the engine. */
+    readonly frameLength: number;
+
+    /** The Porcupine engine version. */
+    readonly version: string;
+  }
+}
+
 declare module 'dockerode' {
   interface ContainerCreateOptions {
     Image?: string;

@@ -1,9 +1,11 @@
 /**
- * Voice Routes -- TTS, STT, and provider status for the KIN web dashboard.
+ * Voice Routes -- TTS, STT, provider status, and full conversation pipeline
+ * for the KIN web dashboard.
  *
- * POST /voice/tts       Text-to-speech (JSON body -> audio buffer)
- * POST /voice/stt       Speech-to-text  (raw audio body -> JSON transcript)
- * GET  /voice/providers Lists available TTS/STT providers and their readiness
+ * POST /voice/tts            Text-to-speech (JSON body -> audio buffer)
+ * POST /voice/stt            Speech-to-text  (raw audio body -> JSON transcript)
+ * GET  /voice/providers      Lists available TTS/STT providers and their readiness
+ * POST /voice/conversation   Full round-trip: audio in -> transcribe -> companion -> TTS -> JSON out
  *
  * All routes return 503 with actionable guidance when the required API key
  * or local binary is missing, so callers can surface helpful setup hints.
@@ -22,6 +24,9 @@ import {
   isPiperAvailable,
 } from '../../voice/local-tts.js';
 import { isWhisperCppAvailable } from '../../voice/local-stt.js';
+import { supervisedChat } from '../../inference/supervisor.js';
+import { buildCompanionPrompt } from '../../inference/companion-prompts.js';
+import { getFallbackHandler } from '../../inference/fallback-handler.js';
 
 // ============================================================================
 // Request / Response types
@@ -247,6 +252,14 @@ const voiceRoutes: FastifyPluginAsync = async (fastify) => {
       },
     };
 
+    // Wake word detection status
+    const picovoiceKey = process.env.NEXT_PUBLIC_PICOVOICE_ACCESS_KEY
+      ?? process.env.PICOVOICE_ACCESS_KEY;
+    const wakeWord = {
+      configured: !!picovoiceKey,
+      provider: (picovoiceKey ? 'porcupine' : 'none') as 'porcupine' | 'none',
+    };
+
     // Determine the currently active providers
     const activeTts = process.env.TTS_PROVIDER
       ?? (process.env.ELEVENLABS_API_KEY ? 'elevenlabs' : process.env.OPENAI_API_KEY ? 'openai' : xttsUp ? 'xtts' : piperUp ? 'piper' : 'none');
@@ -257,8 +270,201 @@ const voiceRoutes: FastifyPluginAsync = async (fastify) => {
     return reply.send({
       tts,
       stt,
+      wakeWord,
       active: { tts: activeTts, stt: activeStt },
     });
+  });
+
+  // ── POST /voice/conversation ────────────────────────────────────────────
+  // Full round-trip voice pipeline: audio → transcribe → companion → TTS → JSON.
+  // Accepts multipart form data with `audio` file + `companionId` string.
+  // Returns JSON with transcription, response text, and base64-encoded audio.
+  fastify.post('/voice/conversation', {
+    config: { rateLimit: { max: 10, timeWindow: '1 minute' } },
+  } as any, async (request, reply: FastifyReply) => {
+    // ── Pre-flight: verify STT backend availability ───────────────────────
+    const whisperLocal = await isWhisperCppAvailable();
+    const hasOpenAiKey = !!process.env.OPENAI_API_KEY;
+
+    if (!whisperLocal && !hasOpenAiKey) {
+      return reply.status(503).send({
+        error: 'No speech-to-text provider available',
+        code: 'NO_STT_PROVIDER',
+        hint: 'Set OPENAI_API_KEY or install whisper.cpp locally.',
+        status: 503,
+      });
+    }
+
+    // ── Parse multipart upload ────────────────────────────────────────────
+    let audioBuffer: Buffer;
+    let companionId = 'cipher';
+
+    try {
+      const data = await request.file();
+      if (!data) {
+        return reply.status(400).send({
+          error: 'Missing audio file in multipart upload',
+          hint: 'Send a multipart form with an "audio" file field.',
+          status: 400,
+        });
+      }
+
+      audioBuffer = await data.toBuffer();
+
+      // Read companionId from multipart fields (comes before or after file)
+      const fields = data.fields as Record<string, any>;
+      if (fields.companionId) {
+        const field = fields.companionId;
+        companionId = (typeof field === 'object' && field.value)
+          ? String(field.value)
+          : String(field);
+      }
+    } catch (err) {
+      request.log.error(err, 'voice/conversation multipart parse error');
+      return reply.status(400).send({
+        error: 'Invalid multipart form data',
+        status: 400,
+      });
+    }
+
+    if (!audioBuffer || audioBuffer.length === 0) {
+      return reply.status(400).send({
+        error: 'Audio file is empty',
+        hint: 'The uploaded audio file contained no data.',
+        status: 400,
+      });
+    }
+
+    // Size guard: reject audio > 25 MB
+    if (audioBuffer.length > 25 * 1024 * 1024) {
+      return reply.status(413).send({
+        error: 'Audio file too large (max 25 MB)',
+        status: 413,
+      });
+    }
+
+    // ── Stage 1: Transcribe ───────────────────────────────────────────────
+    let transcriptionText: string;
+    const t0 = performance.now();
+
+    try {
+      const pipeline = getVoicePipeline();
+      const transcription = await pipeline.transcribe(audioBuffer);
+      transcriptionText = transcription.text;
+    } catch (err) {
+      const transcribeMs = Math.round(performance.now() - t0);
+      if (err instanceof VoicePipelineError) {
+        const status = err.code === 'MISSING_API_KEY' ? 503 : 502;
+        return reply
+          .header('X-Transcribe-Ms', String(transcribeMs))
+          .status(status)
+          .send({ error: err.message, code: err.code, stage: 'transcription', status });
+      }
+      request.log.error(err, 'voice/conversation transcription error');
+      return reply
+        .header('X-Transcribe-Ms', String(transcribeMs))
+        .status(502)
+        .send({ error: 'Transcription failed', code: 'TRANSCRIPTION_ERROR', stage: 'transcription', status: 502 });
+    }
+
+    const transcribeMs = Math.round(performance.now() - t0);
+
+    if (!transcriptionText || transcriptionText.trim().length === 0) {
+      return reply
+        .header('X-Transcribe-Ms', String(transcribeMs))
+        .status(400)
+        .send({
+          error: 'No speech detected in audio',
+          code: 'EMPTY_TRANSCRIPTION',
+          stage: 'transcription',
+          status: 400,
+        });
+    }
+
+    // ── Stage 2: Generate companion response ──────────────────────────────
+    const t1 = performance.now();
+    let responseText: string;
+
+    try {
+      const systemPrompt = buildCompanionPrompt(companionId, {
+        taskContext: { type: 'voice' },
+      });
+
+      const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: transcriptionText },
+      ];
+
+      const fallback = getFallbackHandler();
+      const result = await supervisedChat(messages, companionId, fallback, {
+        taskType: 'voice',
+      });
+      responseText = result.content;
+    } catch (err) {
+      const inferenceMs = Math.round(performance.now() - t1);
+      request.log.error(err, 'voice/conversation inference error');
+      return reply
+        .header('X-Transcribe-Ms', String(transcribeMs))
+        .header('X-Inference-Ms', String(inferenceMs))
+        .status(502)
+        .send({
+          error: 'Companion response generation failed',
+          code: 'INFERENCE_ERROR',
+          stage: 'inference',
+          status: 502,
+        });
+    }
+
+    const inferenceMs = Math.round(performance.now() - t1);
+
+    // ── Stage 3: Synthesize TTS ───────────────────────────────────────────
+    const t2 = performance.now();
+    let audioBase64: string;
+    let audioFormat: string;
+
+    try {
+      const pipeline = getVoicePipeline();
+      const synthesis = await pipeline.synthesize(responseText, companionId);
+      audioBase64 = synthesis.audioBuffer.toString('base64');
+      audioFormat = synthesis.format;
+    } catch (err) {
+      const synthesizeMs = Math.round(performance.now() - t2);
+      if (err instanceof VoicePipelineError) {
+        const status = err.code === 'MISSING_API_KEY' ? 503 : 502;
+        return reply
+          .header('X-Transcribe-Ms', String(transcribeMs))
+          .header('X-Inference-Ms', String(inferenceMs))
+          .header('X-Synthesize-Ms', String(synthesizeMs))
+          .status(status)
+          .send({ error: err.message, code: err.code, stage: 'synthesis', status });
+      }
+      request.log.error(err, 'voice/conversation synthesis error');
+      return reply
+        .header('X-Transcribe-Ms', String(transcribeMs))
+        .header('X-Inference-Ms', String(inferenceMs))
+        .header('X-Synthesize-Ms', String(synthesizeMs))
+        .status(502)
+        .send({ error: 'Voice synthesis failed', code: 'SYNTHESIS_ERROR', stage: 'synthesis', status: 502 });
+    }
+
+    const synthesizeMs = Math.round(performance.now() - t2);
+
+    // ── Return full conversation result ───────────────────────────────────
+    return reply
+      .header('X-Transcribe-Ms', String(transcribeMs))
+      .header('X-Inference-Ms', String(inferenceMs))
+      .header('X-Synthesize-Ms', String(synthesizeMs))
+      .send({
+        transcription: transcriptionText,
+        response: responseText,
+        audio: audioBase64,
+        audioFormat,
+        timings: {
+          transcribeMs,
+          inferenceMs,
+          synthesizeMs,
+        },
+      });
   });
 };
 
