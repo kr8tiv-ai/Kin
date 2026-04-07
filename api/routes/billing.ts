@@ -1,15 +1,14 @@
 /**
  * Billing Routes - Stripe subscription management
  *
- * Handles subscription status, Stripe checkout, billing portal, and webhooks.
+ * Handles subscription status, Stripe checkout, billing portal, and NFT mint checkout.
+ * Webhook handling is in billing-webhook.ts (registered outside JWT scope).
  * Stripe SDK is not a declared dependency, so all Stripe API calls are made
  * via the native fetch API with the STRIPE_SECRET_KEY env var.
  * If STRIPE_SECRET_KEY is absent, checkout/portal return graceful stubs.
  */
 
 import { FastifyPluginAsync } from 'fastify';
-import crypto from 'crypto';
-import { mintCompanionNFT } from '../lib/solana-mint.js';
 import { mintRateLimit } from '../middleware/rate-limit.js';
 
 // ---------------------------------------------------------------------------
@@ -51,62 +50,41 @@ async function stripePost(
   return json;
 }
 
-async function stripeGet(path: string, key: string): Promise<any> {
-  const res = await fetch(`${STRIPE_API}${path}`, {
-    headers: { Authorization: `Bearer ${key}` },
-  });
+// ---------------------------------------------------------------------------
+// Tier → Price ID resolution (server-side, avoids leaking Stripe IDs)
+// ---------------------------------------------------------------------------
 
-  const json = await res.json() as any;
-  if (!res.ok) {
-    const msg = json?.error?.message ?? `Stripe error ${res.status}`;
-    const err = new Error(msg) as any;
-    err.statusCode = res.status;
-    throw err;
-  }
-  return json;
+const VALID_TIERS = ['hatchling', 'elder', 'hero'] as const;
+type TierName = typeof VALID_TIERS[number];
+
+const TIER_ENV_MAP: Record<TierName, string> = {
+  hatchling: 'STRIPE_HATCHLING_PRICE_ID',
+  elder: 'STRIPE_ELDER_PRICE_ID',
+  hero: 'STRIPE_HERO_PRICE_ID',
+};
+
+/**
+ * Resolve a tier name (e.g. 'hatchling', 'elder-monthly') to a Stripe priceId
+ * from env vars. Strips common suffixes like '-monthly' for flexibility.
+ * Returns null if the tier is unknown or the env var is not set.
+ */
+function resolvePriceId(tier: string): string | null {
+  // Normalize: strip common suffixes like '-monthly'
+  const bare = tier.replace(/-monthly$/, '') as TierName;
+  if (!VALID_TIERS.includes(bare)) return null;
+  return process.env[TIER_ENV_MAP[bare]] ?? null;
 }
 
-// ---------------------------------------------------------------------------
-// Stripe webhook signature verification (manual — no SDK)
-// Spec: https://stripe.com/docs/webhooks/signatures
-// ---------------------------------------------------------------------------
-function verifyStripeSignature(
-  payload: Buffer,
-  header: string,
-  secret: string,
-): boolean {
-  try {
-    const parts: Record<string, string> = {};
-    for (const part of header.split(',')) {
-      const idx = part.indexOf('=');
-      if (idx === -1) continue;
-      const k = part.slice(0, idx).trim();
-      const v = part.slice(idx + 1);
-      parts[k] = v;
-    }
-
-    const timestamp = parts['t'];
-    const v1 = parts['v1'];
-    if (!timestamp || !v1) return false;
-
-    // Reject if older than 5 minutes
-    const nowSeconds = Math.floor(Date.now() / 1000);
-    if (Math.abs(nowSeconds - parseInt(timestamp, 10)) > 300) return false;
-
-    const signedPayload = `${timestamp}.${payload.toString('utf-8')}`;
-    const expected = crypto
-      .createHmac('sha256', secret)
-      .update(signedPayload)
-      .digest('hex');
-
-    // v1 and expected are the same length (64 hex chars), safe to compare
-    return crypto.timingSafeEqual(
-      Buffer.from(v1, 'hex'),
-      Buffer.from(expected, 'hex'),
-    );
-  } catch {
-    return false;
-  }
+/**
+ * Reverse-map a Stripe priceId to the plan name (hatchling/elder/hero).
+ * Uses STRIPE_*_PRICE_ID env vars. Returns null if no match found.
+ */
+function resolvePlanFromPriceId(priceId: string): string | null {
+  const mapping: Record<string, string> = {};
+  if (process.env.STRIPE_HATCHLING_PRICE_ID) mapping[process.env.STRIPE_HATCHLING_PRICE_ID] = 'hatchling';
+  if (process.env.STRIPE_ELDER_PRICE_ID) mapping[process.env.STRIPE_ELDER_PRICE_ID] = 'elder';
+  if (process.env.STRIPE_HERO_PRICE_ID) mapping[process.env.STRIPE_HERO_PRICE_ID] = 'hero';
+  return mapping[priceId] ?? null;
 }
 
 // ---------------------------------------------------------------------------
@@ -114,13 +92,10 @@ function verifyStripeSignature(
 // ---------------------------------------------------------------------------
 
 interface CheckoutBody {
+  tier?: string;
   priceId?: string;
   successUrl?: string;
   cancelUrl?: string;
-}
-
-interface WebhookHeaders {
-  'stripe-signature'?: string;
 }
 
 interface PortalBody {
@@ -221,19 +196,38 @@ const billingRoutes: FastifyPluginAsync = async (fastify) => {
 
     const userId = (request.user as { userId: string }).userId;
     const {
-      priceId,
+      tier,
+      priceId: rawPriceId,
       successUrl = 'https://www.meetyourkin.com/billing/success',
       cancelUrl = 'https://www.meetyourkin.com/billing',
     } = request.body ?? {};
 
-    if (!priceId) {
-      reply.status(400);
-      return { error: 'priceId is required' };
+    // Resolve priceId: prefer tier (server-side), fall back to raw priceId
+    let resolvedPriceId: string | null = null;
+    let plan: string | null = null;
+
+    if (tier) {
+      resolvedPriceId = resolvePriceId(tier);
+      if (!resolvedPriceId) {
+        reply.status(400);
+        return { error: `Invalid tier: '${tier}'. Valid tiers: hatchling, elder, hero` };
+      }
+      plan = tier.replace(/-monthly$/, '');
+    } else if (rawPriceId) {
+      // Backward compatibility: accept raw priceId from older clients
+      resolvedPriceId = rawPriceId;
+      plan = resolvePlanFromPriceId(rawPriceId);
     }
 
-    // Get or create Stripe customer
+    if (!resolvedPriceId) {
+      reply.status(400);
+      return { error: 'tier or priceId is required' };
+    }
+
+    // Get or create Stripe customer (also fetch genesis_discount)
     const user = fastify.context.db.prepare(`
-      SELECT id, first_name, last_name, stripe_customer_id FROM users WHERE id = ?
+      SELECT id, first_name, last_name, stripe_customer_id, genesis_discount
+      FROM users WHERE id = ?
     `).get(userId) as any;
 
     if (!user) {
@@ -247,7 +241,6 @@ const billingRoutes: FastifyPluginAsync = async (fastify) => {
       const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ');
       const customer = await stripePost('/customers', {
         name: fullName,
-        // metadata sub-keys flattened as Stripe form-encoded key names
         'metadata[kin_user_id]': userId,
       }, key);
 
@@ -258,231 +251,45 @@ const billingRoutes: FastifyPluginAsync = async (fastify) => {
       `).run(customerId, userId);
     }
 
-    const session = await stripePost('/checkout/sessions', {
+    // Genesis discount: create a one-time Stripe coupon if user has genesis_discount > 0
+    let couponId: string | null = null;
+    const genesisDiscount: number = user.genesis_discount ?? 0;
+
+    if (genesisDiscount > 0) {
+      try {
+        const coupon = await stripePost('/coupons', {
+          percent_off: genesisDiscount,
+          duration: 'forever',
+          'metadata[kin_user_id]': userId,
+          'metadata[type]': 'genesis_discount',
+        }, key);
+        couponId = coupon.id as string;
+      } catch (couponErr) {
+        // Non-blocking: proceed without discount if coupon creation fails
+        const msg = couponErr instanceof Error ? couponErr.message : String(couponErr);
+        console.warn(`[billing] Failed to create Genesis coupon for user ${userId}: ${msg}`);
+      }
+    }
+
+    const sessionParams: Record<string, string | number | boolean | undefined> = {
       mode: 'subscription',
       customer: customerId,
-      'line_items[0][price]': priceId,
+      'line_items[0][price]': resolvedPriceId,
       'line_items[0][quantity]': 1,
       success_url: successUrl,
       cancel_url: cancelUrl,
       'metadata[kin_user_id]': userId,
-    }, key);
+      ...(plan ? { 'metadata[plan]': plan } : {}),
+    };
+
+    if (couponId) {
+      sessionParams['discounts[0][coupon]'] = couponId;
+    }
+
+    const session = await stripePost('/checkout/sessions', sessionParams, key);
 
     return { url: session.url as string };
   });
-
-  // -------------------------------------------------------------------------
-  // POST /billing/webhook
-  //
-  // Stripe sends the raw request body for signature verification.
-  // We register a content-type parser scoped to this plugin that captures the
-  // raw Buffer, then parse JSON manually inside the handler.
-  // -------------------------------------------------------------------------
-  fastify.addContentTypeParser(
-    'application/json',
-    { parseAs: 'buffer', bodyLimit: 1024 * 1024 },
-    (_req, body, done) => {
-      done(null, body);
-    },
-  );
-
-  fastify.post<{ Headers: WebhookHeaders }>(
-    '/billing/webhook',
-    async (request, reply) => {
-      const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-      const sig = request.headers['stripe-signature'];
-
-      // Ensure we have a Buffer (our content-type parser always produces one)
-      const rawBody: Buffer = Buffer.isBuffer(request.body)
-        ? request.body
-        : Buffer.from(
-            typeof request.body === 'string'
-              ? request.body
-              : JSON.stringify(request.body),
-          );
-
-      // Signature verification
-      if (webhookSecret && sig) {
-        const isValid = verifyStripeSignature(rawBody, sig, webhookSecret);
-        if (!isValid) {
-          return reply.status(400).send({ error: 'Invalid Stripe signature' });
-        }
-      }
-
-      let event: any;
-      try {
-        event = JSON.parse(rawBody.toString('utf-8'));
-      } catch {
-        return reply.status(400).send({ error: 'Invalid JSON body' });
-      }
-
-      const db = fastify.context.db;
-
-      switch (event.type as string) {
-        case 'checkout.session.completed': {
-          const session = event.data.object;
-          const kinUserId: string = session.metadata?.kin_user_id ?? '';
-          const customerId: string = session.customer ?? '';
-          const subscriptionId: string = session.subscription ?? '';
-
-          // ── Handle companion mint payments ──
-          if (session.metadata?.type === 'companion_mint') {
-            const mintCompanionId: string = session.metadata.companion_id ?? '';
-            const mintWallet: string = session.metadata.wallet_address ?? '';
-
-            if (kinUserId && mintCompanionId && mintWallet) {
-              try {
-                // Attempt real Candy Machine mint (falls back to mock if CM not deployed)
-                const mintResult = await mintCompanionNFT(mintCompanionId, mintWallet);
-                const mintId = `nft-${crypto.randomUUID()}`;
-
-                db.prepare(`
-                  INSERT INTO nft_ownership (id, user_id, companion_id, mint_address, owner_wallet, metadata_uri)
-                  VALUES (?, ?, ?, ?, ?, ?)
-                `).run(mintId, kinUserId, mintCompanionId, mintResult.mintAddress, mintWallet, null);
-
-                // Auto-claim companion if not already claimed
-                const alreadyClaimed = db.prepare(`
-                  SELECT 1 FROM user_companions WHERE user_id = ? AND companion_id = ?
-                `).get(kinUserId, mintCompanionId);
-
-                if (!alreadyClaimed) {
-                  const ucId = `uc-${crypto.randomUUID()}`;
-                  db.prepare(`
-                    INSERT INTO user_companions (id, user_id, companion_id, nft_mint_address)
-                    VALUES (?, ?, ?, ?)
-                  `).run(ucId, kinUserId, mintCompanionId, mintResult.mintAddress);
-                }
-
-                // Save wallet address to user account for future NFT lookups
-                try {
-                  db.prepare(`
-                    UPDATE users SET wallet_address = COALESCE(wallet_address, ?) WHERE id = ? AND wallet_address IS NULL
-                  `).run(mintWallet, kinUserId);
-                } catch { /* wallet_address column may not exist yet */ }
-
-                console.log(`[Mint] Companion ${mintCompanionId} minted (${mintResult.source}) for user ${kinUserId} → ${mintResult.mintAddress.slice(0, 12)}...`);
-              } catch (mintErr) {
-                console.error('[Mint] Failed to mint companion:', mintErr);
-              }
-            }
-            break;
-          }
-
-          // ── Handle skill request payments ──
-          if (session.metadata?.type === 'skill_request') {
-            const skillRequestId: string = session.metadata.skill_request_id ?? '';
-            if (kinUserId && skillRequestId) {
-              db.prepare(`
-                UPDATE skill_requests
-                SET status = 'paid', updated_at = strftime('%s', 'now') * 1000
-                WHERE id = ? AND user_id = ? AND status = 'payment_required'
-              `).run(skillRequestId, kinUserId);
-              console.log(`[Skills] Request ${skillRequestId} paid by user ${kinUserId}`);
-            }
-            break;
-          }
-
-          if (!kinUserId || !subscriptionId) break;
-
-          // Fetch the subscription to get period dates and plan
-          const apiKey = stripeKey();
-          let plan = 'hatchling';
-          let periodStart: number | null = null;
-          let periodEnd: number | null = null;
-
-          if (apiKey) {
-            try {
-              const stripeSub = await stripeGet(`/subscriptions/${subscriptionId}`, apiKey);
-              periodStart = ((stripeSub.current_period_start as number) ?? 0) * 1000;
-              periodEnd = ((stripeSub.current_period_end as number) ?? 0) * 1000;
-              const priceMeta = stripeSub.items?.data?.[0]?.price?.metadata?.plan as string | undefined;
-              if (priceMeta) plan = priceMeta;
-            } catch {
-              // Non-fatal; continue with defaults
-            }
-          }
-
-          const subId = `sub-${crypto.randomUUID()}`;
-          db.prepare(`
-            INSERT INTO subscriptions
-              (id, user_id, stripe_subscription_id, stripe_customer_id, plan, status,
-               current_period_start, current_period_end, cancel_at_period_end)
-            VALUES (?, ?, ?, ?, ?, 'active', ?, ?, 0)
-            ON CONFLICT(user_id) DO UPDATE SET
-              stripe_subscription_id = excluded.stripe_subscription_id,
-              stripe_customer_id     = excluded.stripe_customer_id,
-              plan                   = excluded.plan,
-              status                 = 'active',
-              current_period_start   = excluded.current_period_start,
-              current_period_end     = excluded.current_period_end,
-              cancel_at_period_end   = 0,
-              updated_at             = strftime('%s', 'now') * 1000
-          `).run(subId, kinUserId, subscriptionId, customerId, plan, periodStart, periodEnd);
-
-          if (plan === 'hatchling' || plan === 'elder' || plan === 'hero') {
-            db.prepare(`UPDATE users SET tier = ? WHERE id = ?`).run(plan, kinUserId);
-          }
-          break;
-        }
-
-        case 'customer.subscription.updated': {
-          const stripeSub = event.data.object;
-          const subscriptionId: string = stripeSub.id;
-          const subStatus: string = stripeSub.status;
-          const cancelAtPeriodEnd: boolean = stripeSub.cancel_at_period_end;
-          const periodStart: number = ((stripeSub.current_period_start as number) ?? 0) * 1000;
-          const periodEnd: number = ((stripeSub.current_period_end as number) ?? 0) * 1000;
-
-          db.prepare(`
-            UPDATE subscriptions
-            SET status               = ?,
-                cancel_at_period_end = ?,
-                current_period_start = ?,
-                current_period_end   = ?,
-                updated_at           = strftime('%s', 'now') * 1000
-            WHERE stripe_subscription_id = ?
-          `).run(
-            subStatus,
-            cancelAtPeriodEnd ? 1 : 0,
-            periodStart,
-            periodEnd,
-            subscriptionId,
-          );
-          break;
-        }
-
-        case 'customer.subscription.deleted': {
-          const stripeSub = event.data.object;
-          const subscriptionId: string = stripeSub.id;
-
-          // Find affected user before updating
-          const affectedSub = db.prepare(`
-            SELECT user_id FROM subscriptions WHERE stripe_subscription_id = ?
-          `).get(subscriptionId) as any;
-
-          db.prepare(`
-            UPDATE subscriptions
-            SET status     = 'canceled',
-                plan       = 'free',
-                updated_at = strftime('%s', 'now') * 1000
-            WHERE stripe_subscription_id = ?
-          `).run(subscriptionId);
-
-          if (affectedSub?.user_id) {
-            db.prepare(`UPDATE users SET tier = 'free' WHERE id = ?`).run(affectedSub.user_id);
-          }
-          break;
-        }
-
-        default:
-          // Unknown event — acknowledge without processing
-          break;
-      }
-
-      return { received: true };
-    },
-  );
 
   // -------------------------------------------------------------------------
   // POST /billing/mint-checkout — One-time payment to mint companion NFT

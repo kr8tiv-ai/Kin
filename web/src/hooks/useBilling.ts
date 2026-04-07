@@ -15,7 +15,7 @@ interface UseBillingResult {
   error: string | null;
   refresh: () => void;
   /** Create a Stripe checkout session and redirect to the returned URL. */
-  checkout: (priceId?: string) => Promise<void>;
+  checkout: (tier?: string) => Promise<void>;
   checkingOut: boolean;
   /** Create a Stripe portal session and redirect to the returned URL. */
   openPortal: () => Promise<void>;
@@ -29,11 +29,11 @@ export function useBilling(): UseBillingResult {
   const [checkingOut, setCheckingOut] = useState(false);
   const [openingPortal, setOpeningPortal] = useState(false);
 
-  const checkout = useCallback(async (priceId?: string) => {
+  const checkout = useCallback(async (tier?: string) => {
     setCheckingOut(true);
     try {
       const result = await kinApi.post<{ url: string }>('/billing/checkout', {
-        priceId,
+        tier,
       });
       if (result.url) {
         window.location.href = result.url;

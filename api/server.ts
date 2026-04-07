@@ -28,6 +28,7 @@ import authRoutes from './routes/auth.js';
 import memoryRoutes from './routes/memory.js';
 import supportRoutes from './routes/support.js';
 import billingRoutes from './routes/billing.js';
+import billingWebhookRoutes from './routes/billing-webhook.js';
 import projectRoutes from './routes/projects.js';
 import referralRoutes from './routes/referral.js';
 import progressRoutes from './routes/progress.js';
@@ -472,6 +473,9 @@ export async function createServer(config: ApiConfig = {}) {
 
   // Authentication routes (no auth required)
   await fastify.register(authRoutes);
+
+  // Billing webhook (no JWT — Stripe authenticates via stripe-signature header)
+  await fastify.register(billingWebhookRoutes);
 
   // Telegram webhook (no JWT — Telegram authenticates via secret token)
   if (config.bot) {

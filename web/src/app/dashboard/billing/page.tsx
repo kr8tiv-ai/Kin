@@ -328,7 +328,7 @@ export default function BillingPage() {
                       className="w-full"
                       onClick={() => {
                         track('upgrade_clicked', { from: currentPlan, to: tier.id });
-                        checkout().catch(() => toastError('Checkout not available yet. Coming soon!'));
+                        checkout(tier.id.replace('-monthly', '')).catch(() => toastError('Checkout not available yet. Coming soon!'));
                       }}
                       disabled={checkingOut}
                     >
