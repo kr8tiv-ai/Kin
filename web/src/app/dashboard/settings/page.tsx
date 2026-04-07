@@ -18,6 +18,7 @@ import { MemoryList } from '@/components/dashboard/MemoryList';
 import { DangerZone } from '@/components/dashboard/DangerZone';
 import { WalletCard } from '@/components/dashboard/WalletCard';
 import { PhantomConnect } from '@/components/dashboard/PhantomConnect';
+import { MigrationWizard } from '@/components/dashboard/MigrationWizard';
 import type { UserPreferences } from '@/lib/types';
 
 // ---------------------------------------------------------------------------
@@ -71,8 +72,7 @@ export default function SettingsPage() {
   const [notifications, setNotifications] = useState(true);
   const [privacyMode, setPrivacyMode] = useState<'private' | 'shared'>('private');
   const [privacySaving, setPrivacySaving] = useState(false);
-  const [exporting, setExporting] = useState(false);
-  const [exportError, setExportError] = useState<string | null>(null);
+  const [wizardMode, setWizardMode] = useState<'export' | 'import' | null>(null);
   const [timezone, setTimezone] = useState('');
 
   // Detect timezone on mount
@@ -117,31 +117,6 @@ export default function SettingsPage() {
       setPrivacyMode(mode === 'private' ? 'shared' : 'private');
     } finally {
       setPrivacySaving(false);
-    }
-  }, []);
-
-  const handleExportData = useCallback(async () => {
-    setExporting(true);
-    setExportError(null);
-    try {
-      const data = await kinApi.get<Record<string, unknown>>('/kin/export');
-      const blob = new Blob([JSON.stringify(data, null, 2)], {
-        type: 'application/json',
-      });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `kin-data-export-${new Date().toISOString().slice(0, 10)}.json`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      setExportError(
-        err instanceof Error ? err.message : 'Failed to export data',
-      );
-    } finally {
-      setExporting(false);
     }
   }, []);
 
@@ -429,26 +404,42 @@ export default function SettingsPage() {
           </button>
         </div>
 
-        {/* Export */}
+        {/* Move Your KIN */}
         <div className="border-t border-white/5 pt-4">
-          <p className="mb-2 text-sm text-white/50">
-            Download all your conversations, memories, and companion data as JSON.
+          <p className="mb-1 text-sm font-semibold text-white">
+            Move Your KIN
           </p>
-          <Button
-            variant="outline"
-            onClick={handleExportData}
-            disabled={exporting}
-          >
-            {exporting ? 'Exporting...' : 'Export My Data'}
-          </Button>
-          {exportError && (
-            <p className="mt-2 text-sm text-magenta">{exportError}</p>
-          )}
+          <p className="mb-3 text-sm text-white/50">
+            Transfer your companion, conversations, and training data between
+            devices or hosting modes.
+          </p>
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setWizardMode('export')}
+              className="border-cyan/30 text-cyan hover:bg-cyan/10"
+            >
+              Export Archive
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setWizardMode('import')}
+            >
+              Import Archive
+            </Button>
+          </div>
         </div>
       </GlassCard>
 
       {/* Danger Zone */}
       <DangerZone />
+
+      {/* Migration Wizard Modal */}
+      <MigrationWizard
+        mode={wizardMode ?? 'export'}
+        open={wizardMode !== null}
+        onClose={() => setWizardMode(null)}
+      />
     </motion.div>
   );
 }

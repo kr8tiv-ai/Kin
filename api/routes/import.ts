@@ -11,7 +11,7 @@
  * @module api/routes/import
  */
 
-import { FastifyPluginAsync } from 'fastify';
+import { FastifyPluginAsync, FastifyReply } from 'fastify';
 import crypto from 'crypto';
 import AdmZip from 'adm-zip';
 import fs from 'fs';
@@ -271,7 +271,7 @@ const importRoutes: FastifyPluginAsync = async (fastify) => {
         },
       },
     } as any,
-    async (request, reply) => {
+    async (request, reply: FastifyReply) => {
       const userId = (request.user as { userId: string }).userId;
       const importData = request.body.importData;
 

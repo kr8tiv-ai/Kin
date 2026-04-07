@@ -483,3 +483,39 @@ export interface CreditBalanceResponse {
   createdAt: number;
   updatedAt: number;
 }
+
+// ============================================================================
+// Migration / Import Archive
+// ============================================================================
+
+export interface ImportCategoryResult {
+  category: string;
+  imported: number;
+  skipped: number;
+  errors: string[];
+}
+
+export interface FileArtifactResult {
+  restored: number;
+  failed: number;
+  errors: string[];
+}
+
+export interface ModelRestorationResult {
+  attempted: number;
+  succeeded: number;
+  failed: number;
+  errors: string[];
+}
+
+export interface ImportArchiveResult {
+  success: boolean;
+  manifestVersion: number;
+  categories: ImportCategoryResult[];
+  totalImported: number;
+  totalSkipped: number;
+  totalErrors: number;
+  durationMs: number;
+  fileArtifacts: FileArtifactResult;
+  modelRestoration: ModelRestorationResult;
+}
