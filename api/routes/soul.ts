@@ -10,35 +10,8 @@
 
 import { FastifyPluginAsync } from 'fastify';
 import crypto from 'crypto';
-
-// ---------------------------------------------------------------------------
-// Types (inline — matches web/src/lib/types.ts SoulConfig)
-// ---------------------------------------------------------------------------
-
-interface SoulTraits {
-  warmth: number;
-  formality: number;
-  humor: number;
-  directness: number;
-  creativity: number;
-  depth: number;
-}
-
-interface SoulStyle {
-  vocabulary: 'simple' | 'moderate' | 'advanced';
-  responseLength: 'concise' | 'balanced' | 'detailed';
-  useEmoji: boolean;
-}
-
-interface SoulConfigBody {
-  customName?: string;
-  traits: SoulTraits;
-  values: string[];
-  style: SoulStyle;
-  customInstructions: string;
-  boundaries: string[];
-  antiPatterns: string[];
-}
+import { configToSoulMd } from '../../inference/soul-bridge.js';
+import type { SoulTraits, SoulStyle, SoulConfigBody } from '../../inference/soul-types.js';
 
 // ---------------------------------------------------------------------------
 // JSON Schemas
@@ -107,67 +80,6 @@ function parseSoulRow(row: any): any {
     createdAt: new Date(row.created_at).toISOString(),
     updatedAt: new Date(row.updated_at).toISOString(),
   };
-}
-
-function configToSoulMd(config: SoulConfigBody, companionName?: string): string {
-  const lines: string[] = [];
-
-  lines.push(`# ${config.customName || companionName || 'My Companion'}`);
-  lines.push('');
-
-  // Core Truths from traits
-  lines.push('## Core Truths');
-  const { traits } = config;
-  if (traits.warmth > 70) lines.push('- Be warm, encouraging, and emotionally present.');
-  else if (traits.warmth < 30) lines.push('- Be reserved and matter-of-fact.');
-  if (traits.humor > 70) lines.push('- Use humor freely — jokes, wordplay, and wit are welcome.');
-  else if (traits.humor < 30) lines.push('- Stay serious and focused.');
-  if (traits.directness > 70) lines.push('- Be blunt and direct. No hedging.');
-  else if (traits.directness < 30) lines.push('- Be diplomatic. Soften feedback.');
-  if (traits.formality > 70) lines.push('- Use professional, polished language.');
-  else if (traits.formality < 30) lines.push('- Keep it casual and conversational.');
-  if (traits.depth > 70) lines.push('- Give thorough, detailed explanations.');
-  else if (traits.depth < 30) lines.push('- Keep responses brief.');
-  if (traits.creativity > 70) lines.push('- Think outside the box.');
-  else if (traits.creativity < 30) lines.push('- Stick to proven approaches.');
-  lines.push('');
-
-  // Values
-  if (config.values.length > 0) {
-    lines.push('## Values');
-    config.values.forEach((v) => lines.push(`- ${v}`));
-    lines.push('');
-  }
-
-  // Vibe / Style
-  lines.push('## Vibe');
-  lines.push(`- Vocabulary: ${config.style.vocabulary}`);
-  lines.push(`- Response length: ${config.style.responseLength}`);
-  lines.push(`- Emoji: ${config.style.useEmoji ? 'use sparingly' : 'avoid'}`);
-  lines.push('');
-
-  // Custom instructions
-  if (config.customInstructions.trim()) {
-    lines.push('## Custom Instructions');
-    lines.push(config.customInstructions.trim());
-    lines.push('');
-  }
-
-  // Boundaries
-  if (config.boundaries.length > 0) {
-    lines.push('## Boundaries');
-    config.boundaries.forEach((b) => lines.push(`- ${b}`));
-    lines.push('');
-  }
-
-  // Anti-patterns
-  if (config.antiPatterns.length > 0) {
-    lines.push('## Never Do These');
-    config.antiPatterns.forEach((a) => lines.push(`- ${a}`));
-    lines.push('');
-  }
-
-  return lines.join('\n');
 }
 
 // ---------------------------------------------------------------------------

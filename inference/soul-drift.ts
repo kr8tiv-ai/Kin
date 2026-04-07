@@ -9,35 +9,13 @@
  */
 
 import { createHash } from 'node:crypto';
+import type { SoulTraits, SoulStyle, SoulConfigBody } from './soul-types.js';
 
-// ============================================================================
-// Inline types (SoulConfig defined in companion settings, not imported here)
-// ============================================================================
+// Re-export types so existing consumers don't break
+export type { SoulTraits, SoulStyle, SoulConfigBody };
 
-interface SoulTraits {
-  warmth: number;      // 0-100
-  formality: number;   // 0-100
-  humor: number;       // 0-100
-  directness: number;  // 0-100
-  creativity: number;  // 0-100
-  depth: number;       // 0-100
-}
-
-interface SoulStyle {
-  vocabulary: 'simple' | 'moderate' | 'advanced';
-  responseLength: 'concise' | 'balanced' | 'detailed';
-  useEmoji: boolean;
-}
-
-interface SoulConfig {
-  customName?: string;
-  traits: SoulTraits;
-  values: string[];
-  style: SoulStyle;
-  customInstructions: string;
-  boundaries: string[];
-  antiPatterns: string[];
-}
+// Legacy alias used internally
+type SoulConfig = SoulConfigBody;
 
 // ============================================================================
 // computeSoulHash
@@ -91,7 +69,7 @@ function wordCount(text: string): number {
 
 // ── Trait signal dictionaries ────────────────────────────────────────────────
 
-const WARM_PHRASES = [
+export const WARM_PHRASES = [
   "glad",
   "happy to help",
   "great",
@@ -108,7 +86,7 @@ const WARM_PHRASES = [
   "thanks",
 ];
 
-const COLD_PHRASES = [
+export const COLD_PHRASES = [
   "cannot",
   "unable",
   "not possible",
@@ -119,7 +97,7 @@ const COLD_PHRASES = [
   "fail",
 ];
 
-const FORMAL_MARKERS = [
+export const FORMAL_MARKERS = [
   "would you",
   "please",
   "i recommend",
@@ -132,7 +110,7 @@ const FORMAL_MARKERS = [
   "regarding",
 ];
 
-const CASUAL_MARKERS = [
+export const CASUAL_MARKERS = [
   "hey",
   "gonna",
   "wanna",
@@ -147,7 +125,7 @@ const CASUAL_MARKERS = [
   "sorta",
 ];
 
-const HUMOR_MARKERS = [
+export const HUMOR_MARKERS = [
   "haha",
   "lol",
   "lmao",
@@ -160,7 +138,7 @@ const HUMOR_MARKERS = [
   "hilarious",
 ];
 
-const HEDGING_PHRASES = [
+export const HEDGING_PHRASES = [
   "perhaps",
   "maybe",
   "consider",
@@ -177,7 +155,7 @@ const HEDGING_PHRASES = [
   "could be",
 ];
 
-const CREATIVITY_MARKERS = [
+export const CREATIVITY_MARKERS = [
   "what if",
   "alternatively",
   "creative approach",
