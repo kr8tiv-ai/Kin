@@ -9,6 +9,7 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import jwt from '@fastify/jwt';
+import multipart from '@fastify/multipart';
 import rateLimit from '@fastify/rate-limit';
 import websocket from '@fastify/websocket';
 import sensible from '@fastify/sensible';
@@ -292,6 +293,11 @@ export async function createServer(config: ApiConfig = {}) {
   await fastify.register(rateLimit, {
     max: environment === 'production' ? resolvedConfig.rateLimitMax : 1000,
     timeWindow: '1 minute',
+  });
+
+  // Multipart file uploads (500 MB limit for archive import)
+  await fastify.register(multipart, {
+    limits: { fileSize: 500 * 1024 * 1024 },
   });
 
   // WebSocket support
