@@ -60,6 +60,7 @@ import advantageRoutes from './routes/advantage.js';
 import dmSecurityRoutes from './routes/dm-security.js';
 import gmailAuthRoutes from './routes/gmail-auth.js';
 import schedulerRoutes, { webhookRoutes } from './routes/scheduler.js';
+import mediaRoutes from './routes/media.js';
 
 // Fleet imports
 import { FleetDb } from '../fleet/db.js';
@@ -538,6 +539,7 @@ export async function createServer(config: ApiConfig = {}) {
     await protectedFastify.register(schedulerRoutes, { schedulerManager });
     await protectedFastify.register(pipelineRoutes, { pipelineManager });
     await protectedFastify.register(approvalRoutes, { approvalManager });
+    await protectedFastify.register(mediaRoutes);
   });
 
   // Webhook ingestion routes (HMAC-authenticated, no JWT)

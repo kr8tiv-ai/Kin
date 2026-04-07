@@ -31,12 +31,19 @@ interface ChatBody {
   conversationId?: string;
 }
 
+interface ChatMediaMeta {
+  url: string;
+  type: 'video' | 'audio';
+  mimeType: string;
+}
+
 interface ChatResponse {
   response: string;
   conversationId: string;
   companionId: string;
   route: string;
   latencyMs: number;
+  media?: ChatMediaMeta;
 }
 
 // -- Data export types (GDPR) -------------------------------------------------
@@ -133,6 +140,43 @@ function loadPrivacyMode(db: any, userId: string): 'private' | 'shared' {
   } catch {
     return 'private';
   }
+}
+
+// ── Media metadata extraction ─────────────────────────────────────────────
+
+/** Known Replicate CDN URL pattern and common media extensions. */
+const MEDIA_URL_PATTERN = /https?:\/\/[^\s)]+\.(mp4|webm|mp3|wav|ogg|m4a|mpeg)/i;
+
+/**
+ * Attempt to extract media metadata from response content.
+ * Media skills embed Replicate CDN URLs in the assistant response text.
+ * Returns structured metadata for frontend player rendering, or null.
+ */
+function extractMediaMeta(content: string): ChatMediaMeta | null {
+  const match = content.match(MEDIA_URL_PATTERN);
+  if (!match) return null;
+
+  const url = match[0];
+  const ext = (match[1] ?? 'mp4').toLowerCase();
+
+  const videoExts = ['mp4', 'webm'];
+  const type: 'video' | 'audio' = videoExts.includes(ext) ? 'video' : 'audio';
+
+  const mimeMap: Record<string, string> = {
+    mp4: 'video/mp4',
+    webm: 'video/webm',
+    mp3: 'audio/mpeg',
+    wav: 'audio/wav',
+    ogg: 'audio/ogg',
+    m4a: 'audio/mp4',
+    mpeg: 'audio/mpeg',
+  };
+
+  return {
+    url,
+    type,
+    mimeType: mimeMap[ext] ?? (type === 'video' ? 'video/mp4' : 'audio/mpeg'),
+  };
 }
 
 // ── Soul injection helper ─────────────────────────────────────────────────
@@ -301,6 +345,14 @@ const chatRoutes: FastifyPluginAsync = async (fastify) => {
       latencyMs: Math.round(result.latencyMs),
     };
 
+    // Surface media metadata when the response contains a Replicate CDN URL.
+    // Media skills embed URLs in the response text — extract and attach as
+    // structured metadata so the frontend can render a player widget.
+    const mediaMeta = extractMediaMeta(result.content);
+    if (mediaMeta) {
+      response.media = mediaMeta;
+    }
+
     return response;
   });
 
@@ -426,7 +478,8 @@ const chatRoutes: FastifyPluginAsync = async (fastify) => {
         }
       }
 
-      // Send final SSE event with metadata
+      // Send final SSE event with metadata (includes media if present)
+      const streamMediaMeta = extractMediaMeta(fullResponse);
       const finalChunk = JSON.stringify({
         content: '',
         done: true,
@@ -434,6 +487,7 @@ const chatRoutes: FastifyPluginAsync = async (fastify) => {
         companionId,
         route: 'streaming',
         latencyMs: Math.round(performance.now() - start),
+        ...(streamMediaMeta ? { mediaUrl: streamMediaMeta.url, mediaType: streamMediaMeta.type, mediaMimeType: streamMediaMeta.mimeType } : {}),
       });
       reply.raw.write(`data: ${finalChunk}\n\n`);
     } catch (err) {
@@ -477,6 +531,7 @@ const chatRoutes: FastifyPluginAsync = async (fastify) => {
           }
         }
 
+        const fallbackMediaMeta = extractMediaMeta(result.content);
         reply.raw.write(`data: ${JSON.stringify({
           content: '',
           done: true,
@@ -484,6 +539,7 @@ const chatRoutes: FastifyPluginAsync = async (fastify) => {
           companionId,
           route: result.route,
           latencyMs: Math.round(performance.now() - start),
+          ...(fallbackMediaMeta ? { mediaUrl: fallbackMediaMeta.url, mediaType: fallbackMediaMeta.type, mediaMimeType: fallbackMediaMeta.mimeType } : {}),
         })}\n\n`);
       } catch (innerErr) {
         reply.raw.write(`data: ${JSON.stringify({
