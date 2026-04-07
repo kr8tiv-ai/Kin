@@ -38,6 +38,16 @@ import { createSkillRouter, registerCompanionAbilities } from './skills/index.js
 import type { SkillContext } from './skills/index.js';
 import { detectLanguage, getLanguagePromptAddition } from './utils/language.js';
 import { recordActivity } from './handlers/progress.js';
+import { getDb } from '../db/connection.js';
+import {
+  isAuthorized,
+  isOwner,
+  generatePairingCode,
+  validatePairingCode,
+  approveSender,
+  denySender,
+  getPendingCodes,
+} from './utils/dm-security.js';
 
 // ============================================================================
 // Types
@@ -529,6 +539,113 @@ export async function handleCommand(
       return true;
     }
 
+    // ── DM Security Commands (owner-only) ─────────────────────────
+
+    case 'approve': {
+      const ownerId = jidToUserId(jid);
+      if (!isOwner('whatsapp', ownerId)) {
+        await sock.sendMessage(jid, { text: 'Only the bot owner can approve senders.' });
+        return true;
+      }
+
+      const code = args[0];
+      if (!code) {
+        await sock.sendMessage(jid, { text: 'Usage: /approve <pairing-code>' });
+        return true;
+      }
+
+      // Find which sender has this pending code
+      const db = getDb();
+      const pendingCodes = getPendingCodes(db, 'whatsapp');
+      const match = pendingCodes.find((p) => p.code === code);
+
+      if (!match) {
+        await sock.sendMessage(jid, { text: `No pending pairing code matches "${code}". Use /pending to see active codes.` });
+        return true;
+      }
+
+      if (!validatePairingCode(db, 'whatsapp', match.senderId, code)) {
+        await sock.sendMessage(jid, { text: 'That pairing code has expired or already been used.' });
+        return true;
+      }
+
+      approveSender(db, 'whatsapp', match.senderId, ownerId, match.displayName ?? undefined);
+
+      // Notify the approved sender
+      const approvedJid = `${match.senderId}@s.whatsapp.net`;
+      await sock.sendMessage(approvedJid, {
+        text: "You've been approved! You can now chat with me freely. Say hi!",
+      });
+
+      await sock.sendMessage(jid, {
+        text: `Approved *${match.displayName ?? match.senderId}* (${match.senderId}). They can now chat with the bot.`,
+      });
+      return true;
+    }
+
+    case 'deny': {
+      const ownerId = jidToUserId(jid);
+      if (!isOwner('whatsapp', ownerId)) {
+        await sock.sendMessage(jid, { text: 'Only the bot owner can deny senders.' });
+        return true;
+      }
+
+      const code = args[0];
+      if (!code) {
+        await sock.sendMessage(jid, { text: 'Usage: /deny <pairing-code>' });
+        return true;
+      }
+
+      const db = getDb();
+      const pendingCodes = getPendingCodes(db, 'whatsapp');
+      const match = pendingCodes.find((p) => p.code === code);
+
+      if (!match) {
+        await sock.sendMessage(jid, { text: `No pending pairing code matches "${code}". Use /pending to see active codes.` });
+        return true;
+      }
+
+      denySender(db, 'whatsapp', match.senderId);
+
+      // Notify the denied sender
+      const deniedJid = `${match.senderId}@s.whatsapp.net`;
+      await sock.sendMessage(deniedJid, {
+        text: "Sorry, the bot owner has denied your access request.",
+      });
+
+      await sock.sendMessage(jid, {
+        text: `Denied *${match.displayName ?? match.senderId}* (${match.senderId}).`,
+      });
+      return true;
+    }
+
+    case 'pending': {
+      const ownerId = jidToUserId(jid);
+      if (!isOwner('whatsapp', ownerId)) {
+        await sock.sendMessage(jid, { text: 'Only the bot owner can view pending codes.' });
+        return true;
+      }
+
+      const db = getDb();
+      const codes = getPendingCodes(db, 'whatsapp');
+
+      if (codes.length === 0) {
+        await sock.sendMessage(jid, { text: 'No pending pairing codes.' });
+        return true;
+      }
+
+      const lines = codes.map((c) => {
+        const name = c.displayName ?? 'Unknown';
+        const mins = Math.max(0, Math.ceil((c.expiresAt - Date.now()) / 60000));
+        return `• *${c.code}* — ${name} (${c.senderId}), expires in ~${mins}min`;
+      });
+
+      await sock.sendMessage(jid, {
+        text: `*Pending Pairing Codes*\n\n${lines.join('\n')}\n\nUse /approve <code> or /deny <code>`,
+      });
+      return true;
+    }
+
     default:
       return false;
   }
@@ -650,6 +767,18 @@ export async function createWhatsAppBot(config: WhatsAppBotConfig = { authDir: D
         if (jid.endsWith('@g.us')) continue;
 
         const pushName = msg.pushName ?? 'Friend';
+        const senderId = jidToUserId(jid);
+
+        // ── DM Security Guard ─────────────────────────────────────
+        // Owner bypasses entirely. Unknown senders get a pairing code.
+        if (!isOwner('whatsapp', senderId) && !isAuthorized(getDb(), 'whatsapp', senderId)) {
+          const code = generatePairingCode(getDb(), 'whatsapp', senderId, pushName);
+          await socket.sendMessage(jid, {
+            text: `Hey! I don't recognize you yet. Your pairing code is: *${code}*\n\nAsk my owner to approve you with:\n/approve ${code}`,
+          });
+          console.log(`[whatsapp][dm-security] Blocked unknown sender ${senderId}, issued pairing code ${code}`);
+          continue;
+        }
 
         try {
           // Determine message type

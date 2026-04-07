@@ -27,6 +27,16 @@ import { supervisedChat } from '../inference/supervisor.js';
 import { conversationStore } from './memory/conversation-store.js';
 import { sanitizeInput, detectJailbreak } from './utils/sanitize.js';
 import { checkRateLimit, RATE_LIMITS } from './utils/rate-limit.js';
+import { getDb } from '../db/connection.js';
+import {
+  isAuthorized,
+  isOwner,
+  generatePairingCode,
+  validatePairingCode,
+  approveSender,
+  denySender,
+  getPendingCodes,
+} from './utils/dm-security.js';
 
 // ============================================================================
 // Types
@@ -121,7 +131,31 @@ const statusCommand = new SlashCommandBuilder()
   .setName('status')
   .setDescription('Check your KIN session status and conversation stats');
 
-const slashCommands = [chatCommand, companionCommand, statusCommand];
+const approveCommand = new SlashCommandBuilder()
+  .setName('approve')
+  .setDescription('Approve a pending DM pairing code (owner only)')
+  .addStringOption((option: any) =>
+    option
+      .setName('code')
+      .setDescription('The 6-digit pairing code to approve')
+      .setRequired(true),
+  );
+
+const denyCommand = new SlashCommandBuilder()
+  .setName('deny')
+  .setDescription('Deny a pending DM pairing code (owner only)')
+  .addStringOption((option: any) =>
+    option
+      .setName('code')
+      .setDescription('The 6-digit pairing code to deny')
+      .setRequired(true),
+  );
+
+const pendingCommand = new SlashCommandBuilder()
+  .setName('pending')
+  .setDescription('List all pending DM pairing codes (owner only)');
+
+const slashCommands = [chatCommand, companionCommand, statusCommand, approveCommand, denyCommand, pendingCommand];
 
 // ============================================================================
 // Helpers
@@ -346,6 +380,133 @@ async function handleStatusCommand(
 }
 
 // ============================================================================
+// DM Security Command Handlers
+// ============================================================================
+
+/**
+ * Handle /approve slash command. Owner-only — approves a pending pairing code.
+ */
+async function handleApproveCommand(
+  interaction: ChatInputCommandInteraction,
+): Promise<void> {
+  const userId = interaction.user.id;
+  if (!isOwner('discord', userId)) {
+    await interaction.reply({ content: 'Only the bot owner can approve senders.', ephemeral: true });
+    return;
+  }
+
+  const code = interaction.options.getString('code', true);
+  const db = getDb();
+  const pendingCodes = getPendingCodes(db, 'discord');
+  const match = pendingCodes.find((p) => p.code === code);
+
+  if (!match) {
+    await interaction.reply({
+      content: `No pending pairing code matches "${code}". Use /pending to see active codes.`,
+      ephemeral: true,
+    });
+    return;
+  }
+
+  if (!validatePairingCode(db, 'discord', match.senderId, code)) {
+    await interaction.reply({
+      content: 'That pairing code has expired or already been used.',
+      ephemeral: true,
+    });
+    return;
+  }
+
+  approveSender(db, 'discord', match.senderId, userId, match.displayName ?? undefined);
+
+  // Notify the approved sender via DM
+  try {
+    const approvedUser = await interaction.client.users.fetch(match.senderId);
+    await approvedUser.send("You've been approved! You can now chat with me freely. Say hi!");
+  } catch {
+    // Non-critical — user may have DMs disabled
+    console.warn(`[discord][dm-security] Could not DM approved user ${match.senderId}`);
+  }
+
+  await interaction.reply({
+    content: `Approved **${match.displayName ?? match.senderId}** (${match.senderId}). They can now chat with the bot.`,
+    ephemeral: true,
+  });
+}
+
+/**
+ * Handle /deny slash command. Owner-only — denies a pending pairing code.
+ */
+async function handleDenyCommand(
+  interaction: ChatInputCommandInteraction,
+): Promise<void> {
+  const userId = interaction.user.id;
+  if (!isOwner('discord', userId)) {
+    await interaction.reply({ content: 'Only the bot owner can deny senders.', ephemeral: true });
+    return;
+  }
+
+  const code = interaction.options.getString('code', true);
+  const db = getDb();
+  const pendingCodes = getPendingCodes(db, 'discord');
+  const match = pendingCodes.find((p) => p.code === code);
+
+  if (!match) {
+    await interaction.reply({
+      content: `No pending pairing code matches "${code}". Use /pending to see active codes.`,
+      ephemeral: true,
+    });
+    return;
+  }
+
+  denySender(db, 'discord', match.senderId);
+
+  // Notify the denied sender via DM
+  try {
+    const deniedUser = await interaction.client.users.fetch(match.senderId);
+    await deniedUser.send('Sorry, the bot owner has denied your access request.');
+  } catch {
+    console.warn(`[discord][dm-security] Could not DM denied user ${match.senderId}`);
+  }
+
+  await interaction.reply({
+    content: `Denied **${match.displayName ?? match.senderId}** (${match.senderId}).`,
+    ephemeral: true,
+  });
+}
+
+/**
+ * Handle /pending slash command. Owner-only — lists all pending pairing codes.
+ */
+async function handlePendingCommand(
+  interaction: ChatInputCommandInteraction,
+): Promise<void> {
+  const userId = interaction.user.id;
+  if (!isOwner('discord', userId)) {
+    await interaction.reply({ content: 'Only the bot owner can view pending codes.', ephemeral: true });
+    return;
+  }
+
+  const db = getDb();
+  const codes = getPendingCodes(db, 'discord');
+
+  if (codes.length === 0) {
+    await interaction.reply({ content: 'No pending pairing codes.', ephemeral: true });
+    return;
+  }
+
+  const lines = codes.map((c) => {
+    const name = c.displayName ?? 'Unknown';
+    const mins = Math.max(0, Math.ceil((c.expiresAt - Date.now()) / 60000));
+    return `• **${c.code}** — ${name} (${c.senderId}), expires in ~${mins}min`;
+  });
+
+  await interaction.reply({
+    content: `**Pending Pairing Codes**\n\n${lines.join('\n')}\n\nUse \`/approve code:<code>\` or \`/deny code:<code>\``,
+    ephemeral: true,
+  });
+}
+
+// ============================================================================
 // DM & Mention Handler
 // ============================================================================
 
@@ -365,6 +526,20 @@ async function handleMessage(
 
   // Only respond in DMs or when @mentioned in a guild
   if (!isDM && !isMentioned) return;
+
+  // ── DM Security Guard (DMs only, not guild @mentions) ──────────
+  if (isDM) {
+    const senderId = message.author.id;
+    if (!isOwner('discord', senderId) && !isAuthorized(getDb(), 'discord', senderId)) {
+      const displayName = message.author.displayName ?? message.author.username;
+      const code = generatePairingCode(getDb(), 'discord', senderId, displayName);
+      await message.reply(
+        `Hey! I don't recognize you yet. Your pairing code is: **${code}**\n\nAsk my owner to approve you with:\n\`/approve code:${code}\``,
+      );
+      console.log(`[discord][dm-security] Blocked unknown sender ${senderId}, issued pairing code ${code}`);
+      return;
+    }
+  }
 
   // Extract the text content (strip the bot mention if present)
   let rawContent = message.content;
@@ -500,6 +675,15 @@ export function createDiscordBot(config: DiscordBotConfig) {
           break;
         case 'status':
           await handleStatusCommand(interaction);
+          break;
+        case 'approve':
+          await handleApproveCommand(interaction);
+          break;
+        case 'deny':
+          await handleDenyCommand(interaction);
+          break;
+        case 'pending':
+          await handlePendingCommand(interaction);
           break;
         default:
           await interaction.reply({ content: 'Unknown command.', ephemeral: true });

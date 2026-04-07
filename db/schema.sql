@@ -668,3 +668,36 @@ CREATE TABLE IF NOT EXISTS training_curation (
 
 CREATE INDEX IF NOT EXISTS idx_training_curation_companion ON training_curation(companion_id);
 CREATE INDEX IF NOT EXISTS idx_training_curation_hash ON training_curation(entry_hash);
+
+-- ============================================================================
+-- DM Security — Pairing Codes & Channel Allowlists
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS dm_allowlist (
+  id TEXT PRIMARY KEY,
+  channel TEXT NOT NULL CHECK (channel IN ('telegram', 'whatsapp', 'discord')),
+  sender_id TEXT NOT NULL,
+  display_name TEXT,
+  approved_by TEXT NOT NULL,
+  approved_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000),
+  UNIQUE(channel, sender_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_dm_allowlist_channel ON dm_allowlist(channel);
+CREATE INDEX IF NOT EXISTS idx_dm_allowlist_sender ON dm_allowlist(sender_id);
+
+CREATE TABLE IF NOT EXISTS pairing_codes (
+  id TEXT PRIMARY KEY,
+  channel TEXT NOT NULL CHECK (channel IN ('telegram', 'whatsapp', 'discord')),
+  sender_id TEXT NOT NULL,
+  display_name TEXT,
+  code TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending'
+    CHECK (status IN ('pending', 'approved', 'denied', 'expired')),
+  created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000),
+  expires_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_pairing_codes_channel ON pairing_codes(channel);
+CREATE INDEX IF NOT EXISTS idx_pairing_codes_sender ON pairing_codes(sender_id);
+CREATE INDEX IF NOT EXISTS idx_pairing_codes_status ON pairing_codes(status);

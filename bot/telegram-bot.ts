@@ -35,6 +35,16 @@ import type { SkillContext } from './skills/index.js';
 import { sanitizeInput, escapeMarkdown, detectJailbreak } from './utils/sanitize.js';
 import { checkRateLimit, RATE_LIMITS } from './utils/rate-limit.js';
 import { detectLanguage, getLanguagePromptAddition } from './utils/language.js';
+import { getDb } from '../db/connection.js';
+import {
+  isAuthorized,
+  isOwner,
+  generatePairingCode,
+  validatePairingCode,
+  approveSender,
+  denySender,
+  getPendingCodes,
+} from './utils/dm-security.js';
 
 
 // Suggestion buttons shown after Cipher responses
@@ -202,6 +212,113 @@ export function createKINBot(config: BotConfig) {
   });
 
   // ==========================================================================
+  // DM Security Commands (owner-only)
+  // ==========================================================================
+
+  bot.command('approve', async (ctx) => {
+    const userId = ctx.from?.id.toString() ?? 'unknown';
+    if (!isOwner('telegram', userId)) {
+      await ctx.reply('Only the bot owner can approve senders.');
+      return;
+    }
+
+    const code = ctx.match?.trim();
+    if (!code) {
+      await ctx.reply('Usage: /approve <pairing-code>');
+      return;
+    }
+
+    const db = getDb();
+    const pendingCodes = getPendingCodes(db, 'telegram');
+    const match = pendingCodes.find((p) => p.code === code);
+
+    if (!match) {
+      await ctx.reply(`No pending pairing code matches "${code}". Use /pending to see active codes.`);
+      return;
+    }
+
+    if (!validatePairingCode(db, 'telegram', match.senderId, code)) {
+      await ctx.reply('That pairing code has expired or already been used.');
+      return;
+    }
+
+    approveSender(db, 'telegram', match.senderId, userId, match.displayName ?? undefined);
+
+    // Notify the approved sender
+    try {
+      const chatId = Number(match.senderId);
+      if (!isNaN(chatId)) {
+        await bot.api.sendMessage(chatId, "You've been approved! You can now chat with me freely. Say hi!");
+      }
+    } catch {
+      console.warn(`[telegram][dm-security] Could not notify approved user ${match.senderId}`);
+    }
+
+    await ctx.reply(`Approved *${match.displayName ?? match.senderId}* (${match.senderId}). They can now chat with the bot.`, { parse_mode: 'Markdown' });
+  });
+
+  bot.command('deny', async (ctx) => {
+    const userId = ctx.from?.id.toString() ?? 'unknown';
+    if (!isOwner('telegram', userId)) {
+      await ctx.reply('Only the bot owner can deny senders.');
+      return;
+    }
+
+    const code = ctx.match?.trim();
+    if (!code) {
+      await ctx.reply('Usage: /deny <pairing-code>');
+      return;
+    }
+
+    const db = getDb();
+    const pendingCodes = getPendingCodes(db, 'telegram');
+    const match = pendingCodes.find((p) => p.code === code);
+
+    if (!match) {
+      await ctx.reply(`No pending pairing code matches "${code}". Use /pending to see active codes.`);
+      return;
+    }
+
+    denySender(db, 'telegram', match.senderId);
+
+    // Notify the denied sender
+    try {
+      const chatId = Number(match.senderId);
+      if (!isNaN(chatId)) {
+        await bot.api.sendMessage(chatId, 'Sorry, the bot owner has denied your access request.');
+      }
+    } catch {
+      console.warn(`[telegram][dm-security] Could not notify denied user ${match.senderId}`);
+    }
+
+    await ctx.reply(`Denied *${match.displayName ?? match.senderId}* (${match.senderId}).`, { parse_mode: 'Markdown' });
+  });
+
+  bot.command('pending', async (ctx) => {
+    const userId = ctx.from?.id.toString() ?? 'unknown';
+    if (!isOwner('telegram', userId)) {
+      await ctx.reply('Only the bot owner can view pending codes.');
+      return;
+    }
+
+    const db = getDb();
+    const codes = getPendingCodes(db, 'telegram');
+
+    if (codes.length === 0) {
+      await ctx.reply('No pending pairing codes.');
+      return;
+    }
+
+    const lines = codes.map((c) => {
+      const name = c.displayName ?? 'Unknown';
+      const mins = Math.max(0, Math.ceil((c.expiresAt - Date.now()) / 60000));
+      return `• *${c.code}* — ${name} (${c.senderId}), expires in ~${mins}min`;
+    });
+
+    await ctx.reply(`*Pending Pairing Codes*\n\n${lines.join('\n')}\n\nUse /approve <code> or /deny <code>`, { parse_mode: 'Markdown' });
+  });
+
+  // ==========================================================================
   // Callback Query Handlers (Inline Button Presses)
   // ==========================================================================
 
@@ -211,6 +328,53 @@ export function createKINBot(config: BotConfig) {
     // Support category buttons
     if (data.startsWith('support:')) {
       await handleSupportCallback(ctx, data);
+      return;
+    }
+
+    // DM Security inline keyboard callbacks (dm:approve:<senderId> / dm:deny:<senderId>)
+    if (data.startsWith('dm:approve:')) {
+      const callbackUserId = ctx.from?.id.toString() ?? 'unknown';
+      if (!isOwner('telegram', callbackUserId)) {
+        await ctx.answerCallbackQuery({ text: 'Only the bot owner can approve senders.' });
+        return;
+      }
+      const senderId = data.slice('dm:approve:'.length);
+      const db = getDb();
+      approveSender(db, 'telegram', senderId, callbackUserId);
+      // Notify the approved sender
+      try {
+        const chatId = Number(senderId);
+        if (!isNaN(chatId)) {
+          await bot.api.sendMessage(chatId, "You've been approved! You can now chat with me freely. Say hi!");
+        }
+      } catch {
+        console.warn(`[telegram][dm-security] Could not notify approved user ${senderId}`);
+      }
+      await ctx.answerCallbackQuery({ text: `Approved sender ${senderId}` });
+      await ctx.editMessageText(`✅ Approved sender ${senderId}`);
+      return;
+    }
+
+    if (data.startsWith('dm:deny:')) {
+      const callbackUserId = ctx.from?.id.toString() ?? 'unknown';
+      if (!isOwner('telegram', callbackUserId)) {
+        await ctx.answerCallbackQuery({ text: 'Only the bot owner can deny senders.' });
+        return;
+      }
+      const senderId = data.slice('dm:deny:'.length);
+      const db = getDb();
+      denySender(db, 'telegram', senderId);
+      // Notify the denied sender
+      try {
+        const chatId = Number(senderId);
+        if (!isNaN(chatId)) {
+          await bot.api.sendMessage(chatId, 'Sorry, the bot owner has denied your access request.');
+        }
+      } catch {
+        console.warn(`[telegram][dm-security] Could not notify denied user ${senderId}`);
+      }
+      await ctx.answerCallbackQuery({ text: `Denied sender ${senderId}` });
+      await ctx.editMessageText(`❌ Denied sender ${senderId}`);
       return;
     }
 
@@ -327,6 +491,25 @@ export function createKINBot(config: BotConfig) {
 
   bot.on('message:voice', async (ctx) => {
     const userId = ctx.from?.id.toString() ?? 'unknown';
+    // DM Security Guard
+    if (!isOwner('telegram', userId) && !isAuthorized(getDb(), 'telegram', userId)) {
+      const displayName = ctx.from?.first_name ?? 'Unknown';
+      const code = generatePairingCode(getDb(), 'telegram', userId, displayName);
+      await ctx.reply(
+        `Hey! I don't recognize you yet. Your pairing code is: *${code}*\n\nAsk my owner to approve you.`,
+        { parse_mode: 'Markdown' },
+      );
+      // Notify owner with inline approve/deny buttons
+      const ownerChatId = Number(process.env['BOT_OWNER_TELEGRAM'] ?? '');
+      if (!isNaN(ownerChatId) && ownerChatId > 0) {
+        const kb = new InlineKeyboard()
+          .text('✅ Approve', `dm:approve:${userId}`)
+          .text('❌ Deny', `dm:deny:${userId}`);
+        await bot.api.sendMessage(ownerChatId, `🔔 New DM request from *${displayName}* (${userId})\nCode: ${code}`, { parse_mode: 'Markdown', reply_markup: kb });
+      }
+      console.log(`[telegram][dm-security] Blocked unknown sender ${userId} (voice), issued pairing code ${code}`);
+      return;
+    }
     const rl = checkRateLimit(userId, 'voice', RATE_LIMITS.voice.maxRequests, RATE_LIMITS.voice.windowMs);
     if (!rl.allowed) {
       const mins = Math.ceil(rl.resetInMs / 60000);
@@ -342,6 +525,24 @@ export function createKINBot(config: BotConfig) {
 
   bot.on('message:photo', async (ctx) => {
     const userId = ctx.from?.id.toString() ?? 'unknown';
+    // DM Security Guard
+    if (!isOwner('telegram', userId) && !isAuthorized(getDb(), 'telegram', userId)) {
+      const displayName = ctx.from?.first_name ?? 'Unknown';
+      const code = generatePairingCode(getDb(), 'telegram', userId, displayName);
+      await ctx.reply(
+        `Hey! I don't recognize you yet. Your pairing code is: *${code}*\n\nAsk my owner to approve you.`,
+        { parse_mode: 'Markdown' },
+      );
+      const ownerChatId = Number(process.env['BOT_OWNER_TELEGRAM'] ?? '');
+      if (!isNaN(ownerChatId) && ownerChatId > 0) {
+        const kb = new InlineKeyboard()
+          .text('✅ Approve', `dm:approve:${userId}`)
+          .text('❌ Deny', `dm:deny:${userId}`);
+        await bot.api.sendMessage(ownerChatId, `🔔 New DM request from *${displayName}* (${userId})\nCode: ${code}`, { parse_mode: 'Markdown', reply_markup: kb });
+      }
+      console.log(`[telegram][dm-security] Blocked unknown sender ${userId} (photo), issued pairing code ${code}`);
+      return;
+    }
     const rl = checkRateLimit(userId, 'image', RATE_LIMITS.image.maxRequests, RATE_LIMITS.image.windowMs);
     if (!rl.allowed) {
       const mins = Math.ceil(rl.resetInMs / 60000);
@@ -357,6 +558,24 @@ export function createKINBot(config: BotConfig) {
 
   bot.on('message:document', async (ctx) => {
     const userId = ctx.from?.id.toString() ?? 'unknown';
+    // DM Security Guard
+    if (!isOwner('telegram', userId) && !isAuthorized(getDb(), 'telegram', userId)) {
+      const displayName = ctx.from?.first_name ?? 'Unknown';
+      const code = generatePairingCode(getDb(), 'telegram', userId, displayName);
+      await ctx.reply(
+        `Hey! I don't recognize you yet. Your pairing code is: *${code}*\n\nAsk my owner to approve you.`,
+        { parse_mode: 'Markdown' },
+      );
+      const ownerChatId = Number(process.env['BOT_OWNER_TELEGRAM'] ?? '');
+      if (!isNaN(ownerChatId) && ownerChatId > 0) {
+        const kb = new InlineKeyboard()
+          .text('✅ Approve', `dm:approve:${userId}`)
+          .text('❌ Deny', `dm:deny:${userId}`);
+        await bot.api.sendMessage(ownerChatId, `🔔 New DM request from *${displayName}* (${userId})\nCode: ${code}`, { parse_mode: 'Markdown', reply_markup: kb });
+      }
+      console.log(`[telegram][dm-security] Blocked unknown sender ${userId} (document), issued pairing code ${code}`);
+      return;
+    }
     const rl = checkRateLimit(userId, 'image', RATE_LIMITS.image.maxRequests, RATE_LIMITS.image.windowMs);
     if (!rl.allowed) {
       const mins = Math.ceil(rl.resetInMs / 60000);
@@ -372,6 +591,27 @@ export function createKINBot(config: BotConfig) {
 
   bot.on('message:text', async (ctx) => {
     const userId = ctx.from?.id.toString() ?? 'unknown';
+
+    // ── DM Security Guard ─────────────────────────────────────
+    if (!isOwner('telegram', userId) && !isAuthorized(getDb(), 'telegram', userId)) {
+      const displayName = ctx.from?.first_name ?? 'Unknown';
+      const code = generatePairingCode(getDb(), 'telegram', userId, displayName);
+      await ctx.reply(
+        `Hey! I don't recognize you yet. Your pairing code is: *${code}*\n\nAsk my owner to approve you.`,
+        { parse_mode: 'Markdown' },
+      );
+      // Notify owner with inline approve/deny buttons
+      const ownerChatId = Number(process.env['BOT_OWNER_TELEGRAM'] ?? '');
+      if (!isNaN(ownerChatId) && ownerChatId > 0) {
+        const kb = new InlineKeyboard()
+          .text('✅ Approve', `dm:approve:${userId}`)
+          .text('❌ Deny', `dm:deny:${userId}`);
+        await bot.api.sendMessage(ownerChatId, `🔔 New DM request from *${displayName}* (${userId})\nCode: ${code}`, { parse_mode: 'Markdown', reply_markup: kb });
+      }
+      console.log(`[telegram][dm-security] Blocked unknown sender ${userId}, issued pairing code ${code}`);
+      return;
+    }
+
     const rawMessage = ctx.message.text;
     const message = sanitizeInput(rawMessage);
     if (!message) return; // Empty after sanitization
