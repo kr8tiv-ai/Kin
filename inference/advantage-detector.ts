@@ -4,6 +4,8 @@ export interface AdvantageDataPoint {
   localLatency: number;
   frontierLatency: number;
   localWins: boolean;
+  /** Optional quality score (0-1) from the eval pipeline. */
+  qualityScore?: number;
 }
 
 export interface AdvantageReport {
@@ -13,6 +15,8 @@ export interface AdvantageReport {
   winRate: number;
   sampleSize: number;
   recommendation: 'local' | 'frontier' | 'hybrid';
+  /** Average quality delta (local - frontier) when quality data is present. */
+  averageQualityDelta?: number;
 }
 
 export interface AdvantageTrend {
@@ -30,7 +34,8 @@ class AdvantageDetector {
     taskCategory: string,
     localLatency: number,
     frontierLatency: number,
-    userPreferredLocal: boolean
+    userPreferredLocal: boolean,
+    qualityScore?: number,
   ): void {
     this.history.push({
       timestamp: Date.now(),
@@ -38,6 +43,7 @@ class AdvantageDetector {
       localLatency,
       frontierLatency,
       localWins: userPreferredLocal,
+      qualityScore,
     });
 
     if (this.history.length > 10000) {
@@ -71,6 +77,13 @@ class AdvantageDetector {
         recommendation = 'hybrid';
       }
 
+      // Compute average quality delta when quality data is present
+      const qualityPoints = points.filter(p => p.qualityScore !== undefined);
+      const averageQualityDelta =
+        qualityPoints.length > 0
+          ? qualityPoints.reduce((sum, p) => sum + p.qualityScore!, 0) / qualityPoints.length
+          : undefined;
+
       reports.push({
         category,
         localAdvantage,
@@ -78,6 +91,7 @@ class AdvantageDetector {
         winRate,
         sampleSize: total,
         recommendation,
+        averageQualityDelta,
       });
     }
 
