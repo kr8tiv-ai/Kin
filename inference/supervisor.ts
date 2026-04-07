@@ -90,6 +90,16 @@ export interface SupervisorOptions {
    * access should pass their query function here.
    */
   memoryFallback?: () => Promise<string[]>;
+  /**
+   * KIN Credits credential — provisioned by PinkBrain subscription.
+   * CLI credentials route through the companion's frontier provider;
+   * API credentials route through OpenRouter as a fallback.
+   */
+  kinCredential?: {
+    type: 'cli' | 'api';
+    credential: string;
+    providerId: FrontierProviderId;
+  };
 }
 
 // ============================================================================
@@ -452,6 +462,80 @@ export async function supervisedChat(
           // Fall through to legacy fallback below
           frontierModel = undefined;
           usedProvider = undefined;
+        }
+      }
+    }
+
+    // ── KIN Credits path (PinkBrain-provisioned credentials) ──
+    // CLI credential → route through companion's frontier provider with override key.
+    // API credential → route through OpenRouter with override key.
+    if (!frontierModel && options?.kinCredential) {
+      const kc = options.kinCredential;
+      const targetProviderId: FrontierProviderId = kc.type === 'cli' ? kc.providerId : 'openrouter';
+      const provider = getProvider(targetProviderId);
+      if (provider) {
+        try {
+          const trimmed = trimForSupervisor(messages, config.supervisorContextWindow);
+          const result = await provider.chat({
+            messages: trimmed,
+            maxTokens: 4096,
+            temperature: 0.8,
+            apiKeyOverride: kc.credential,
+          });
+          route = 'supervisor';
+          content = result.content;
+          frontierModel = provider.spec.modelId;
+          usedProvider = targetProviderId;
+          trackedInputTokens = result.inputTokens;
+          trackedOutputTokens = result.outputTokens;
+          const pricing = provider.spec.pricing;
+          trackedCostUsd = (result.inputTokens / 1_000_000) * pricing.inputPer1M
+                         + (result.outputTokens / 1_000_000) * pricing.outputPer1M;
+          recordSuccess(targetProviderId);
+          const pathLabel = kc.type === 'cli' ? `CLI via ${targetProviderId}` : `API fallback via openrouter`;
+          console.log(
+            `[supervisor] KIN Credits ${pathLabel} | ` +
+            `${result.inputTokens}in/${result.outputTokens}out | ` +
+            `$${trackedCostUsd.toFixed(4)} | ${result.latencyMs.toFixed(0)}ms`,
+          );
+        } catch (err) {
+          recordFailure(targetProviderId);
+          const pathLabel = kc.type === 'cli' ? 'CLI' : 'API';
+          console.warn(`[supervisor] KIN Credits ${pathLabel} via ${targetProviderId} failed, falling back to waterfall:`, err);
+          // If CLI failed, try API fallback through OpenRouter before hitting free waterfall
+          if (kc.type === 'cli') {
+            const openrouter = getProvider('openrouter');
+            if (openrouter) {
+              try {
+                const trimmed = trimForSupervisor(messages, config.supervisorContextWindow);
+                const result = await openrouter.chat({
+                  messages: trimmed,
+                  maxTokens: 4096,
+                  temperature: 0.8,
+                  apiKeyOverride: kc.credential,
+                });
+                route = 'supervisor';
+                content = result.content;
+                frontierModel = openrouter.spec.modelId;
+                usedProvider = 'openrouter';
+                trackedInputTokens = result.inputTokens;
+                trackedOutputTokens = result.outputTokens;
+                const pricing = openrouter.spec.pricing;
+                trackedCostUsd = (result.inputTokens / 1_000_000) * pricing.inputPer1M
+                               + (result.outputTokens / 1_000_000) * pricing.outputPer1M;
+                recordSuccess('openrouter');
+                console.log(
+                  `[supervisor] KIN Credits API fallback via openrouter | ` +
+                  `${result.inputTokens}in/${result.outputTokens}out | ` +
+                  `$${trackedCostUsd.toFixed(4)} | ${result.latencyMs.toFixed(0)}ms`,
+                );
+              } catch (orErr) {
+                recordFailure('openrouter');
+                console.warn('[supervisor] KIN Credits OpenRouter fallback also failed:', orErr);
+                // Fall through to legacy waterfall
+              }
+            }
+          }
         }
       }
     }

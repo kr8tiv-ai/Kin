@@ -91,6 +91,9 @@ import { requiresApproval, extractSkillIntent } from '../inference/approval-poli
 import pipelineRoutes from './routes/pipelines.js';
 import approvalRoutes from './routes/approvals.js';
 
+// KIN Credits imports
+import { CredentialManager, setCredentialManager } from '../inference/kin-credits.js';
+
 // Inference imports for WebSocket streaming chat
 import crypto from 'crypto';
 import { getOllamaClient, isLocalLlmAvailable, type ChatMessage } from '../inference/local-llm.js';
@@ -239,6 +242,10 @@ export async function createServer(config: ApiConfig = {}) {
   // Credit metering — shares the fleet.db file for co-located tables
   const creditDb = new CreditDb(fleetDbPath);
   creditDb.init();
+
+  // KIN Credits — encrypted provider credential store (PinkBrain subscriptions)
+  const credentialManager = new CredentialManager(db);
+  setCredentialManager(credentialManager);
 
   // Cloudflare Tunnel integration (optional — requires all three env vars)
   let tunnelManager: TunnelManager | undefined;

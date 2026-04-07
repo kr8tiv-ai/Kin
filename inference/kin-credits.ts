@@ -297,3 +297,19 @@ export class CredentialManager {
     };
   }
 }
+
+// ============================================================================
+// Singleton accessor (set once at server init, consumed by chat routes)
+// ============================================================================
+
+let _credentialManager: CredentialManager | null = null;
+
+/** Set the process-wide CredentialManager instance. Called once at server init. */
+export function setCredentialManager(cm: CredentialManager): void {
+  _credentialManager = cm;
+}
+
+/** Get the process-wide CredentialManager, or null if not yet initialized. */
+export function getCredentialManager(): CredentialManager | null {
+  return _credentialManager;
+}

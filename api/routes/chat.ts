@@ -20,6 +20,8 @@ import { scoreDrift, needsReinforcement, buildReinforcementPrefix } from '../../
 import { getProviderHealth } from '../../inference/providers/circuit-breaker.js';
 import { getMetricsCollector } from '../../inference/metrics.js';
 import { loadUserTier, enforceMessageLimit } from '../middleware/subscription-gate.js';
+import { getCredentialManager } from '../../inference/kin-credits.js';
+import type { FrontierProviderId } from '../../inference/providers/types.js';
 
 // ============================================================================
 // Types
@@ -289,6 +291,21 @@ const chatRoutes: FastifyPluginAsync = async (fastify) => {
     // Generate response via supervisor (two-brain architecture)
     const privacyMode = loadPrivacyMode(fastify.context.db, userId);
     const userTier = loadUserTier(fastify.context.db, userId);
+
+    // Resolve KIN Credits credential for PinkBrain-funded routing
+    let kinCredential: { type: 'cli' | 'api'; credential: string; providerId: FrontierProviderId } | undefined;
+    const credMgr = getCredentialManager();
+    if (credMgr) {
+      const cred = credMgr.getCredential(userId, config.frontierProvider);
+      if (cred) {
+        kinCredential = {
+          type: cred.credentialType,
+          credential: cred.credential,
+          providerId: cred.providerId as FrontierProviderId,
+        };
+      }
+    }
+
     const result = await supervisedChat(
       messages,
       companionId,
@@ -298,6 +315,7 @@ const chatRoutes: FastifyPluginAsync = async (fastify) => {
         userId,
         privacyMode,
         userTier,
+        kinCredential,
         memoryFallback: async () => {
           const rows = fastify.context.db.prepare(`
             SELECT memory_type, content FROM memories
@@ -495,6 +513,21 @@ const chatRoutes: FastifyPluginAsync = async (fastify) => {
       try {
         const streamPrivacyMode = loadPrivacyMode(fastify.context.db, userId);
         const streamUserTier = loadUserTier(fastify.context.db, userId);
+
+        // Resolve KIN Credits credential for PinkBrain-funded routing (streaming fallback)
+        let streamKinCredential: { type: 'cli' | 'api'; credential: string; providerId: FrontierProviderId } | undefined;
+        const streamCredMgr = getCredentialManager();
+        if (streamCredMgr) {
+          const cred = streamCredMgr.getCredential(userId, config.frontierProvider);
+          if (cred) {
+            streamKinCredential = {
+              type: cred.credentialType,
+              credential: cred.credential,
+              providerId: cred.providerId as FrontierProviderId,
+            };
+          }
+        }
+
         const result = await supervisedChat(
           messages,
           companionId,
@@ -504,6 +537,7 @@ const chatRoutes: FastifyPluginAsync = async (fastify) => {
             userId,
             privacyMode: streamPrivacyMode,
             userTier: streamUserTier,
+            kinCredential: streamKinCredential,
             memoryFallback: async () => {
               const rows = fastify.context.db.prepare(`
                 SELECT memory_type, content FROM memories
