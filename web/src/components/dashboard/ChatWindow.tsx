@@ -10,6 +10,7 @@ import { useRef, useEffect, useState, useCallback, type FormEvent } from 'react'
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { ChatMarkdown } from '@/components/dashboard/ChatMarkdown';
+import { MediaPlayer } from '@/components/dashboard/MediaPlayer';
 import { useChat, type ChatMessage } from '@/hooks/useChat';
 import { useTTS } from '@/hooks/useTTS';
 import { useVoiceSession, type VoiceSessionState } from '@/hooks/useVoiceSession';
@@ -649,6 +650,13 @@ function ChatBubble({
               content={isAssistant ? displayed : message.content}
               className="text-sm leading-relaxed"
             />
+          )}
+
+          {/* Inline media player for generated video/audio */}
+          {message.mediaUrl && message.mediaType && (
+            <div className="mt-2">
+              <MediaPlayer url={message.mediaUrl} type={message.mediaType} />
+            </div>
           )}
 
           {/* Typewriter cursor */}

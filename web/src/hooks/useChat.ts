@@ -25,6 +25,10 @@ export interface ChatMessage {
   isStreaming?: boolean;
   /** Set when a user message failed to send */
   failed?: boolean;
+  /** URL to generated media (video or audio) attached to this message */
+  mediaUrl?: string;
+  /** Type of attached media */
+  mediaType?: 'video' | 'audio';
 }
 
 interface StreamEvent {
@@ -35,6 +39,10 @@ interface StreamEvent {
   route?: string;
   latencyMs?: number;
   error?: string;
+  /** Media URL from media generation (present on final event) */
+  mediaUrl?: string;
+  /** Media type: 'video' or 'audio' (present on final event) */
+  mediaType?: 'video' | 'audio';
 }
 
 interface UseChatOptions {
@@ -211,6 +219,8 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
         let finalConvoId: string | null = null;
         let route = 'streaming';
         let latencyMs = 0;
+        let streamMediaUrl: string | undefined;
+        let streamMediaType: 'video' | 'audio' | undefined;
 
         while (true) {
           const { done, value } = await reader.read();
@@ -247,6 +257,8 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
                 finalConvoId = event.conversationId ?? null;
                 route = event.route ?? 'streaming';
                 latencyMs = event.latencyMs ?? 0;
+                streamMediaUrl = event.mediaUrl;
+                streamMediaType = event.mediaType;
               }
             } catch (parseErr) {
               if (parseErr instanceof Error && parseErr.message !== json) {
@@ -256,11 +268,11 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
           }
         }
 
-        // Finalize streaming message
+        // Finalize streaming message (include media metadata if present)
         setMessages((prev) =>
           prev.map((m) =>
             m.id === assistantId
-              ? { ...m, content: fullContent, isStreaming: false }
+              ? { ...m, content: fullContent, isStreaming: false, mediaUrl: streamMediaUrl, mediaType: streamMediaType }
               : m,
           ),
         );
@@ -283,6 +295,8 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
           role: 'assistant',
           content: fullContent,
           timestamp: new Date(),
+          mediaUrl: streamMediaUrl,
+          mediaType: streamMediaType,
         };
         options.onResponse?.(finalMsg);
       } catch (err) {
@@ -304,6 +318,7 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
             companionId: string;
             route: string;
             latencyMs: number;
+            media?: { url: string; type: 'video' | 'audio'; mimeType: string };
           }>('/chat', {
             companionId: companionIdRef.current,
             message: content.trim(),
@@ -315,6 +330,8 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
             role: 'assistant',
             content: result.response,
             timestamp: new Date(),
+            mediaUrl: result.media?.url,
+            mediaType: result.media?.type,
           };
 
           setMessages((prev) => [...prev, assistantMessage]);
