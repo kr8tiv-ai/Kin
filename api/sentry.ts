@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-require-imports */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 interface SentryLike {
   init: (opts: Record<string, unknown>) => void;
   captureException: (err: unknown, ctx?: Record<string, unknown>) => void;
@@ -14,8 +14,8 @@ const noopSentry: SentryLike = {
 let Sentry: SentryLike = noopSentry;
 
 try {
-  // Dynamic require to avoid compile-time resolution
-  const mod = require('@sentry/node') as SentryLike;
+  // Use globalThis.eval to completely bypass TypeScript module resolution
+  const mod = (globalThis as any).eval('require')('@sentry/node') as SentryLike;
   const dsn = process.env.SENTRY_DSN;
   if (dsn) {
     mod.init({
