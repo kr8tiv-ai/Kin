@@ -891,3 +891,39 @@ CREATE TABLE IF NOT EXISTS exec_approvals (
 );
 
 CREATE INDEX IF NOT EXISTS idx_exec_approvals_user_status ON exec_approvals(user_id, status);
+
+-- ============================================================================
+-- Revenue Reports — periodic revenue aggregation for Genesis surplus sharing
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS revenue_reports (
+  id TEXT PRIMARY KEY,
+  period_start INTEGER NOT NULL,           -- epoch ms
+  period_end INTEGER NOT NULL,             -- epoch ms
+  subscription_revenue INTEGER NOT NULL DEFAULT 0,  -- cents
+  mint_revenue INTEGER NOT NULL DEFAULT 0,          -- cents
+  rebinding_revenue INTEGER NOT NULL DEFAULT 0,     -- cents
+  total_revenue INTEGER NOT NULL DEFAULT 0,         -- cents
+  surplus_allocated INTEGER NOT NULL DEFAULT 0,     -- cents
+  status TEXT NOT NULL DEFAULT 'generated'
+    CHECK (status IN ('generated', 'distributed', 'archived')),
+  created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000),
+  UNIQUE(period_start, period_end)
+);
+
+-- ============================================================================
+-- Revenue Distributions — per-holder surplus allocation from a report
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS revenue_distributions (
+  id TEXT PRIMARY KEY,
+  report_id TEXT NOT NULL REFERENCES revenue_reports(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  genesis_tier TEXT NOT NULL,
+  reward_percent REAL NOT NULL,
+  amount INTEGER NOT NULL DEFAULT 0,       -- cents
+  created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000)
+);
+
+CREATE INDEX IF NOT EXISTS idx_revenue_distributions_report ON revenue_distributions(report_id);
+CREATE INDEX IF NOT EXISTS idx_revenue_distributions_user ON revenue_distributions(user_id);

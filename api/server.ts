@@ -55,6 +55,7 @@ import communityRoutes from './routes/community.js';
 import evalRoutes from './routes/eval.js';
 import distillRoutes from './routes/distill.js';
 import retrainRoutes from './routes/retrain.js';
+import revenueRoutes from './routes/revenue.js';
 import advantageRoutes from './routes/advantage.js';
 import dmSecurityRoutes from './routes/dm-security.js';
 import gmailAuthRoutes from './routes/gmail-auth.js';
@@ -532,6 +533,7 @@ export async function createServer(config: ApiConfig = {}) {
     await protectedFastify.register(retrainRoutes);
     await protectedFastify.register(advantageRoutes);
     await protectedFastify.register(dmSecurityRoutes);
+    await protectedFastify.register(revenueRoutes);
     await protectedFastify.register(gmailAuthRoutes);
     await protectedFastify.register(schedulerRoutes, { schedulerManager });
     await protectedFastify.register(pipelineRoutes, { pipelineManager });
