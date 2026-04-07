@@ -37,7 +37,8 @@ export class OpenAICompatProvider implements FrontierProvider {
   }
 
   async chat(request: ProviderChatRequest): Promise<ProviderChatResponse> {
-    if (!this.apiKey) {
+    const effectiveKey = request.apiKeyOverride ?? this.apiKey;
+    if (!effectiveKey) {
       throw new Error(`[${this.id}] API key not configured (set ${this.spec.apiKeyEnvVar})`);
     }
 
@@ -50,7 +51,7 @@ export class OpenAICompatProvider implements FrontierProvider {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${this.apiKey!}`,
+            'Authorization': `Bearer ${effectiveKey}`,
           },
           body: JSON.stringify({
             model: this.spec.modelId,
@@ -84,7 +85,8 @@ export class OpenAICompatProvider implements FrontierProvider {
   }
 
   async *chatStream(request: ProviderChatRequest): AsyncGenerator<ProviderStreamChunk> {
-    if (!this.apiKey) {
+    const effectiveKey = request.apiKeyOverride ?? this.apiKey;
+    if (!effectiveKey) {
       throw new Error(`[${this.id}] API key not configured (set ${this.spec.apiKeyEnvVar})`);
     }
 
@@ -97,7 +99,7 @@ export class OpenAICompatProvider implements FrontierProvider {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${this.apiKey!}`,
+            'Authorization': `Bearer ${effectiveKey}`,
           },
           body: JSON.stringify({
             model: this.spec.modelId,

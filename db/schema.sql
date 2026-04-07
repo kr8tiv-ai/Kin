@@ -927,3 +927,26 @@ CREATE TABLE IF NOT EXISTS revenue_distributions (
 
 CREATE INDEX IF NOT EXISTS idx_revenue_distributions_report ON revenue_distributions(report_id);
 CREATE INDEX IF NOT EXISTS idx_revenue_distributions_user ON revenue_distributions(user_id);
+
+-- ============================================================================
+-- KIN Credits — provider CLI/API credential storage per user
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS kin_credits (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  provider_id TEXT NOT NULL,               -- FrontierProviderId (e.g. 'openai', 'anthropic', 'openrouter')
+  credential_type TEXT NOT NULL CHECK (credential_type IN ('cli', 'api')),
+  encrypted_credential TEXT NOT NULL,      -- AES-256-GCM ciphertext (iv:authTag:data)
+  plan_tier TEXT,                          -- e.g. 'pro', 'team', 'enterprise'
+  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'suspended', 'revoked')),
+  provisioned_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000),
+  expires_at INTEGER,
+  last_used_at INTEGER,
+  usage_count INTEGER NOT NULL DEFAULT 0,
+  UNIQUE(user_id, provider_id, credential_type)
+);
+
+CREATE INDEX IF NOT EXISTS idx_kin_credits_user ON kin_credits(user_id);
+CREATE INDEX IF NOT EXISTS idx_kin_credits_provider ON kin_credits(provider_id);
+CREATE INDEX IF NOT EXISTS idx_kin_credits_status ON kin_credits(status);

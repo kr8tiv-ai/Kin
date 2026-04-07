@@ -22,7 +22,8 @@ export type FrontierProviderId =
   | 'deepseek'   // DeepSeek R1
   | 'mistral'    // Mistral Large
   | 'together'   // Together AI Llama 3.3 70B
-  | 'fireworks'; // Fireworks Llama 3.3 70B
+  | 'fireworks'  // Fireworks Llama 3.3 70B
+  | 'openrouter'; // OpenRouter — multi-model API fallback
 
 // ============================================================================
 // Model Specification
@@ -55,6 +56,8 @@ export interface ProviderChatRequest {
   maxTokens?: number;
   temperature?: number;
   stream?: boolean;
+  /** Override the provider's default API key (e.g. user-provisioned KIN Credits key) */
+  apiKeyOverride?: string;
 }
 
 export interface ProviderStreamChunk {

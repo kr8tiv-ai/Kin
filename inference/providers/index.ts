@@ -19,6 +19,7 @@ import { deepseekProvider } from './deepseek.js';
 import { mistralProvider } from './mistral.js';
 import { togetherProvider } from './together.js';
 import { fireworksProvider } from './fireworks.js';
+import { openrouterProvider } from './openrouter.js';
 
 // ============================================================================
 // Registry
@@ -42,6 +43,7 @@ function initializeProviders(): void {
     mistralProvider,
     togetherProvider,
     fireworksProvider,
+    openrouterProvider,
   ];
 
   for (const provider of providers) {
