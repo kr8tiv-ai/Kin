@@ -50,6 +50,8 @@ import fleetRoutes from '../fleet/routes.js';
 import exportRoutes from './routes/export.js';
 import importRoutes from './routes/import.js';
 import communityRoutes from './routes/community.js';
+import evalRoutes from './routes/eval.js';
+import distillRoutes from './routes/distill.js';
 
 // Fleet imports
 import { FleetDb } from '../fleet/db.js';
@@ -353,6 +355,8 @@ export async function createServer(config: ApiConfig = {}) {
     await protectedFastify.register(exportRoutes);
     await protectedFastify.register(importRoutes);
     await protectedFastify.register(communityRoutes);
+    await protectedFastify.register(evalRoutes);
+    await protectedFastify.register(distillRoutes);
   });
 
   // ==========================================================================
