@@ -49,7 +49,15 @@ export {
   calculatorSkill,
   reminderSkill,
   webSearchSkill,
+  scheduleSkill,
 } from './builtins/index.js';
+
+// Schedule skill API (for wiring up SchedulerManager at boot)
+export {
+  setSchedulerManager,
+  parseCronIntent,
+} from './builtins/schedule.js';
+export type { ParsedCronIntent } from './builtins/schedule.js';
 
 // Reminder API (for wiring up notification delivery)
 export {

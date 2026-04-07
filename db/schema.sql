@@ -722,3 +722,54 @@ CREATE TABLE IF NOT EXISTS pairing_codes (
 CREATE INDEX IF NOT EXISTS idx_pairing_codes_channel ON pairing_codes(channel);
 CREATE INDEX IF NOT EXISTS idx_pairing_codes_sender ON pairing_codes(sender_id);
 CREATE INDEX IF NOT EXISTS idx_pairing_codes_status ON pairing_codes(status);
+
+-- ---------------------------------------------------------------------------
+-- Scheduled Jobs — persistent cron-based job scheduling
+-- ---------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS scheduled_jobs (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  companion_id TEXT NOT NULL REFERENCES companions(id),
+  skill_name TEXT NOT NULL,
+  skill_args TEXT NOT NULL DEFAULT '{}',
+  cron_expression TEXT NOT NULL,
+  timezone TEXT NOT NULL DEFAULT 'UTC',
+  delivery_channel TEXT NOT NULL CHECK (delivery_channel IN ('telegram', 'whatsapp', 'discord', 'api')),
+  delivery_recipient_id TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'paused', 'completed', 'failed')),
+  last_run_at INTEGER,
+  next_run_at INTEGER,
+  run_count INTEGER NOT NULL DEFAULT 0,
+  max_runs INTEGER,
+  error_count INTEGER NOT NULL DEFAULT 0,
+  last_error TEXT,
+  created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000),
+  updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000)
+);
+
+CREATE INDEX IF NOT EXISTS idx_scheduled_jobs_user ON scheduled_jobs(user_id);
+CREATE INDEX IF NOT EXISTS idx_scheduled_jobs_status ON scheduled_jobs(status);
+CREATE INDEX IF NOT EXISTS idx_scheduled_jobs_next_run ON scheduled_jobs(next_run_at);
+
+-- ---------------------------------------------------------------------------
+-- Webhook Triggers — external HTTP triggers for skill execution
+-- ---------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS webhook_triggers (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  companion_id TEXT NOT NULL REFERENCES companions(id),
+  skill_name TEXT NOT NULL,
+  skill_args TEXT NOT NULL DEFAULT '{}',
+  hmac_secret TEXT NOT NULL,
+  delivery_channel TEXT NOT NULL CHECK (delivery_channel IN ('telegram', 'whatsapp', 'discord', 'api')),
+  delivery_recipient_id TEXT NOT NULL,
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  last_triggered_at INTEGER,
+  trigger_count INTEGER NOT NULL DEFAULT 0,
+  created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000)
+);
+
+CREATE INDEX IF NOT EXISTS idx_webhook_triggers_user ON webhook_triggers(user_id);
+CREATE INDEX IF NOT EXISTS idx_webhook_triggers_active ON webhook_triggers(is_active);

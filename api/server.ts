@@ -57,6 +57,7 @@ import retrainRoutes from './routes/retrain.js';
 import advantageRoutes from './routes/advantage.js';
 import dmSecurityRoutes from './routes/dm-security.js';
 import gmailAuthRoutes from './routes/gmail-auth.js';
+import schedulerRoutes, { webhookRoutes } from './routes/scheduler.js';
 
 // Fleet imports
 import { FleetDb } from '../fleet/db.js';
@@ -65,6 +66,12 @@ import { TunnelManager, type TunnelManagerConfig } from '../fleet/tunnel-manager
 import { CreditDb } from '../fleet/credit-db.js';
 import { FrontierProxy } from '../fleet/frontier-proxy.js';
 import creditRoutes from '../fleet/credit-routes.js';
+
+// Scheduler imports
+import { SchedulerManager } from '../inference/scheduler-manager.js';
+import { ChannelDelivery } from '../inference/channel-delivery.js';
+import { createSkillRouter } from '../bot/skills/index.js';
+import { setSchedulerManager } from '../bot/skills/builtins/schedule.js';
 
 // Inference imports for WebSocket streaming chat
 import crypto from 'crypto';
@@ -260,6 +267,41 @@ export async function createServer(config: ApiConfig = {}) {
     },
   });
 
+  // --------------------------------------------------------------------------
+  // Scheduler initialisation
+  // --------------------------------------------------------------------------
+
+  const channelDelivery = new ChannelDelivery();
+  const schedulerManager = new SchedulerManager(db, channelDelivery);
+
+  // Wire skill resolution — SkillRouter holds all builtins
+  const skillRouter = createSkillRouter();
+  const resolveSkill = (name: string): import('../bot/skills/types.js').KinSkill | undefined => {
+    if (!skillRouter.hasSkill(name)) return undefined;
+    // Return a thin proxy that delegates to skillRouter.executeSkill
+    return {
+      name,
+      description: '',
+      triggers: [],
+      execute: (ctx) => skillRouter.executeSkill(name, ctx),
+    };
+  };
+  schedulerManager.setSkillResolver(resolveSkill);
+
+  // Wire the schedule skill's SchedulerManager reference
+  setSchedulerManager(schedulerManager);
+
+  // Hydrate active jobs from DB
+  try {
+    const hydrated = schedulerManager.hydrateFromDb();
+    if (hydrated > 0) {
+      fastify.log.info(`[scheduler] Hydrated ${hydrated} active job(s)`);
+    }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    fastify.log.error(`[scheduler] Hydration failed: ${msg}`);
+  }
+
   // Store context
   fastify.decorate('context', {
     db,
@@ -371,6 +413,13 @@ export async function createServer(config: ApiConfig = {}) {
     await protectedFastify.register(advantageRoutes);
     await protectedFastify.register(dmSecurityRoutes);
     await protectedFastify.register(gmailAuthRoutes);
+    await protectedFastify.register(schedulerRoutes, { schedulerManager });
+  });
+
+  // Webhook ingestion routes (HMAC-authenticated, no JWT)
+  await fastify.register(webhookRoutes, {
+    channelDelivery,
+    skillResolver: resolveSkill,
   });
 
   // ==========================================================================
@@ -479,6 +528,7 @@ export async function createServer(config: ApiConfig = {}) {
   const closeHandlers: (() => Promise<void>)[] = [];
 
   fastify.addHook('onClose', async () => {
+    schedulerManager.shutdown();
     for (const handler of closeHandlers) {
       await handler();
     }
