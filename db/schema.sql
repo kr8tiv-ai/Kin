@@ -606,6 +606,27 @@ CREATE TABLE IF NOT EXISTS nft_transfers (
 CREATE INDEX IF NOT EXISTS idx_nft_transfers_mint ON nft_transfers(nft_mint_address);
 
 -- ============================================================================
+-- NFT Rebindings — secondary-market companion re-onboarding
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS nft_rebindings (
+  id TEXT PRIMARY KEY,
+  nft_mint_address TEXT NOT NULL,
+  companion_id TEXT NOT NULL,
+  from_user_id TEXT NOT NULL,
+  to_user_id TEXT,
+  status TEXT NOT NULL DEFAULT 'pending_payment'
+    CHECK (status IN ('pending_payment','processing','pending_onboarding','complete','failed')),
+  stripe_session_id TEXT,
+  snapshot_id TEXT REFERENCES companion_snapshots(id),
+  error TEXT,
+  created_at INTEGER NOT NULL DEFAULT (strftime('%s','now')*1000),
+  completed_at INTEGER
+);
+
+CREATE INDEX IF NOT EXISTS idx_nft_rebindings_mint ON nft_rebindings(nft_mint_address);
+
+-- ============================================================================
 -- Companion Souls (user-authored personality configs with drift detection)
 -- ============================================================================
 

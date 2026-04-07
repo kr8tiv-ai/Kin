@@ -351,6 +351,20 @@ export const DEFAULT_SOUL_CONFIG: SoulConfig = {
   antiPatterns: [],
 };
 
+// ============================================================================
+// NFT Rebinding
+// ============================================================================
+
+export interface RebindingStatus {
+  rebindingId: string;
+  status: 'pending_payment' | 'processing' | 'pending_onboarding' | 'complete' | 'failed';
+  companionId: string;
+  fromUserId: string;
+  toUserId: string | null;
+  createdAt: string;
+  completedAt: string | null;
+}
+
 export interface NftTransfer {
   id: string;
   nftMintAddress: string;

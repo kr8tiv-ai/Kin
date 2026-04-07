@@ -6,6 +6,8 @@ import { FastifyPluginAsync } from 'fastify';
 import crypto from 'crypto';
 import { mintCompanionNFT } from '../lib/solana-mint.js';
 import { mintRateLimit } from '../middleware/rate-limit.js';
+import { pinJSON } from '../lib/ipfs-pin.js';
+import { anchorHash } from '../lib/chain-anchor.js';
 
 interface NFTParams {
   mintAddress: string;
@@ -187,108 +189,387 @@ const nftRoutes: FastifyPluginAsync = async (fastify) => {
     }
   );
 
-  // Transfer NFT with skill/memory migration
-  fastify.post<{ Body: { mintAddress: string; toWallet: string; toUserId?: string } }>(
-    '/nft/transfer',
+  // ── POST /nft/rebind-execute ──────────────────────────────────────────
+  // Atomic data migration pipeline: snapshot → skill replication →
+  // private data wipe → ownership transfer → status update.
+  // Called by the new owner after Stripe payment completes (status: processing).
+  fastify.post<{ Body: { mintAddress: string } }>(
+    '/nft/rebind-execute',
     async (request, reply) => {
       const userId = (request.user as { userId: string }).userId;
-      const { mintAddress, toWallet, toUserId } = request.body;
+      const { mintAddress } = request.body;
 
-      // Verify ownership
-      const nft = fastify.context.db.prepare(`
-        SELECT * FROM nft_ownership WHERE mint_address = ? AND user_id = ?
-      `).get(mintAddress, userId) as any;
+      if (!mintAddress) {
+        reply.status(400);
+        return { error: 'mintAddress is required' };
+      }
 
-      if (!nft) {
+      // ── Verify caller is the to_user_id of a processing rebinding ────
+      const rebinding = fastify.context.db.prepare(`
+        SELECT id, nft_mint_address, companion_id, from_user_id, to_user_id, status
+        FROM nft_rebindings
+        WHERE nft_mint_address = ? AND status = 'processing'
+        ORDER BY created_at DESC LIMIT 1
+      `).get(mintAddress) as {
+        id: string; nft_mint_address: string; companion_id: string;
+        from_user_id: string; to_user_id: string | null; status: string;
+      } | undefined;
+
+      if (!rebinding) {
         reply.status(404);
-        return { error: 'NFT not found or not owned' };
+        return { error: 'No active rebinding found for this NFT' };
       }
 
-      const companionId = nft.companion_id;
-
-      // ── 1. Execute on-chain transfer ──────────────────────────────────
-      let onChainSignature: string | null = null;
-      try {
-        const { getNFTClient } = await import('../../solana/nft.js');
-        const client = getNFTClient();
-        const result = await client.transfer(mintAddress, nft.owner_wallet, toWallet);
-        onChainSignature = result.signature;
-      } catch (err) {
-        // Log but don't block — on-chain may fail if Umi not configured
-        fastify.log.warn({ err, mintAddress }, 'On-chain transfer failed, proceeding with DB update');
+      if (rebinding.to_user_id !== userId) {
+        reply.status(403);
+        return { error: 'Only the new owner can execute rebinding' };
       }
 
-      // ── 2. Migrate memories to new owner ──────────────────────────────
-      let memoriesMigrated = 0;
-      if (toUserId) {
-        try {
-          const migrateResult = fastify.context.db.prepare(`
-            UPDATE memories
-            SET user_id = ?,
-                updated_at = (strftime('%s','now')*1000)
-            WHERE user_id = ? AND companion_id = ?
-          `).run(toUserId, userId, companionId);
-          memoriesMigrated = migrateResult.changes;
-        } catch (err) {
-          fastify.log.warn({ err }, 'Memory migration failed');
+      // ── Idempotency: reject if already past processing ───────────────
+      // (Checked above via status='processing', but guard against race)
+
+      const fromUser = rebinding.from_user_id;
+      const toUser = userId;
+      const companionId = rebinding.companion_id;
+
+      fastify.log.info(
+        { rebindingId: rebinding.id, mintAddress, fromUser, toUser, companionId },
+        '[Rebind] Starting atomic migration pipeline',
+      );
+
+      // ── Atomic transaction ────────────────────────────────────────────
+      let snapshotId: string;
+      let skillsTransferred = 0;
+      let memoriesWiped = 0;
+
+      const runPipeline = fastify.context.db.transaction(() => {
+        // ── a. Snapshot: portable skills for transfer record ───────────
+        const portableSkills = fastify.context.db.prepare(`
+          SELECT cs.skill_id, cs.skill_level, cs.xp, cs.usage_count,
+                 cs.xp_to_next_level, cs.is_portable,
+                 s.name, s.display_name, s.category
+          FROM companion_skills cs
+          JOIN skills s ON s.id = cs.skill_id
+          WHERE cs.companion_id = ? AND cs.user_id = ? AND cs.is_portable = 1
+          ORDER BY cs.skill_level DESC
+        `).all(companionId, fromUser) as any[];
+
+        const snapshotPayload = {
+          type: 'rebind_transfer',
+          companionId,
+          nftMintAddress: mintAddress,
+          fromUserId: fromUser,
+          toUserId: toUser,
+          timestamp: Date.now(),
+          skills: portableSkills.map((s: any) => ({
+            id: s.skill_id,
+            name: s.name,
+            displayName: s.display_name,
+            category: s.category,
+            level: s.skill_level,
+            xp: s.xp,
+            usageCount: s.usage_count,
+          })),
+        };
+
+        const payloadStr = JSON.stringify(snapshotPayload);
+        const contentHash = crypto
+          .createHash('sha256')
+          .update(payloadStr)
+          .digest('hex');
+
+        snapshotId = `csn-${crypto.randomUUID()}`;
+
+        fastify.context.db.prepare(`
+          INSERT INTO companion_snapshots
+            (id, companion_id, user_id, nft_mint_address, snapshot_type,
+             content_hash, encrypted_payload, is_on_chain)
+          VALUES (?, ?, ?, ?, 'transfer', ?, ?, 0)
+        `).run(snapshotId, companionId, fromUser, mintAddress, contentHash, payloadStr);
+
+        fastify.log.info(
+          { snapshotId, skillCount: portableSkills.length },
+          '[Rebind] Snapshot created',
+        );
+
+        // ── b. Skill replication: portable skills to new owner ─────────
+        for (const skill of portableSkills) {
+          const newId = `cs-${crypto.randomUUID()}`;
+          fastify.context.db.prepare(`
+            INSERT OR REPLACE INTO companion_skills
+              (id, companion_id, user_id, skill_id, skill_level, xp,
+               xp_to_next_level, is_portable, usage_count, accrued_at)
+            VALUES (
+              COALESCE(
+                (SELECT id FROM companion_skills WHERE companion_id = ? AND user_id = ? AND skill_id = ?),
+                ?
+              ),
+              ?, ?, ?, ?, ?, ?, 1, ?, ?
+            )
+          `).run(
+            companionId, toUser, skill.skill_id, // COALESCE lookup
+            newId,                                 // fallback id
+            companionId, toUser, skill.skill_id,
+            skill.skill_level, skill.xp,
+            skill.xp_to_next_level,
+            skill.usage_count,
+            Date.now(),
+          );
+          skillsTransferred++;
         }
 
-        // ── 3. Migrate companion skills ───────────────────────────────
-        try {
-          fastify.context.db.prepare(`
-            UPDATE companion_skills
-            SET user_id = ?
-            WHERE user_id = ? AND companion_id = ?
-          `).run(toUserId, userId, companionId);
-        } catch { /* companion_skills table may not exist */ }
+        fastify.log.info(
+          { skillsTransferred },
+          '[Rebind] Skills replicated to new owner',
+        );
 
-        // ── 4. Migrate soul config ────────────────────────────────────
-        try {
-          fastify.context.db.prepare(`
-            UPDATE companion_souls
-            SET user_id = ?,
-                updated_at = (strftime('%s','now')*1000)
-            WHERE user_id = ? AND companion_id = ?
-          `).run(toUserId, userId, companionId);
-        } catch { /* companion_souls table may not exist */ }
+        // ── c. Private data wipe ──────────────────────────────────────
 
-        // ── 5. Transfer user_companions ownership ─────────────────────
-        try {
-          fastify.context.db.prepare(`
-            UPDATE user_companions
-            SET user_id = ?
-            WHERE user_id = ? AND companion_id = ?
-          `).run(toUserId, userId, companionId);
-        } catch { /* ignore */ }
-      }
+        // c1. Delete conversations for old owner + companion
+        const convResult = fastify.context.db.prepare(`
+          DELETE FROM conversations
+          WHERE user_id = ? AND companion_id = ?
+        `).run(fromUser, companionId);
 
-      // ── 6. Update NFT ownership record ────────────────────────────────
-      if (toUserId) {
+        // c2. Transferable memories: replicate to new owner, then delete originals
+        const transferableMemories = fastify.context.db.prepare(`
+          SELECT id, memory_type, content, importance, embedding, metadata
+          FROM memories
+          WHERE user_id = ? AND companion_id = ? AND is_transferable = 1
+        `).all(fromUser, companionId) as any[];
+
+        for (const mem of transferableMemories) {
+          fastify.context.db.prepare(`
+            INSERT INTO memories
+              (id, user_id, companion_id, memory_type, content, importance,
+               is_transferable, embedding, metadata)
+            VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)
+          `).run(
+            `mem-${crypto.randomUUID()}`,
+            toUser, companionId,
+            mem.memory_type, mem.content, mem.importance,
+            mem.embedding, mem.metadata,
+          );
+        }
+
+        // c3. Delete ALL memories for old owner + companion (transferable originals + non-transferable)
+        const memResult = fastify.context.db.prepare(`
+          DELETE FROM memories
+          WHERE user_id = ? AND companion_id = ?
+        `).run(fromUser, companionId);
+
+        memoriesWiped = memResult.changes;
+
+        // c4. Delete companion souls (personality config)
+        fastify.context.db.prepare(`
+          DELETE FROM companion_souls
+          WHERE user_id = ? AND companion_id = ?
+        `).run(fromUser, companionId);
+
+        // c5. Delete companion customizations
+        fastify.context.db.prepare(`
+          DELETE FROM companion_customizations
+          WHERE user_id = ? AND companion_id = ?
+        `).run(fromUser, companionId);
+
+        fastify.log.info(
+          { conversationsDeleted: convResult.changes, memoriesWiped, transferableMemoriesMigrated: transferableMemories.length },
+          '[Rebind] Private data wiped',
+        );
+
+        // ── d. Ownership transfer ─────────────────────────────────────
+
+        // d1. Update nft_ownership
         fastify.context.db.prepare(`
           UPDATE nft_ownership
-          SET user_id = ?, owner_wallet = ?, transfer_count = transfer_count + 1
+          SET user_id = ?, transfer_count = transfer_count + 1
           WHERE mint_address = ?
-        `).run(toUserId, toWallet, mintAddress);
-      } else {
+        `).run(toUser, mintAddress);
+
+        // d2. Update user_companions
         fastify.context.db.prepare(`
-          UPDATE nft_ownership
-          SET owner_wallet = ?, transfer_count = transfer_count + 1
-          WHERE mint_address = ?
-        `).run(toWallet, mintAddress);
-      }
+          UPDATE user_companions
+          SET user_id = ?
+          WHERE user_id = ? AND companion_id = ?
+        `).run(toUser, fromUser, companionId);
+
+        // d3. Log transfer in nft_transfers
+        const transferId = `xfer-${crypto.randomUUID()}`;
+        const skillsJson = JSON.stringify(
+          portableSkills.map((s: any) => ({
+            skillId: s.skill_id,
+            level: s.skill_level,
+            xp: s.xp,
+            name: s.name,
+          })),
+        );
+
+        fastify.context.db.prepare(`
+          INSERT INTO nft_transfers
+            (id, nft_mint_address, companion_id, from_user_id, to_user_id,
+             skills_transferred, snapshot_id)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `).run(transferId, mintAddress, companionId, fromUser, toUser, skillsJson, snapshotId);
+
+        // ── e. Status update ──────────────────────────────────────────
+        fastify.context.db.prepare(`
+          UPDATE nft_rebindings
+          SET status = 'pending_onboarding', snapshot_id = ?, completed_at = ?
+          WHERE id = ?
+        `).run(snapshotId, Date.now(), rebinding.id);
+      });
+
+      // Execute the atomic transaction
+      runPipeline();
+
+      fastify.log.info(
+        { rebindingId: rebinding.id, snapshotId: snapshotId!, skillsTransferred, memoriesWiped },
+        '[Rebind] Migration pipeline complete',
+      );
+
+      // ── Fire-and-forget: pin snapshot to IPFS + anchor hash (K013) ──
+      (async () => {
+        try {
+          const snapshot = fastify.context.db.prepare(
+            `SELECT encrypted_payload, content_hash FROM companion_snapshots WHERE id = ?`,
+          ).get(snapshotId!) as { encrypted_payload: string; content_hash: string } | undefined;
+
+          if (snapshot) {
+            const pinResult = await pinJSON(JSON.parse(snapshot.encrypted_payload), snapshotId!);
+            if (pinResult) {
+              fastify.context.db.prepare(
+                `UPDATE companion_snapshots SET ipfs_cid = ? WHERE id = ?`,
+              ).run(pinResult.cid, snapshotId!);
+            }
+
+            const anchorResult = await anchorHash(snapshot.content_hash);
+            if (anchorResult) {
+              fastify.context.db.prepare(
+                `UPDATE companion_snapshots SET solana_tx_sig = ?, is_on_chain = 1 WHERE id = ?`,
+              ).run(anchorResult.txSig, snapshotId!);
+            }
+          }
+        } catch (err) {
+          fastify.log.warn({ err, snapshotId: snapshotId! }, '[Rebind] IPFS/chain anchor failed (non-blocking)');
+        }
+      })().catch(() => {});
 
       return {
         success: true,
-        newOwner: toWallet,
-        newUserId: toUserId ?? null,
-        onChainSignature,
-        migration: {
-          memoriesMigrated,
-          skillsMigrated: toUserId ? true : false,
-          soulMigrated: toUserId ? true : false,
-        },
+        rebindingId: rebinding.id,
+        snapshotId: snapshotId!,
+        skillsTransferred,
+        memoriesWiped,
       };
-    }
+    },
+  );
+
+  // ── GET /nft/rebind-status/:mintAddress ─────────────────────────────
+  // Returns the latest rebinding record for a given NFT mint address.
+  // Access-controlled: only from_user_id or to_user_id can query.
+  fastify.get<{ Params: NFTParams }>(
+    '/nft/rebind-status/:mintAddress',
+    async (request, reply) => {
+      const userId = (request.user as { userId: string }).userId;
+      const { mintAddress } = request.params;
+
+      const rebinding = fastify.context.db.prepare(`
+        SELECT id, nft_mint_address, companion_id, from_user_id, to_user_id,
+               status, created_at, completed_at
+        FROM nft_rebindings
+        WHERE nft_mint_address = ?
+        ORDER BY created_at DESC LIMIT 1
+      `).get(mintAddress) as {
+        id: string; nft_mint_address: string; companion_id: string;
+        from_user_id: string; to_user_id: string | null; status: string;
+        created_at: number; completed_at: number | null;
+      } | undefined;
+
+      if (!rebinding) {
+        reply.status(404);
+        return { error: 'No rebinding found for this NFT' };
+      }
+
+      // Access control: only involved parties can view rebinding status
+      if (rebinding.from_user_id !== userId && rebinding.to_user_id !== userId) {
+        reply.status(403);
+        return { error: 'Not authorized to view this rebinding' };
+      }
+
+      return {
+        rebindingId: rebinding.id,
+        status: rebinding.status,
+        companionId: rebinding.companion_id,
+        fromUserId: rebinding.from_user_id,
+        toUserId: rebinding.to_user_id,
+        createdAt: new Date(rebinding.created_at).toISOString(),
+        completedAt: rebinding.completed_at
+          ? new Date(rebinding.completed_at).toISOString()
+          : null,
+      };
+    },
+  );
+
+  // ── POST /nft/rebind-complete ─────────────────────────────────────────
+  // Called by the new owner to finalize onboarding after rebinding migration.
+  // Transitions status from pending_onboarding → complete.
+  fastify.post<{ Body: { mintAddress: string } }>(
+    '/nft/rebind-complete',
+    async (request, reply) => {
+      const userId = (request.user as { userId: string }).userId;
+      const { mintAddress } = request.body;
+
+      if (!mintAddress) {
+        reply.status(400);
+        return { error: 'mintAddress is required' };
+      }
+
+      const rebinding = fastify.context.db.prepare(`
+        SELECT id, to_user_id, status
+        FROM nft_rebindings
+        WHERE nft_mint_address = ? AND status = 'pending_onboarding'
+        ORDER BY created_at DESC LIMIT 1
+      `).get(mintAddress) as {
+        id: string; to_user_id: string | null; status: string;
+      } | undefined;
+
+      if (!rebinding) {
+        reply.status(404);
+        return { error: 'No rebinding pending onboarding for this NFT' };
+      }
+
+      if (rebinding.to_user_id !== userId) {
+        reply.status(403);
+        return { error: 'Only the new owner can complete rebinding' };
+      }
+
+      fastify.context.db.prepare(`
+        UPDATE nft_rebindings
+        SET status = 'complete', completed_at = ?
+        WHERE id = ?
+      `).run(Date.now(), rebinding.id);
+
+      fastify.log.info(
+        { rebindingId: rebinding.id, mintAddress, userId },
+        '[Rebind] Onboarding complete',
+      );
+
+      return { success: true };
+    },
+  );
+
+  // ── POST /nft/transfer (DEPRECATED) ─────────────────────────────────
+  // Old naive transfer had multiple bugs: moved ALL memories, no transaction,
+  // no snapshot. Replaced by the rebinding flow.
+  fastify.post<{ Body: { mintAddress: string; toWallet: string; toUserId?: string } }>(
+    '/nft/transfer',
+    async (_request, reply) => {
+      reply.status(410);
+      return {
+        error: 'Use /nft/rebind-checkout for NFT transfers',
+        deprecated: true,
+      };
+    },
   );
 };
 

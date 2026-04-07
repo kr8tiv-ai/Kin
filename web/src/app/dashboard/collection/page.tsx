@@ -10,6 +10,7 @@ import { motion } from 'framer-motion';
 import { useCollection, type CollectionItem } from '@/hooks/useCollection';
 import { useConversations } from '@/hooks/useConversations';
 import { useCompanions } from '@/hooks/useCompanions';
+import { useRebindingStatus } from '@/hooks/useRebinding';
 import { COMPANION_LIST, type CompanionData } from '@/lib/companions';
 import { CompanionViewer } from '@/components/3d/CompanionViewer';
 import { CollectionDetail } from '@/components/dashboard/CollectionDetail';
@@ -20,6 +21,42 @@ import { Skeleton } from '@/components/ui/Skeleton';
 
 const SOLANA_EXPLORER = 'https://explorer.solana.com/address';
 const SOLANA_CLUSTER = process.env.NEXT_PUBLIC_SOLANA_NETWORK === 'mainnet-beta' ? '' : '?cluster=devnet';
+
+/**
+ * Shows rebinding status badge for an owned companion NFT.
+ * Uses individual status hook — only renders when mintAddress exists.
+ */
+function RebindingBadge({ mintAddress }: { mintAddress: string }) {
+  const { rebinding } = useRebindingStatus(mintAddress);
+
+  if (!rebinding) return null;
+
+  if (rebinding.status === 'pending_onboarding') {
+    return (
+      <Badge color="gold">
+        ✨ Complete Setup
+      </Badge>
+    );
+  }
+
+  if (rebinding.status === 'complete') {
+    return (
+      <Badge color="cyan">
+        New! Rebound
+      </Badge>
+    );
+  }
+
+  if (rebinding.status === 'processing') {
+    return (
+      <Badge color="magenta">
+        Rebinding…
+      </Badge>
+    );
+  }
+
+  return null;
+}
 
 function CompanionCardInner({
   companion,
@@ -74,6 +111,11 @@ function CompanionCardInner({
         {isOwned && (
           <div className="absolute top-4 right-4">
             <Badge color="gold">Owned</Badge>
+          </div>
+        )}
+        {isOwned && nftMintAddress && (
+          <div className="absolute bottom-4 left-4">
+            <RebindingBadge mintAddress={nftMintAddress} />
           </div>
         )}
         {!isOwned && (
