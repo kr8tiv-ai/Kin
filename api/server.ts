@@ -260,9 +260,9 @@ export async function createServer(config: ApiConfig = {}) {
     creditDb,
     tunnelManager,
     logger: {
-      info: (msg, ctx) => fastify.log.info(ctx ?? {}, `[fleet] ${msg}`),
-      warn: (msg, ctx) => fastify.log.warn(ctx ?? {}, `[fleet] ${msg}`),
-      error: (msg, ctx) => fastify.log.error(ctx ?? {}, `[fleet] ${msg}`),
+      info: (msg: string, ctx?: Record<string, unknown>) => fastify.log.info(ctx ?? {}, `[fleet] ${msg}`),
+      warn: (msg: string, ctx?: Record<string, unknown>) => fastify.log.warn(ctx ?? {}, `[fleet] ${msg}`),
+      error: (msg: string, ctx?: Record<string, unknown>) => fastify.log.error(ctx ?? {}, `[fleet] ${msg}`),
     },
   });
 
@@ -273,9 +273,9 @@ export async function createServer(config: ApiConfig = {}) {
     fleetDb,
     port: frontierProxyPort,
     logger: {
-      info: (msg, ctx) => fastify.log.info(ctx ?? {}, `[frontier-proxy] ${msg}`),
-      warn: (msg, ctx) => fastify.log.warn(ctx ?? {}, `[frontier-proxy] ${msg}`),
-      error: (msg, ctx) => fastify.log.error(ctx ?? {}, `[frontier-proxy] ${msg}`),
+      info: (msg: string, ctx?: Record<string, unknown>) => fastify.log.info(ctx ?? {}, `[frontier-proxy] ${msg}`),
+      warn: (msg: string, ctx?: Record<string, unknown>) => fastify.log.warn(ctx ?? {}, `[frontier-proxy] ${msg}`),
+      error: (msg: string, ctx?: Record<string, unknown>) => fastify.log.error(ctx ?? {}, `[frontier-proxy] ${msg}`),
     },
   });
 
