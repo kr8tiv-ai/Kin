@@ -1,5 +1,19 @@
-import { FastifyPluginAsync } from 'fastify';
+/**
+ * Export Routes — Full-state archive export and legacy flat-JSON endpoints.
+ *
+ * GET /export/archive  — streams a versioned ZIP archive (v1 schema)
+ * GET /export/data     — (deprecated) flat JSON export
+ * GET /export/download — (deprecated) flat JSON download with Content-Disposition
+ *
+ * All routes are JWT-protected (registered under the protectedFastify scope).
+ *
+ * @module api/routes/export
+ */
 
+import { FastifyPluginAsync } from 'fastify';
+import { buildExportArchive } from '../lib/archive-builder.js';
+
+// Legacy flat-JSON shape (preserved for backward compatibility)
 export interface ExportData {
   user: {
     id: string;
@@ -49,9 +63,64 @@ export interface ExportData {
 }
 
 const exportRoutes: FastifyPluginAsync = async (fastify) => {
-  fastify.get('/export/data', async (request) => {
+  // ==========================================================================
+  // NEW: GET /export/archive — streaming ZIP with full-state data + manifest
+  // ==========================================================================
+
+  fastify.get('/export/archive', async (request, reply) => {
     const userId = (request.user as { userId: string }).userId;
-    
+    const db = fastify.context.db;
+
+    // Verify user exists
+    const user = db.prepare(`SELECT id FROM users WHERE id = ?`).get(userId) as
+      | { id: string }
+      | undefined;
+
+    if (!user) {
+      return reply.status(404).send({ error: 'User not found' });
+    }
+
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const filename = `kin-export-${userId}-${timestamp}.zip`;
+
+    request.log.info({ userId }, 'Export archive requested');
+
+    const { archive, finalized } = buildExportArchive({
+      db,
+      userId,
+      logger: {
+        info: (msg, ctx) => request.log.info(ctx ?? {}, msg),
+        warn: (msg, ctx) => request.log.warn(ctx ?? {}, msg),
+        error: (msg, ctx) => request.log.error(ctx ?? {}, msg),
+      },
+    });
+
+    reply.header('Content-Type', 'application/zip');
+    reply.header('Content-Disposition', `attachment; filename="${filename}"`);
+
+    // Stream the archive to the response
+    // Fastify supports sending a stream via reply.send()
+    reply.send(archive);
+
+    // Await finalization for logging (fire-and-forget — response is already streaming)
+    finalized.then(({ totalBytes }) => {
+      request.log.info({ userId, totalBytes, filename }, 'Export archive streamed');
+    }).catch((err) => {
+      request.log.error({ userId, error: err.message }, 'Export archive stream error');
+    });
+
+    return reply;
+  });
+
+  // ==========================================================================
+  // DEPRECATED: GET /export/data — flat JSON export (backward compatible)
+  // ==========================================================================
+
+  fastify.get('/export/data', async (request, reply) => {
+    const userId = (request.user as { userId: string }).userId;
+
+    reply.header('X-Deprecated', 'Use GET /export/archive for full-state export');
+
     const user = fastify.context.db.prepare(`
       SELECT id, first_name, last_name, tier, created_at FROM users WHERE id = ?
     `).get(userId) as any;
@@ -64,9 +133,11 @@ const exportRoutes: FastifyPluginAsync = async (fastify) => {
       SELECT id, companion_id, claimed_at FROM user_companions WHERE user_id = ?
     `).all(userId) as any;
 
-    const companionsList = fastify.context.db.prepare(`
-      SELECT id, name, type FROM companions WHERE id IN (${companions.map(() => '?').join(',')})
-    `).all(...companions.map((c: any) => c.companion_id)) as any;
+    const companionsList = companions.length > 0
+      ? fastify.context.db.prepare(
+          `SELECT id, name, type FROM companions WHERE id IN (${companions.map(() => '?').join(',')})`,
+        ).all(...companions.map((c: any) => c.companion_id)) as any
+      : [];
 
     const companionMap = new Map<string, any>(companionsList.map((c: any) => [c.id, c]));
 
@@ -142,9 +213,15 @@ const exportRoutes: FastifyPluginAsync = async (fastify) => {
     return exportData;
   });
 
+  // ==========================================================================
+  // DEPRECATED: GET /export/download — flat JSON file download
+  // ==========================================================================
+
   fastify.get('/export/download', async (request, reply) => {
     const userId = (request.user as { userId: string }).userId;
-    
+
+    reply.header('X-Deprecated', 'Use GET /export/archive for full-state export');
+
     const user = fastify.context.db.prepare(`SELECT id FROM users WHERE id = ?`).get(userId);
     if (!user) {
       return { error: 'User not found' };
@@ -157,10 +234,13 @@ const exportRoutes: FastifyPluginAsync = async (fastify) => {
     });
 
     const data = JSON.stringify(exportData.json(), null, 2);
-    
+
     reply.header('Content-Type', 'application/json');
-    reply.header('Content-Disposition', `attachment; filename="kin-export-${userId}-${Date.now()}.json"`);
-    
+    reply.header(
+      'Content-Disposition',
+      `attachment; filename="kin-export-${userId}-${Date.now()}.json"`,
+    );
+
     return data;
   });
 };
