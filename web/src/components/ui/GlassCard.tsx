@@ -7,6 +7,7 @@ interface GlassCardProps {
   className?: string;
   hover?: boolean;
   glow?: 'cyan' | 'magenta' | 'gold' | 'none';
+  onClick?: (e: React.MouseEvent) => void;
 }
 
 const glowShadows: Record<string, string> = {
@@ -21,6 +22,7 @@ export function GlassCard({
   className,
   hover = true,
   glow = 'none',
+  onClick,
 }: GlassCardProps) {
   return (
     <div
@@ -30,6 +32,7 @@ export function GlassCard({
         hover && glow !== 'none' && 'hover:scale-[1.02]',
         className,
       )}
+      onClick={onClick}
       style={
         hover
           ? ({

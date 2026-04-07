@@ -124,7 +124,7 @@ const skillsRoutes: FastifyPluginAsync = async (fastify) => {
     let sql = `
       SELECT
         s.id, s.name, s.display_name, s.description, s.category,
-        s.source_type, s.author, s.install_count, s.version,
+        s.source_type, s.author, s.install_count, s.version, s.triggers,
         CASE WHEN us.id IS NOT NULL THEN 1 ELSE 0 END AS is_installed,
         COALESCE(us.is_active, 0) AS is_active
       FROM skills s
@@ -159,6 +159,7 @@ const skillsRoutes: FastifyPluginAsync = async (fastify) => {
       author: r.author,
       installCount: r.install_count,
       version: r.version,
+      triggers: JSON.parse(r.triggers || '[]'),
       isInstalled: r.is_installed === 1,
       isActive: r.is_active === 1,
     }));
@@ -176,7 +177,7 @@ const skillsRoutes: FastifyPluginAsync = async (fastify) => {
         us.is_active,
         us.installed_at,
         s.id, s.name, s.display_name, s.description, s.category,
-        s.source_type, s.install_count, s.version
+        s.source_type, s.author, s.install_count, s.version, s.triggers
       FROM user_skills us
       JOIN skills s ON s.id = us.skill_id
       WHERE us.user_id = ?
@@ -190,8 +191,10 @@ const skillsRoutes: FastifyPluginAsync = async (fastify) => {
       description: r.description,
       category: r.category,
       sourceType: r.source_type,
+      author: r.author,
       installCount: r.install_count,
       version: r.version,
+      triggers: JSON.parse(r.triggers || '[]'),
       isInstalled: true,
       isActive: r.is_active === 1,
       companionId: r.companion_id,

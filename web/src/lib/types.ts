@@ -206,6 +206,9 @@ export interface Skill {
   description: string;
   category: string;
   sourceType: 'builtin' | 'companion' | 'custom';
+  author: string;
+  version: string;
+  triggers: string[];
   installCount: number;
   isInstalled: boolean;
   isActive: boolean;

@@ -12,6 +12,8 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { SkillDetailModal } from '@/components/skills/SkillDetailModal';
+import type { Skill } from '@/lib/types';
 
 // ---------------------------------------------------------------------------
 // Category config
@@ -72,6 +74,7 @@ export default function SkillsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [toggling, setToggling] = useState<string | null>(null);
+  const [selectedSkill, setSelectedSkill] = useState<Skill | null>(null);
 
   // Filter skills
   const filtered = skills.filter((s) => {
@@ -88,6 +91,12 @@ export default function SkillsPage() {
     setToggling(skillId);
     try {
       await toggleSkill(skillId, !currentActive);
+      // Update selected skill in modal so it reflects the new state
+      setSelectedSkill((prev) =>
+        prev && prev.id === skillId
+          ? { ...prev, isInstalled: true, isActive: !currentActive }
+          : prev,
+      );
     } finally {
       setToggling(null);
     }
@@ -180,7 +189,12 @@ export default function SkillsPage() {
       {/* Skills Grid */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {filtered.map((skill) => (
-          <GlassCard key={skill.id} className="flex flex-col p-5" glow="cyan">
+          <GlassCard
+            key={skill.id}
+            className="flex cursor-pointer flex-col p-5"
+            glow="cyan"
+            onClick={() => setSelectedSkill(skill)}
+          >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
                 <h3 className="truncate font-display text-base font-semibold text-white">
@@ -209,7 +223,10 @@ export default function SkillsPage() {
               <Button
                 size="sm"
                 variant={skill.isActive ? 'outline' : 'primary'}
-                onClick={() => handleToggle(skill.id, skill.isActive)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleToggle(skill.id, skill.isActive);
+                }}
                 disabled={toggling === skill.id}
               >
                 {toggling === skill.id
@@ -224,6 +241,15 @@ export default function SkillsPage() {
           </GlassCard>
         ))}
       </div>
+
+      {/* Skill Detail Modal */}
+      <SkillDetailModal
+        skill={selectedSkill}
+        open={!!selectedSkill}
+        onClose={() => setSelectedSkill(null)}
+        onToggle={handleToggle}
+        toggling={toggling === selectedSkill?.id}
+      />
 
       {filtered.length === 0 && (
         <div className="flex flex-col items-center justify-center py-16 text-center">
