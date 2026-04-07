@@ -13,6 +13,7 @@ import type { KinSkill, SkillContext, SkillResult } from './types.js';
 import type { SkillRouter } from './loader.js';
 import { getOllamaClient } from '../../inference/local-llm.js';
 import { resolveLocalModel } from '../../companions/config.js';
+import { getMediaManager } from '../../inference/media-manager.js';
 import {
   CODE_GEN_PROMPT,
   SOCIAL_CONTENT_PROMPT,
@@ -20,6 +21,8 @@ import {
   ARCHITECTURE_REVIEW_PROMPT,
   CREATIVE_WRITING_PROMPT,
   HABIT_COACHING_PROMPT,
+  VIDEO_GEN_PROMPT,
+  MUSIC_GEN_PROMPT,
 } from './ability-prompts.js';
 
 // ============================================================================
@@ -116,6 +119,126 @@ function createAbilityExecute(
 }
 
 // ============================================================================
+// Media Ability Executor Factory
+// ============================================================================
+
+/** Timeout for prompt enhancement via Ollama (30s). */
+const ENHANCE_TIMEOUT_MS = 30_000;
+
+/**
+ * Creates an execute function for media generation abilities.
+ *
+ * Unlike createAbilityExecute() which delegates entirely to Ollama,
+ * this factory uses Ollama only for prompt enhancement and delegates
+ * the actual generation to MediaManager (Replicate API).
+ *
+ * Flow: user prompt → Ollama enhancement → MediaManager generation → SkillResult
+ *
+ * Failure handling:
+ * - Replicate not configured → friendly error
+ * - Ollama enhancement fails/times out → falls back to raw prompt
+ * - Generation fails → surfaces MediaManager error
+ */
+function createMediaAbilityExecute(
+  companionId: string,
+  abilityName: string,
+  enhancementPrompt: string,
+  mediaType: 'video' | 'audio',
+): (ctx: SkillContext) => Promise<SkillResult> {
+  return async (ctx: SkillContext): Promise<SkillResult> => {
+    const manager = getMediaManager();
+
+    // Gate: Replicate must be configured
+    if (!manager.getHealth().configured) {
+      return {
+        content: `Media generation is not available — the Replicate API token is not configured. Ask the admin to set REPLICATE_API_TOKEN.`,
+        type: 'error',
+        metadata: { companion: companionId, ability: abilityName, error: 'replicate_not_configured' },
+      };
+    }
+
+    const startMs = Date.now();
+    let enhancedPrompt = ctx.message;
+    let wasEnhanced = false;
+
+    // Prompt enhancement via companion's local model
+    try {
+      const ollamaClient = getOllamaClient();
+      const model = await resolveLocalModel(companionId, ollamaClient);
+
+      const response = await Promise.race([
+        ollamaClient.chat({
+          model,
+          messages: [
+            { role: 'system', content: enhancementPrompt },
+            { role: 'user', content: ctx.message },
+          ],
+          stream: false,
+        }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('ENHANCE_TIMEOUT')), ENHANCE_TIMEOUT_MS),
+        ),
+      ]);
+
+      const content = response.message?.content;
+      if (typeof content === 'string' && content.trim().length > 0) {
+        enhancedPrompt = content.trim();
+        wasEnhanced = true;
+      } else {
+        console.warn(`[ability:${abilityName}] companion=${companionId} Ollama returned empty response, using raw prompt`);
+      }
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      console.warn(`[ability:${abilityName}] companion=${companionId} enhancement failed (${msg}), using raw prompt`);
+    }
+
+    // Generation via MediaManager
+    const genResult = mediaType === 'video'
+      ? await manager.generateVideo(enhancedPrompt, ctx.userId)
+      : await manager.generateMusic(enhancedPrompt, ctx.userId);
+
+    if (genResult.status !== 'completed') {
+      console.error(`[ability:${abilityName}] companion=${companionId} generation failed: ${genResult.error}`);
+      return {
+        content: `${mediaType === 'video' ? 'Video' : 'Music'} generation failed: ${genResult.error}`,
+        type: 'error',
+        metadata: {
+          companion: companionId,
+          ability: abilityName,
+          status: genResult.status,
+          error: genResult.error,
+          enhancedPrompt: wasEnhanced,
+        },
+      };
+    }
+
+    const totalMs = Date.now() - startMs;
+    const emoji = mediaType === 'video' ? '🎬' : '🎵';
+    const mimeType = mediaType === 'video' ? 'video/mp4' : 'audio/mpeg';
+
+    console.log(
+      `[ability:${abilityName}] companion=${companionId} completed in ${totalMs}ms enhanced=${wasEnhanced}`,
+    );
+
+    return {
+      content: `${emoji} ${mediaType === 'video' ? 'Video' : 'Music'} generated! (${(totalMs / 1000).toFixed(1)}s)`,
+      type: mediaType,
+      mediaUrl: genResult.result.url,
+      mediaMimeType: mimeType,
+      metadata: {
+        companion: companionId,
+        ability: abilityName,
+        generationId: genResult.result.id,
+        durationMs: genResult.result.durationMs,
+        totalDurationMs: totalMs,
+        enhancedPrompt: wasEnhanced,
+        mimeType,
+      },
+    };
+  };
+}
+
+// ============================================================================
 // Companion Abilities Registry
 // ============================================================================
 
@@ -193,6 +316,36 @@ export const habitCoachingAbility: CompanionAbility = {
 };
 
 // ============================================================================
+// Video Generation — Vortex, Mischief, Aether (creative companions)
+// ============================================================================
+
+export const videoGenAbility: CompanionAbility = {
+  name: 'video-gen',
+  description: 'Generate videos from text descriptions using Replicate',
+  triggers: ['generate.*video', 'create.*video', 'make.*video', 'video.*for'],
+  companionIds: ['vortex', 'mischief', 'aether'],
+  requiresLocalModel: true,
+  isActive: true,
+  systemPrompt: VIDEO_GEN_PROMPT,
+  execute: createMediaAbilityExecute('vortex', 'video-gen', VIDEO_GEN_PROMPT, 'video'),
+};
+
+// ============================================================================
+// Music Generation — Aether, Mischief
+// ============================================================================
+
+export const musicGenAbility: CompanionAbility = {
+  name: 'music-gen',
+  description: 'Generate music from text descriptions using Replicate',
+  triggers: ['generate.*music', 'create.*song', 'make.*music', 'compose.*music'],
+  companionIds: ['aether', 'mischief'],
+  requiresLocalModel: true,
+  isActive: true,
+  systemPrompt: MUSIC_GEN_PROMPT,
+  execute: createMediaAbilityExecute('aether', 'music-gen', MUSIC_GEN_PROMPT, 'audio'),
+};
+
+// ============================================================================
 // All Companion Abilities
 // ============================================================================
 
@@ -203,6 +356,8 @@ export const companionAbilities: CompanionAbility[] = [
   architectureReviewAbility,
   creativeWritingAbility,
   habitCoachingAbility,
+  videoGenAbility,
+  musicGenAbility,
 ];
 
 // ============================================================================

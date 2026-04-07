@@ -14,6 +14,7 @@ import { browserSkill } from './browser.js';
 import { emailSkill } from './email.js';
 import { scheduleSkill } from './schedule.js';
 import { pipelineSkill } from './pipeline.js';
+import { videoGenSkill, musicGenSkill } from './media.js';
 
 export const builtinSkills: KinSkill[] = [
   weatherSkill,
@@ -24,6 +25,8 @@ export const builtinSkills: KinSkill[] = [
   emailSkill,
   scheduleSkill,
   pipelineSkill,
+  videoGenSkill,
+  musicGenSkill,
 ];
 
 export { weatherSkill } from './weather.js';
@@ -34,5 +37,6 @@ export { browserSkill } from './browser.js';
 export { emailSkill } from './email.js';
 export { scheduleSkill } from './schedule.js';
 export { pipelineSkill } from './pipeline.js';
+export { videoGenSkill, musicGenSkill } from './media.js';
 
 export default builtinSkills;
