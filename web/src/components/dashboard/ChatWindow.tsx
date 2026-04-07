@@ -12,9 +12,9 @@ import { GlassCard } from '@/components/ui/GlassCard';
 import { ChatMarkdown } from '@/components/dashboard/ChatMarkdown';
 import { useChat, type ChatMessage } from '@/hooks/useChat';
 import { useTTS } from '@/hooks/useTTS';
+import { useVoiceSession, type VoiceSessionState } from '@/hooks/useVoiceSession';
 import { COMPANIONS, type CompanionData } from '@/lib/companions';
 import { cn } from '@/lib/utils';
-import { kinApi } from '@/lib/api';
 
 // ============================================================================
 // Quick-reply suggestions per companion
@@ -83,7 +83,7 @@ interface ChatWindowProps {
 
 export function ChatWindow({ companionId, className }: ChatWindowProps) {
   const companion: CompanionData = COMPANIONS[companionId] ?? COMPANIONS['cipher']!;
-  const { messages, isLoading, isStreaming, error, sendMessage, retryLastMessage, clearMessages, historyLoading } = useChat({
+  const { messages, isLoading, isStreaming, error, sendMessage, retryLastMessage, clearMessages, historyLoading, addMessage } = useChat({
     companionId,
   });
   const tts = useTTS();
@@ -91,10 +91,33 @@ export function ChatWindow({ companionId, className }: ChatWindowProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [newestAssistantId, setNewestAssistantId] = useState<string | null>(null);
-  const [isRecording, setIsRecording] = useState(false);
-  const [isTranscribing, setIsTranscribing] = useState(false);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
+  const voiceErrorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [wakeWordEnabled, setWakeWordEnabled] = useState(false);
+
+  // ── Voice session ───────────────────────────────────────────────────
+  const voiceSession = useVoiceSession({
+    companionId,
+    onTranscription: (text) => {
+      addMessage('user', text);
+    },
+    onResponse: (text) => {
+      addMessage('assistant', text);
+    },
+    onError: (msg) => {
+      // Show error briefly, then auto-dismiss
+      setVoiceError(msg);
+      if (voiceErrorTimerRef.current) clearTimeout(voiceErrorTimerRef.current);
+      voiceErrorTimerRef.current = setTimeout(() => setVoiceError(null), 5000);
+    },
+  });
+
+  // Clean up error timer on unmount
+  useEffect(() => {
+    return () => {
+      if (voiceErrorTimerRef.current) clearTimeout(voiceErrorTimerRef.current);
+    };
+  }, []);
 
   // Track the newest assistant message for typewriter effect
   useEffect(() => {
@@ -134,63 +157,37 @@ export function ChatWindow({ companionId, className }: ChatWindowProps) {
     [sendMessage],
   );
 
-  const handleVoiceToggle = useCallback(async () => {
-    if (isRecording) {
-      // Stop recording
-      mediaRecorderRef.current?.stop();
-      setIsRecording(false);
-      return;
+  // ── Voice button handler ──────────────────────────────────────────────
+  const handleVoiceToggle = useCallback(() => {
+    if (voiceSession.isActive) {
+      if (voiceSession.state === 'recording') {
+        // Stop recording (push-to-talk release)
+        voiceSession.toggleRecording();
+      } else {
+        // Stop the entire voice session
+        voiceSession.stopSession();
+      }
+    } else {
+      if (wakeWordEnabled && voiceSession.wakeWordAvailable) {
+        // Start wake-word listening session
+        voiceSession.startSession();
+      } else {
+        // Push-to-talk: toggle recording directly
+        voiceSession.toggleRecording();
+      }
     }
+  }, [voiceSession, wakeWordEnabled]);
 
-    // Start recording
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) audioChunksRef.current.push(event.data);
-      };
-
-      mediaRecorder.onstop = async () => {
-        stream.getTracks().forEach((t) => t.stop());
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        if (audioBlob.size < 1000) return; // Too short
-
-        setIsTranscribing(true);
-        try {
-          // Send to transcription endpoint — falls back to text input on error
-          const formData = new FormData();
-          formData.append('audio', audioBlob, 'voice.webm');
-          formData.append('companionId', companionId);
-
-          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/chat/voice`, {
-            method: 'POST',
-            body: formData,
-            credentials: 'include',
-          });
-
-          if (res.ok) {
-            const data = await res.json();
-            if (data.transcription) {
-              // Send transcribed text through normal chat flow
-              await sendMessage(data.transcription);
-            }
-          }
-        } catch (err) {
-          console.error('Voice transcription failed:', err);
-        } finally {
-          setIsTranscribing(false);
-        }
-      };
-
-      mediaRecorder.start();
-      setIsRecording(true);
-    } catch {
-      // Microphone permission denied — silently ignore
+  // ── Wake word toggle handler ────────────────────────────────────────
+  const handleWakeWordToggle = useCallback(() => {
+    const next = !wakeWordEnabled;
+    setWakeWordEnabled(next);
+    if (next && voiceSession.wakeWordAvailable) {
+      voiceSession.startSession();
+    } else if (!next && voiceSession.state === 'listening') {
+      voiceSession.stopSession();
     }
-  }, [isRecording, companionId, sendMessage]);
+  }, [wakeWordEnabled, voiceSession]);
 
   const quickReplies = QUICK_REPLIES[companionId] ?? QUICK_REPLIES['cipher']!;
   const showQuickReplies = messages.length === 0 && !isLoading;
@@ -353,6 +350,24 @@ export function ChatWindow({ companionId, className }: ChatWindowProps) {
           </motion.div>
         )}
 
+        {/* Voice error toast */}
+        {voiceError && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 4 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 4 }}
+            className="rounded-lg bg-magenta/10 border border-magenta/20 px-4 py-2 text-xs text-magenta flex items-center gap-2"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <span>{voiceError}</span>
+            <button type="button" onClick={() => setVoiceError(null)} className="ml-auto text-magenta/60 hover:text-magenta">✕</button>
+          </motion.div>
+        )}
+
         <div ref={messagesEndRef} />
       </div>
 
@@ -361,42 +376,66 @@ export function ChatWindow({ companionId, className }: ChatWindowProps) {
         onSubmit={handleSubmit}
         className="border-t border-white/10 px-4 py-3"
       >
+        {/* Voice status bar — shown when voice session is active */}
+        {voiceSession.isActive && (
+          <div className="flex items-center gap-2 mb-2 px-1">
+            <VoiceStateIndicator state={voiceSession.state} companionName={companion.name} />
+            <button
+              type="button"
+              onClick={() => voiceSession.stopSession()}
+              className="ml-auto rounded-md border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] text-white/40 hover:bg-white/10 hover:text-white/60 transition-colors"
+            >
+              End voice
+            </button>
+          </div>
+        )}
+
         <div className="flex gap-2">
           {/* Voice button */}
           <button
             type="button"
             onClick={handleVoiceToggle}
-            disabled={isLoading || isTranscribing}
-            aria-label={isRecording ? 'Stop recording' : 'Voice message'}
+            disabled={isLoading || voiceSession.state === 'processing'}
+            aria-label={voiceButtonAriaLabel(voiceSession.state)}
+            title={voiceButtonTooltip(voiceSession.state, wakeWordEnabled)}
             className={cn(
               'rounded-lg border p-2.5 text-sm transition-all duration-200 min-w-[44px] min-h-[44px] flex items-center justify-center',
-              isRecording
-                ? 'bg-magenta/20 border-magenta/40 text-magenta animate-pulse'
-                : 'bg-white/5 border-white/10 text-white/40 hover:bg-white/10 hover:text-white/60',
-              (isLoading || isTranscribing) && 'opacity-30 cursor-not-allowed',
+              voiceButtonStyles(voiceSession.state),
+              (isLoading || voiceSession.state === 'processing') && 'opacity-30 cursor-not-allowed',
             )}
           >
-            {isTranscribing ? (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="animate-spin">
-                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
-              </svg>
-            ) : (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
-                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-                <line x1="12" y1="19" x2="12" y2="23" />
-                <line x1="8" y1="23" x2="16" y2="23" />
-              </svg>
-            )}
+            <VoiceButtonIcon state={voiceSession.state} />
           </button>
+
+          {/* Wake word toggle — only shown when available */}
+          {voiceSession.wakeWordAvailable && (
+            <button
+              type="button"
+              onClick={handleWakeWordToggle}
+              disabled={voiceSession.state === 'recording' || voiceSession.state === 'processing'}
+              aria-label={wakeWordEnabled ? 'Disable wake word' : 'Enable wake word'}
+              title={wakeWordEnabled ? 'Wake word active — listening hands-free' : 'Enable wake word for hands-free'}
+              className={cn(
+                'rounded-lg border p-2 text-xs transition-all duration-200 min-w-[36px] min-h-[44px] flex items-center justify-center',
+                wakeWordEnabled
+                  ? 'bg-cyan/10 border-cyan/30 text-cyan'
+                  : 'bg-white/5 border-white/10 text-white/30 hover:bg-white/10 hover:text-white/50',
+              )}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            </button>
+          )}
 
           <input
             ref={inputRef}
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={isRecording ? 'Listening...' : `Message ${companion.name}...`}
-            disabled={isLoading || isRecording}
+            placeholder={voiceInputPlaceholder(voiceSession.state, companion.name)}
+            disabled={isLoading || voiceSession.state === 'recording' || voiceSession.state === 'processing'}
             maxLength={4000}
             className="flex-1 rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-cyan/50 focus:outline-none focus:ring-1 focus:ring-cyan/50 disabled:opacity-50 transition-colors"
           />
@@ -414,6 +453,124 @@ export function ChatWindow({ companionId, className }: ChatWindowProps) {
         </div>
       </form>
     </div>
+  );
+}
+
+// ============================================================================
+// Voice UI helpers — pure functions for voice session state → UI mapping
+// ============================================================================
+
+function voiceButtonAriaLabel(state: VoiceSessionState): string {
+  switch (state) {
+    case 'recording': return 'Stop recording';
+    case 'listening': return 'Recording — wake word active';
+    case 'processing': return 'Processing voice...';
+    case 'playing': return 'Playing response';
+    default: return 'Voice message';
+  }
+}
+
+function voiceButtonTooltip(state: VoiceSessionState, wakeWordEnabled: boolean): string {
+  switch (state) {
+    case 'recording': return 'Click to stop recording';
+    case 'listening': return 'Listening for wake word...';
+    case 'processing': return 'Processing your voice...';
+    case 'playing': return 'Playing companion response';
+    default: return wakeWordEnabled ? 'Start voice session' : 'Push to talk';
+  }
+}
+
+function voiceButtonStyles(state: VoiceSessionState): string {
+  switch (state) {
+    case 'recording':
+      return 'bg-magenta/20 border-magenta/40 text-magenta animate-pulse';
+    case 'listening':
+      return 'bg-cyan/15 border-cyan/30 text-cyan animate-pulse';
+    case 'processing':
+      return 'bg-gold/15 border-gold/30 text-gold';
+    case 'playing':
+      return 'bg-cyan/10 border-cyan/20 text-cyan';
+    default:
+      return 'bg-white/5 border-white/10 text-white/40 hover:bg-white/10 hover:text-white/60';
+  }
+}
+
+function voiceInputPlaceholder(state: VoiceSessionState, companionName: string): string {
+  switch (state) {
+    case 'recording': return 'Listening...';
+    case 'listening': return 'Waiting for wake word...';
+    case 'processing': return 'Processing...';
+    case 'playing': return `${companionName} is speaking...`;
+    default: return `Message ${companionName}...`;
+  }
+}
+
+/** Inline SVG icon that reflects the current voice state. */
+function VoiceButtonIcon({ state }: { state: VoiceSessionState }) {
+  switch (state) {
+    case 'recording':
+      // Red pulsing circle
+      return (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+          <circle cx="12" cy="12" r="8" />
+        </svg>
+      );
+    case 'listening':
+      // Sound-wave / ear icon
+      return (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+          <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+        </svg>
+      );
+    case 'processing':
+      // Spinner
+      return (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="animate-spin">
+          <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+        </svg>
+      );
+    case 'playing':
+      // Speaker icon with animated waves
+      return (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+          <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+        </svg>
+      );
+    default:
+      // Default microphone icon
+      return (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+          <line x1="12" y1="19" x2="12" y2="23" />
+          <line x1="8" y1="23" x2="16" y2="23" />
+        </svg>
+      );
+  }
+}
+
+/** Status bar showing the active voice session state. */
+function VoiceStateIndicator({ state, companionName }: { state: VoiceSessionState; companionName: string }) {
+  const labels: Record<VoiceSessionState, string> = {
+    idle: '',
+    listening: '🎙️ Listening for wake word...',
+    recording: '🔴 Recording — speak now',
+    processing: '⏳ Processing your voice...',
+    playing: `🔊 ${companionName} is responding...`,
+  };
+
+  return (
+    <motion.span
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="text-xs text-white/50 font-mono"
+    >
+      {labels[state]}
+    </motion.span>
   );
 }
 

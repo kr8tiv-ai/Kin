@@ -57,6 +57,10 @@ interface UseChatResult {
   retryLastMessage: () => Promise<void>;
   /** Clear messages and start fresh */
   clearMessages: () => void;
+  /** Insert a message into the chat display without triggering the API.
+   *  Used by voice session to show transcription/response that already went
+   *  through a separate inference pipeline. */
+  addMessage: (role: 'user' | 'assistant', content: string) => void;
 }
 
 let messageCounter = 0;
@@ -369,6 +373,20 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
     storeConversationId(companionIdRef.current, null);
   }, []);
 
+  // ── Insert a message without triggering the API ─────────────────────
+  const addMessage = useCallback(
+    (role: 'user' | 'assistant', content: string) => {
+      const msg: ChatMessage = {
+        id: generateId(),
+        role,
+        content,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, msg]);
+    },
+    [],
+  );
+
   return {
     messages,
     isLoading,
@@ -379,5 +397,6 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
     sendMessage,
     retryLastMessage,
     clearMessages,
+    addMessage,
   };
 }
