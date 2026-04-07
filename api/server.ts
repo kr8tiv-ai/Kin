@@ -61,6 +61,11 @@ import dmSecurityRoutes from './routes/dm-security.js';
 import gmailAuthRoutes from './routes/gmail-auth.js';
 import schedulerRoutes, { webhookRoutes } from './routes/scheduler.js';
 import mediaRoutes from './routes/media.js';
+import missionControlRoutes from './routes/mission-control.js';
+
+// Mission Control imports
+import { initMissionControlClient, getMissionControlClient } from '../inference/mission-control.js';
+import { getMetricsCollector } from '../inference/metrics.js';
 
 // Fleet imports
 import { FleetDb } from '../fleet/db.js';
@@ -421,6 +426,56 @@ export async function createServer(config: ApiConfig = {}) {
     fastify.log.error(`[pipeline] Hydration failed: ${msg}`);
   }
 
+  // --------------------------------------------------------------------------
+  // Mission Control auto-connect (opt-in via MC_URL + MC_API_KEY env vars)
+  // --------------------------------------------------------------------------
+
+  if (process.env.MC_URL) {
+    try {
+      const mcClient = initMissionControlClient({
+        mcUrl: process.env.MC_URL,
+        mcApiKey: process.env.MC_API_KEY,
+        getPrivacyMode: () => {
+          try {
+            // Use first user's preference in dev; production should use per-request context
+            const row = db.prepare(
+              `SELECT privacy_mode FROM user_preferences LIMIT 1`,
+            ).get() as { privacy_mode?: string } | undefined;
+            return row?.privacy_mode ?? 'private';
+          } catch {
+            return 'private';
+          }
+        },
+      });
+
+      // Wire MetricsCollector → MC telemetry
+      const metrics = getMetricsCollector();
+      metrics.subscribe(mcClient.onMetricEvent.bind(mcClient));
+
+      // Load companions from DB and register as MC agents
+      const companions = db.prepare(
+        `SELECT id, name, specialization FROM companions`,
+      ).all() as Array<{ id: string; name: string; specialization: string }>;
+
+      const companionAgents = companions.map((c) => ({
+        id: c.id,
+        name: c.name,
+        role: c.specialization,
+      }));
+
+      // Connect is async/fire-and-forget — don't block server startup
+      mcClient.connect(companionAgents).catch((err) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        fastify.log.warn(`[mission-control] Auto-connect failed: ${msg}`);
+      });
+
+      fastify.log.info('[mission-control] Auto-connect initiated (MC_URL configured)');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      fastify.log.warn(`[mission-control] Auto-connect setup failed: ${msg}`);
+    }
+  }
+
   // Store context
   fastify.decorate('context', {
     db,
@@ -540,6 +595,7 @@ export async function createServer(config: ApiConfig = {}) {
     await protectedFastify.register(pipelineRoutes, { pipelineManager });
     await protectedFastify.register(approvalRoutes, { approvalManager });
     await protectedFastify.register(mediaRoutes);
+    await protectedFastify.register(missionControlRoutes);
   });
 
   // Webhook ingestion routes (HMAC-authenticated, no JWT)
@@ -656,6 +712,7 @@ export async function createServer(config: ApiConfig = {}) {
   fastify.addHook('onClose', async () => {
     schedulerManager.shutdown();
     pipelineManager.shutdown();
+    getMissionControlClient().disconnect();
     for (const handler of closeHandlers) {
       await handler();
     }

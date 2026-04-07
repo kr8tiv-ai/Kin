@@ -405,7 +405,8 @@ export class MissionControlClient {
             timestamp: m.timestamp,
           };
         }
-        return { type: event.type, timestamp: new Date().toISOString(), ...event };
+        const { type, ...rest } = event;
+        return { type, timestamp: new Date().toISOString(), ...rest };
       });
 
       await this.mcFetch('/api/telemetry/ingest', {
