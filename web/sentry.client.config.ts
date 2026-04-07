@@ -1,5 +1,6 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 try {
-  const Sentry = await import('@sentry/nextjs');
+  const Sentry = require('@sentry/nextjs');
   if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
     Sentry.init({
       dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
