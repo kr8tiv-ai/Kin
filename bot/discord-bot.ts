@@ -12,6 +12,7 @@
 import {
   Client,
   GatewayIntentBits,
+  Partials,
   REST,
   Routes,
   SlashCommandBuilder,
@@ -37,6 +38,10 @@ import {
   denySender,
   getPendingCodes,
 } from './utils/dm-security.js';
+import { detectLanguage, getLanguagePromptAddition } from './utils/language.js';
+import { createSkillRouter, registerCompanionAbilities } from './skills/index.js';
+import type { SkillContext } from './skills/index.js';
+import { recordActivity } from './handlers/progress.js';
 
 // ============================================================================
 // Types
@@ -94,6 +99,13 @@ function getSession(userId: string): UserSession {
   session.lastActivity = new Date();
   return session;
 }
+
+// ============================================================================
+// Skill Router (shared singleton, mirrors WhatsApp/Telegram pattern)
+// ============================================================================
+
+const skillRouter = createSkillRouter();
+registerCompanionAbilities(skillRouter);
 
 // ============================================================================
 // Slash Command Definitions
@@ -223,10 +235,36 @@ async function runInferencePipeline(
     return `You've been chatting a lot! Take a breather -- I'll be ready again in ~${mins} min.`;
   }
 
-  // Get conversation history
   const companionId = session.companionId;
+
+  // Check if message triggers a skill (before LLM inference)
+  const matchedSkill = skillRouter.matchSkill(message);
+  if (matchedSkill) {
+    const history = await conversationStore.getHistory(userId, 20, companionId);
+    const skillCtx: SkillContext = {
+      message,
+      userId,
+      userName: userName || 'Friend',
+      conversationHistory: history.map((m) => ({ role: m.role, content: m.content })),
+      env: process.env as Record<string, string | undefined>,
+    };
+    const result = await skillRouter.executeSkill(matchedSkill.name, skillCtx);
+    if (result && result.type !== 'error') {
+      await conversationStore.addMessage(userId, 'user', message, companionId);
+      await conversationStore.addMessage(userId, 'assistant', result.content, companionId);
+      return result.content;
+    }
+    // If skill returned error, fall through to LLM
+  }
+
+  // Get conversation history
   const history = await conversationStore.getHistory(userId, 20, companionId);
 
+  // Detect language for multi-language support
+  const lang = detectLanguage(message);
+  const langAddition = getLanguagePromptAddition(lang);
+
+  // Build system prompt with active companion personality + language addition
   const systemPrompt = buildCompanionPrompt(companionId, {
     userName,
     taskContext: { type: 'chat' },
@@ -235,7 +273,7 @@ async function runInferencePipeline(
       hour: 'numeric',
       minute: 'numeric',
     }),
-  });
+  }) + langAddition;
 
   const messages = [
     { role: 'system' as const, content: systemPrompt },
@@ -295,6 +333,9 @@ async function handleChatCommand(
   const userId = interaction.user.id;
   const userName = interaction.user.displayName ?? interaction.user.username;
   const session = getSession(userId);
+
+  // Track activity for progress/gamification (fire-and-forget per K013)
+  recordActivity(userId);
 
   try {
     const response = await runInferencePipeline(userId, userName, message, session, fallback);
@@ -574,9 +615,14 @@ async function handleMessage(
   const userName = message.author.displayName ?? message.author.username;
   const session = getSession(userId);
 
-  // Show typing indicator
+  // Track activity for progress/gamification (fire-and-forget per K013)
+  recordActivity(userId);
+
+  // Show typing indicator (PartialGroupDMChannel lacks sendTyping — guard it)
   try {
-    await message.channel.sendTyping();
+    if ('sendTyping' in message.channel) {
+      await message.channel.sendTyping();
+    }
   } catch {
     // Non-critical -- continue without typing indicator
   }
@@ -585,6 +631,21 @@ async function handleMessage(
     const response = await runInferencePipeline(userId, userName, content, session, fallback);
     const chunks = splitMessage(response);
 
+    // Guild @mentions: respond in a thread to avoid channel noise
+    if (!isDM) {
+      try {
+        const thread = await message.startThread({ name: `KIN: ${userName}` });
+        for (const chunk of chunks) {
+          await thread.send(chunk);
+        }
+        return;
+      } catch (threadErr) {
+        // Thread creation failed (permissions, etc.) — fall back to regular reply
+        console.warn('[discord] Thread creation failed, falling back to reply:', threadErr);
+      }
+    }
+
+    // DMs or thread-creation fallback: reply directly
     for (const chunk of chunks) {
       await message.reply(chunk);
     }
@@ -630,6 +691,7 @@ export function createDiscordBot(config: DiscordBotConfig) {
       GatewayIntentBits.DirectMessages,
       GatewayIntentBits.MessageContent,
     ],
+    partials: [Partials.Channel, Partials.Message],
   });
 
   // Initialize fallback handler -- auto-detect best available provider
@@ -777,3 +839,33 @@ if (isDirectRun) {
 }
 
 export default createDiscordBot;
+
+// ============================================================================
+// Named Exports for Testability (K010)
+// ============================================================================
+
+export {
+  // Command handlers
+  handleChatCommand,
+  handleMessage,
+  handleCompanionCommand,
+  handleStatusCommand,
+  handleApproveCommand,
+  handleDenyCommand,
+  handlePendingCommand,
+  // Core pipeline
+  runInferencePipeline,
+  // Session management
+  getSession,
+  sessions,
+  // Helpers
+  splitMessage,
+  randomErrorMessage,
+  // Constants & data
+  CIPHER_ERROR_MESSAGES,
+  slashCommands,
+  // Skill router instance
+  skillRouter,
+};
+
+export type { UserSession, DiscordBotConfig };

@@ -49,63 +49,6 @@ declare module 'bs58' {
   export default bs58;
 }
 
-declare module 'discord.js' {
-  export class Client {
-    constructor(options: any);
-    user: any;
-    guilds: any;
-    login(token: string): Promise<string>;
-    on(event: string, listener: (...args: any[]) => void): this;
-    once(event: string, listener: (...args: any[]) => void): this;
-    destroy(): Promise<void>;
-  }
-  export class REST {
-    constructor(options?: any);
-    setToken(token: string): this;
-    put(route: string, options?: any): Promise<any>;
-  }
-  export class Routes {
-    static applicationCommands(id: string): string;
-  }
-  export class SlashCommandBuilder {
-    setName(name: string): this;
-    setDescription(desc: string): this;
-    addStringOption(fn: (option: any) => any): this;
-    addBooleanOption(fn: (option: any) => any): this;
-    toJSON(): any;
-  }
-  export class EmbedBuilder {
-    setTitle(title: string): this;
-    setDescription(desc: string): this;
-    setColor(color: number): this;
-    addFields(...fields: any[]): this;
-    setFooter(footer: any): this;
-    setTimestamp(): this;
-  }
-  export class ActionRowBuilder<T = any> {
-    addComponents(...components: any[]): this;
-  }
-  export class ButtonBuilder {
-    setCustomId(id: string): this;
-    setLabel(label: string): this;
-    setStyle(style: any): this;
-    setEmoji(emoji: string): this;
-  }
-  export const ButtonStyle: Record<string, number>;
-  export const GatewayIntentBits: Record<string, number>;
-  export const Events: {
-    readonly ClientReady: string;
-    readonly InteractionCreate: string;
-    readonly MessageCreate: string;
-    readonly Warn: string;
-    readonly Error: string;
-  };
-  export const Partials: Record<string, number>;
-  export const ChannelType: Record<string, number>;
-  export type Interaction = any;
-  export type Message = any;
-  export type ChatInputCommandInteraction = any;
-}
 
 
 
