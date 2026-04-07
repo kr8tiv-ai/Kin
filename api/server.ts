@@ -56,6 +56,7 @@ import distillRoutes from './routes/distill.js';
 import retrainRoutes from './routes/retrain.js';
 import advantageRoutes from './routes/advantage.js';
 import dmSecurityRoutes from './routes/dm-security.js';
+import gmailAuthRoutes from './routes/gmail-auth.js';
 
 // Fleet imports
 import { FleetDb } from '../fleet/db.js';
@@ -369,6 +370,7 @@ export async function createServer(config: ApiConfig = {}) {
     await protectedFastify.register(retrainRoutes);
     await protectedFastify.register(advantageRoutes);
     await protectedFastify.register(dmSecurityRoutes);
+    await protectedFastify.register(gmailAuthRoutes);
   });
 
   // ==========================================================================

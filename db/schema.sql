@@ -632,6 +632,27 @@ CREATE INDEX IF NOT EXISTS idx_companion_souls_user ON companion_souls(user_id);
 CREATE INDEX IF NOT EXISTS idx_companion_souls_companion ON companion_souls(companion_id);
 
 -- ============================================================================
+-- OAuth Tokens (encrypted, per-user, per-provider)
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS oauth_tokens (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  provider TEXT NOT NULL,                  -- e.g. 'gmail'
+  encrypted_refresh_token TEXT NOT NULL,   -- AES-256-GCM ciphertext
+  encrypted_access_token TEXT,             -- AES-256-GCM ciphertext (nullable, short-lived)
+  token_expiry INTEGER,                    -- epoch ms when access token expires
+  scopes TEXT NOT NULL,                    -- space-separated OAuth scopes
+  email TEXT,                              -- provider account email
+  created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000),
+  updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000),
+  UNIQUE(user_id, provider)
+);
+
+CREATE INDEX IF NOT EXISTS idx_oauth_tokens_user ON oauth_tokens(user_id);
+CREATE INDEX IF NOT EXISTS idx_oauth_tokens_provider ON oauth_tokens(provider);
+
+-- ============================================================================
 -- Safe Migrations — add columns to existing tables without breaking anything.
 -- Each ALTER TABLE is wrapped in a sub-statement; SQLite silently ignores
 -- "duplicate column name" errors when using CREATE TABLE IF NOT EXISTS but

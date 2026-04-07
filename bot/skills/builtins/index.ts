@@ -11,6 +11,7 @@ import { calculatorSkill } from './calculator.js';
 import { reminderSkill } from './reminder.js';
 import { webSearchSkill } from './web-search.js';
 import { browserSkill } from './browser.js';
+import { emailSkill } from './email.js';
 
 export const builtinSkills: KinSkill[] = [
   weatherSkill,
@@ -18,6 +19,7 @@ export const builtinSkills: KinSkill[] = [
   reminderSkill,
   webSearchSkill,
   browserSkill,
+  emailSkill,
 ];
 
 export { weatherSkill } from './weather.js';
@@ -25,5 +27,6 @@ export { calculatorSkill } from './calculator.js';
 export { reminderSkill } from './reminder.js';
 export { webSearchSkill } from './web-search.js';
 export { browserSkill } from './browser.js';
+export { emailSkill } from './email.js';
 
 export default builtinSkills;

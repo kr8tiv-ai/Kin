@@ -7,8 +7,8 @@
  * All checks run in-process against an in-memory SQLite database.
  */
 
-import { createServer } from '../api/server.js';
-import { isBetterSqliteNativeLoadError } from './smoke-errors.js';
+import type { FastifyInstance } from 'fastify';
+import { isBetterSqliteNativeLoadError, isOptionalDependencyError } from './smoke-errors.js';
 
 // ============================================================================
 // Types
@@ -52,8 +52,9 @@ async function main() {
   // Note: dev-login requires environment='development' in auth.ts.
   // We use 'development' here so all test endpoints are available.
   // ---------------------------------------------------------------------------
-  let server: Awaited<ReturnType<typeof createServer>>;
+  let server: FastifyInstance;
   try {
+    const { createServer } = await import('../api/server.js');
     server = await createServer({
       environment: 'development',
       databasePath: ':memory:',
@@ -65,6 +66,13 @@ async function main() {
     if (isBetterSqliteNativeLoadError(err)) {
       console.warn('  [SKIP] better-sqlite3 native module failed to load in this runtime.');
       console.warn('         Rebuild better-sqlite3 (or switch to a supported Node/platform) to run full smoke checks.');
+      process.exit(0);
+    }
+
+    if (isOptionalDependencyError(err)) {
+      const pkg = (err as Error).message.match(/Cannot find package '([^']+)'/)?.[1] ?? 'unknown';
+      console.warn(`  [SKIP] Optional dependency '${pkg}' is not installed.`);
+      console.warn('         Install it or run in a complete environment to run full smoke checks.');
       process.exit(0);
     }
 
