@@ -76,7 +76,12 @@ import { setSchedulerManager } from '../bot/skills/builtins/schedule.js';
 // Pipeline imports
 import { PipelineManager } from '../inference/pipeline-manager.js';
 import { setPipelineManager } from '../bot/skills/builtins/pipeline.js';
+
+// Approval imports
+import { ApprovalManager } from '../inference/approval-manager.js';
+import { requiresApproval, extractSkillIntent } from '../inference/approval-policy.js';
 import pipelineRoutes from './routes/pipelines.js';
+import approvalRoutes from './routes/approvals.js';
 
 // Inference imports for WebSocket streaming chat
 import crypto from 'crypto';
@@ -273,11 +278,10 @@ export async function createServer(config: ApiConfig = {}) {
   });
 
   // --------------------------------------------------------------------------
-  // Scheduler initialisation
+  // Shared infrastructure
   // --------------------------------------------------------------------------
 
   const channelDelivery = new ChannelDelivery();
-  const schedulerManager = new SchedulerManager(db, channelDelivery);
 
   // Wire skill resolution — SkillRouter holds all builtins
   const skillRouter = createSkillRouter();
@@ -291,7 +295,65 @@ export async function createServer(config: ApiConfig = {}) {
       execute: (ctx) => skillRouter.executeSkill(name, ctx),
     };
   };
-  schedulerManager.setSkillResolver(resolveSkill);
+
+  // --------------------------------------------------------------------------
+  // Approval initialisation (before scheduler/pipeline — they reference it)
+  // --------------------------------------------------------------------------
+
+  const approvalManager = new ApprovalManager({ db, channelDelivery });
+
+  // When an approval is approved, execute the held skill and deliver the result
+  approvalManager.onApproved = async (approval) => {
+    try {
+      const payload = JSON.parse(approval.payload);
+      const skill = resolveSkill(payload.skillName);
+      if (!skill) return;
+      const result = await skill.execute(payload.ctx);
+      await channelDelivery
+        .send(approval.deliveryChannel, approval.deliveryRecipientId, result.content)
+        .catch(() => { /* fire-and-forget delivery — K013 */ });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`[approval] onApproved execution failed for ${approval.id}: ${msg}`);
+    }
+  };
+
+  // --------------------------------------------------------------------------
+  // Scheduler initialisation
+  // --------------------------------------------------------------------------
+
+  const schedulerManager = new SchedulerManager(db, channelDelivery);
+
+  // Wrap resolveSkill with approval gate for scheduled jobs
+  schedulerManager.setSkillResolver((name: string) => {
+    const skill = resolveSkill(name);
+    if (!skill) return undefined;
+    return {
+      ...skill,
+      execute: async (ctx) => {
+        const intent = extractSkillIntent(ctx.message, name);
+        if (requiresApproval(name, intent)) {
+          const approval = approvalManager.createApproval({
+            userId: ctx.userId,
+            skillName: name,
+            intent,
+            payload: JSON.stringify({
+              skillName: name,
+              ctx: { message: ctx.message, userId: ctx.userId, userName: ctx.userName, conversationHistory: ctx.conversationHistory },
+            }),
+            deliveryChannel: 'api',
+            deliveryRecipientId: ctx.userId,
+          });
+          return {
+            content: `⏳ This action requires your approval before executing. Approval ID: ${approval.id}. Check your messages or visit /approvals to approve.`,
+            type: 'error' as const,
+            metadata: { approvalRequired: true, approvalId: approval.id },
+          };
+        }
+        return skill.execute(ctx);
+      },
+    };
+  });
 
   // Wire the schedule skill's SchedulerManager reference
   setSchedulerManager(schedulerManager);
@@ -313,11 +375,31 @@ export async function createServer(config: ApiConfig = {}) {
 
   const pipelineManager = new PipelineManager(db, channelDelivery);
 
-  // Wire skill resolution — same resolveSkill callback as scheduler
+  // Wire skill resolution — approval-aware executor
   pipelineManager.setSkillExecutor(async (skillName, ctx) => {
     const skill = resolveSkill(skillName);
     if (!skill) {
       return { content: `Skill "${skillName}" not found`, type: 'error' as const };
+    }
+    // Check approval gate — extract intent from message for policy check
+    const intent = extractSkillIntent(ctx.message, skillName);
+    if (requiresApproval(skillName, intent)) {
+      const approval = approvalManager.createApproval({
+        userId: ctx.userId,
+        skillName,
+        intent,
+        payload: JSON.stringify({
+          skillName,
+          ctx: { message: ctx.message, userId: ctx.userId, userName: ctx.userName, conversationHistory: ctx.conversationHistory },
+        }),
+        deliveryChannel: 'api',
+        deliveryRecipientId: ctx.userId,
+      });
+      return {
+        content: `⏳ This action requires your approval before executing. Approval ID: ${approval.id}. Check your messages or visit /approvals to approve.`,
+        type: 'error' as const,
+        metadata: { approvalRequired: true, approvalId: approval.id },
+      };
     }
     return skill.execute(ctx);
   });
@@ -449,6 +531,7 @@ export async function createServer(config: ApiConfig = {}) {
     await protectedFastify.register(gmailAuthRoutes);
     await protectedFastify.register(schedulerRoutes, { schedulerManager });
     await protectedFastify.register(pipelineRoutes, { pipelineManager });
+    await protectedFastify.register(approvalRoutes, { approvalManager });
   });
 
   // Webhook ingestion routes (HMAC-authenticated, no JWT)

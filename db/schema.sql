@@ -848,3 +848,25 @@ CREATE TABLE IF NOT EXISTS pipeline_step_results (
 );
 
 CREATE INDEX IF NOT EXISTS idx_pipeline_step_results_run ON pipeline_step_results(run_id);
+
+-- ---------------------------------------------------------------------------
+-- Exec Approvals — user confirmation gate for external mutations
+-- ---------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS exec_approvals (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  skill_name TEXT NOT NULL,
+  intent TEXT,                             -- nullable: not all skills use intents
+  payload TEXT NOT NULL,                   -- JSON: serialized skill context for deferred execution
+  delivery_channel TEXT NOT NULL,
+  delivery_recipient_id TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending'
+    CHECK (status IN ('pending', 'approved', 'rejected', 'expired')),
+  created_at INTEGER NOT NULL,
+  expires_at INTEGER NOT NULL,
+  resolved_at INTEGER,                     -- nullable: set when approved/rejected/expired
+  resolved_by TEXT                         -- nullable: 'user' or 'system' (for expiry)
+);
+
+CREATE INDEX IF NOT EXISTS idx_exec_approvals_user_status ON exec_approvals(user_id, status);
