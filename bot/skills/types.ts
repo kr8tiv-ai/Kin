@@ -54,7 +54,13 @@ export interface SkillResult {
   content: string;
 
   /** How to render the response */
-  type: 'text' | 'markdown' | 'error';
+  type: 'text' | 'markdown' | 'error' | 'video' | 'audio';
+
+  /** URL of the generated media asset (for video/audio types) */
+  mediaUrl?: string;
+
+  /** MIME type of the generated media (e.g. 'video/mp4', 'audio/mpeg') */
+  mediaMimeType?: string;
 
   /** Optional structured data for downstream consumers */
   metadata?: Record<string, unknown>;
