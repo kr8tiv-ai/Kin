@@ -139,6 +139,14 @@ export default function ProjectDetailPage() {
           )}
         </div>
         <div className="flex shrink-0 items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-cyan/30 text-cyan hover:bg-cyan/10"
+            onClick={() => router.push(`/dashboard/canvas/${projectId}`)}
+          >
+            Open in Canvas
+          </Button>
           {isDeployable && (
             <Button
               variant="primary"

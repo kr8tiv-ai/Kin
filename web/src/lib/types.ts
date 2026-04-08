@@ -90,6 +90,7 @@ export interface Project {
   companionId: string;
   previewUrl?: string;
   deployUrl?: string;
+  files?: Record<string, unknown> | null;
   createdAt: string;
   updatedAt: string;
 }
