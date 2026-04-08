@@ -327,12 +327,13 @@ const importRoutes: FastifyPluginAsync = async (fastify) => {
         }
 
         if (importData.memories?.length > 0) {
+          const insertMemoryStmt = fastify.context.db.prepare(`
+            INSERT INTO memories (id, user_id, companion_id, memory_type, content, importance, created_at, last_accessed_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          `);
           for (const memory of importData.memories) {
             try {
-              fastify.context.db.prepare(`
-                INSERT INTO memories (id, user_id, companion_id, memory_type, content, importance, created_at, last_accessed_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-              `).run(
+              insertMemoryStmt.run(
                 memory.id ?? `mem-${crypto.randomUUID()}`,
                 userId,
                 memory.companionId,
@@ -350,12 +351,13 @@ const importRoutes: FastifyPluginAsync = async (fastify) => {
         }
 
         if (importData.customizations?.length > 0) {
+          const insertCustomStmt = fastify.context.db.prepare(`
+            INSERT OR REPLACE INTO companion_customizations (id, user_id, companion_id, custom_name, tone_override, personality_notes, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+          `);
           for (const custom of importData.customizations) {
             try {
-              fastify.context.db.prepare(`
-                INSERT OR REPLACE INTO companion_customizations (id, user_id, companion_id, custom_name, tone_override, personality_notes, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-              `).run(
+              insertCustomStmt.run(
                 `custom-${crypto.randomUUID()}`,
                 userId,
                 custom.companionId,

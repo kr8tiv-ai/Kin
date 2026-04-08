@@ -293,20 +293,21 @@ const nftRoutes: FastifyPluginAsync = async (fastify) => {
         );
 
         // ── b. Skill replication: portable skills to new owner ─────────
+        const insertSkillStmt = fastify.context.db.prepare(`
+          INSERT OR REPLACE INTO companion_skills
+            (id, companion_id, user_id, skill_id, skill_level, xp,
+             xp_to_next_level, is_portable, usage_count, accrued_at)
+          VALUES (
+            COALESCE(
+              (SELECT id FROM companion_skills WHERE companion_id = ? AND user_id = ? AND skill_id = ?),
+              ?
+            ),
+            ?, ?, ?, ?, ?, ?, 1, ?, ?
+          )
+        `);
         for (const skill of portableSkills) {
           const newId = `cs-${crypto.randomUUID()}`;
-          fastify.context.db.prepare(`
-            INSERT OR REPLACE INTO companion_skills
-              (id, companion_id, user_id, skill_id, skill_level, xp,
-               xp_to_next_level, is_portable, usage_count, accrued_at)
-            VALUES (
-              COALESCE(
-                (SELECT id FROM companion_skills WHERE companion_id = ? AND user_id = ? AND skill_id = ?),
-                ?
-              ),
-              ?, ?, ?, ?, ?, ?, 1, ?, ?
-            )
-          `).run(
+          insertSkillStmt.run(
             companionId, toUser, skill.skill_id, // COALESCE lookup
             newId,                                 // fallback id
             companionId, toUser, skill.skill_id,
@@ -338,13 +339,14 @@ const nftRoutes: FastifyPluginAsync = async (fastify) => {
           WHERE user_id = ? AND companion_id = ? AND is_transferable = 1
         `).all(fromUser, companionId) as any[];
 
+        const insertMemoryStmt = fastify.context.db.prepare(`
+          INSERT INTO memories
+            (id, user_id, companion_id, memory_type, content, importance,
+             is_transferable, embedding, metadata)
+          VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)
+        `);
         for (const mem of transferableMemories) {
-          fastify.context.db.prepare(`
-            INSERT INTO memories
-              (id, user_id, companion_id, memory_type, content, importance,
-               is_transferable, embedding, metadata)
-            VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)
-          `).run(
+          insertMemoryStmt.run(
             `mem-${crypto.randomUUID()}`,
             toUser, companionId,
             mem.memory_type, mem.content, mem.importance,

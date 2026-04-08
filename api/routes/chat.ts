@@ -667,34 +667,45 @@ const chatRoutes: FastifyPluginAsync = async (fastify) => {
       updated_at: number;
     }>;
 
-    // Fetch messages for each conversation
-    const conversations: ExportConversation[] = rawConversations.map((c) => {
-      const rawMessages = fastify.context.db.prepare(`
-        SELECT id, role, content, timestamp
-        FROM messages
-        WHERE conversation_id = ?
-        ORDER BY timestamp ASC
-      `).all(c.id) as Array<{
-        id: string;
-        role: string;
-        content: string;
-        timestamp: number;
-      }>;
+    // Single JOIN query — fetch all messages for all user conversations at once
+    const allMessages = fastify.context.db.prepare(`
+      SELECT m.id, m.conversation_id, m.role, m.content, m.timestamp
+      FROM messages m
+      JOIN conversations c ON m.conversation_id = c.id
+      WHERE c.user_id = ?
+      ORDER BY m.timestamp ASC
+    `).all(userId) as Array<{
+      id: string;
+      conversation_id: string;
+      role: string;
+      content: string;
+      timestamp: number;
+    }>;
 
-      return {
-        id: c.id,
-        companionId: c.companion_id,
-        title: c.title,
-        createdAt: new Date(c.created_at).toISOString(),
-        updatedAt: new Date(c.updated_at).toISOString(),
-        messages: rawMessages.map((m) => ({
-          id: m.id,
-          role: m.role,
-          content: m.content,
-          createdAt: new Date(m.timestamp).toISOString(),
-        })),
-      };
-    });
+    // Group messages by conversation_id in JS
+    const messagesByConversation = new Map<string, typeof allMessages>();
+    for (const m of allMessages) {
+      let arr = messagesByConversation.get(m.conversation_id);
+      if (!arr) {
+        arr = [];
+        messagesByConversation.set(m.conversation_id, arr);
+      }
+      arr.push(m);
+    }
+
+    const conversations: ExportConversation[] = rawConversations.map((c) => ({
+      id: c.id,
+      companionId: c.companion_id,
+      title: c.title,
+      createdAt: new Date(c.created_at).toISOString(),
+      updatedAt: new Date(c.updated_at).toISOString(),
+      messages: (messagesByConversation.get(c.id) ?? []).map((m) => ({
+        id: m.id,
+        role: m.role,
+        content: m.content,
+        createdAt: new Date(m.timestamp).toISOString(),
+      })),
+    }));
 
     // Fetch all memories for the user
     const rawMemories = fastify.context.db.prepare(`

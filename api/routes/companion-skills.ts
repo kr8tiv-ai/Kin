@@ -418,14 +418,15 @@ const companionSkillsRoutes: FastifyPluginAsync = async (fastify) => {
 
     // If toUserId is provided, replicate skills to new owner
     if (toUserId) {
+      const insertSkillStmt = fastify.context.db.prepare(`
+        INSERT OR IGNORE INTO companion_skills
+          (id, companion_id, user_id, skill_id, skill_level, xp,
+           xp_to_next_level, is_portable, usage_count, accrued_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
+      `);
       for (const skill of skills) {
         const newId = `cs-${crypto.randomUUID()}`;
-        fastify.context.db.prepare(`
-          INSERT OR IGNORE INTO companion_skills
-            (id, companion_id, user_id, skill_id, skill_level, xp,
-             xp_to_next_level, is_portable, usage_count, accrued_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
-        `).run(
+        insertSkillStmt.run(
           newId,
           companionId,
           toUserId,

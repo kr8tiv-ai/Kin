@@ -493,13 +493,35 @@ export class MissionControlClient {
 
         if (!data.packs || !Array.isArray(data.packs)) return;
 
-        for (const pack of data.packs) {
-          // Check if we already have this exact config locally
-          const existing = db.prepare(
-            `SELECT soul_hash FROM companion_souls WHERE user_id = ? AND companion_id = ?`,
-          ).get(pack.userId, pack.companionId) as { soul_hash: string } | undefined;
+        // Pre-fetch all local soul hashes into a Map to avoid per-pack queries
+        const localSoulRows = db.prepare(
+          `SELECT user_id, companion_id, soul_hash FROM companion_souls`,
+        ).all() as Array<{ user_id: string; companion_id: string; soul_hash: string }>;
+        const localHashMap = new Map<string, string>();
+        for (const row of localSoulRows) {
+          localHashMap.set(`${row.user_id}:${row.companion_id}`, row.soul_hash);
+        }
 
-          if (existing && existing.soul_hash === pack.soulHash) {
+        // Hoist prepared statements outside the loop
+        const updateSoulStmt = db.prepare(`
+          UPDATE companion_souls SET
+            custom_name = ?, traits = ?, soul_values = ?, style = ?,
+            custom_instructions = ?, boundaries = ?, anti_patterns = ?,
+            soul_hash = ?, updated_at = ?
+          WHERE user_id = ? AND companion_id = ?
+        `);
+        const insertSoulStmt = db.prepare(`
+          INSERT INTO companion_souls
+            (id, user_id, companion_id, custom_name, traits, soul_values, style,
+             custom_instructions, boundaries, anti_patterns, soul_hash, drift_score, created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1.0, ?, ?)
+        `);
+
+        for (const pack of data.packs) {
+          const key = `${pack.userId}:${pack.companionId}`;
+          const existingHash = localHashMap.get(key);
+
+          if (existingHash === pack.soulHash) {
             continue; // Already in sync
           }
 
@@ -507,14 +529,8 @@ export class MissionControlClient {
           const now = Date.now();
           const cfg = pack.config;
 
-          if (existing) {
-            db.prepare(`
-              UPDATE companion_souls SET
-                custom_name = ?, traits = ?, soul_values = ?, style = ?,
-                custom_instructions = ?, boundaries = ?, anti_patterns = ?,
-                soul_hash = ?, updated_at = ?
-              WHERE user_id = ? AND companion_id = ?
-            `).run(
+          if (existingHash !== undefined) {
+            updateSoulStmt.run(
               cfg.customName ?? null,
               JSON.stringify(cfg.traits),
               JSON.stringify(cfg.values),
@@ -529,12 +545,7 @@ export class MissionControlClient {
             );
           } else {
             const id = `soul-mc-${createHash('sha256').update(`${pack.userId}-${pack.companionId}`).digest('hex').slice(0, 12)}`;
-            db.prepare(`
-              INSERT INTO companion_souls
-                (id, user_id, companion_id, custom_name, traits, soul_values, style,
-                 custom_instructions, boundaries, anti_patterns, soul_hash, drift_score, created_at, updated_at)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1.0, ?, ?)
-            `).run(
+            insertSoulStmt.run(
               id,
               pack.userId,
               pack.companionId,
