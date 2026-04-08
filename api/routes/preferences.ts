@@ -83,6 +83,22 @@ const preferencesRoutes: FastifyPluginAsync = async (fastify) => {
       return { error: 'Invalid privacy mode' };
     }
 
+    // Block privacy_mode changes for child accounts — COPPA requires 'private'
+    if (body.privacyMode !== undefined) {
+      try {
+        const prefs = fastify.context.db.prepare(
+          `SELECT account_type FROM user_preferences WHERE user_id = ?`,
+        ).get(userId) as { account_type: string | null } | undefined;
+
+        if (prefs?.account_type === 'child') {
+          reply.status(403);
+          return { error: 'Child accounts cannot change privacy mode' };
+        }
+      } catch {
+        // account_type column may not exist — allow update
+      }
+    }
+
     // Validate display name length
     if (body.displayName && body.displayName.length > 100) {
       reply.status(400);

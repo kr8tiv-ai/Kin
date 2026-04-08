@@ -27,6 +27,12 @@ interface JoinBody {
   code: string;
 }
 
+interface ChildAccountBody {
+  firstName: string;
+  ageBracket: 'under_13' | 'teen';
+  familyGroupId?: string; // optional — defaults to caller's family group
+}
+
 // ============================================================================
 // Helpers
 // ============================================================================
@@ -305,6 +311,94 @@ const familyRoutes: FastifyPluginAsync = async (fastify) => {
     ).run(memberId);
 
     return { removed: true, memberId };
+  });
+
+  // --------------------------------------------------------------------------
+  // POST /family/child-account — create a child account (parent-only, COPPA-safe)
+  // --------------------------------------------------------------------------
+  fastify.post<{ Body: ChildAccountBody }>('/family/child-account', async (request, reply) => {
+    const userId = (request.user as { userId: string }).userId;
+    const firstName = request.body?.firstName?.trim();
+    const ageBracket = request.body?.ageBracket;
+    let familyGroupId = request.body?.familyGroupId?.trim();
+
+    // ── Validation ──────────────────────────────────────────────────────
+    if (!firstName || firstName.length === 0) {
+      reply.status(400);
+      return { error: 'firstName is required' };
+    }
+
+    if (firstName.length > 100) {
+      reply.status(400);
+      return { error: 'firstName must be 100 characters or less' };
+    }
+
+    const VALID_AGE_BRACKETS = ['under_13', 'teen'];
+    if (!ageBracket || !VALID_AGE_BRACKETS.includes(ageBracket)) {
+      reply.status(400);
+      return { error: 'ageBracket must be "under_13" or "teen"' };
+    }
+
+    // ── Resolve family group ────────────────────────────────────────────
+    if (!familyGroupId) {
+      const membership = getUserFamilyMembership(fastify.context.db, userId);
+      if (!membership) {
+        reply.status(404);
+        return { error: 'You are not a member of any family group. Create one first.' };
+      }
+      familyGroupId = membership.familyGroupId;
+    }
+
+    // Verify caller is a parent in the target group
+    if (!isParent(fastify.context.db, familyGroupId, userId)) {
+      reply.status(403);
+      return { error: 'Only parents can create child accounts' };
+    }
+
+    // ── Create user row ─────────────────────────────────────────────────
+    const childUserId = `user-${crypto.randomUUID()}`;
+    const now = Date.now();
+    const metadata = JSON.stringify({ parentUserId: userId });
+
+    fastify.context.db.prepare(
+      `INSERT INTO users (id, first_name, auth_provider, metadata, created_at, updated_at)
+       VALUES (?, ?, 'family', ?, ?, ?)`,
+    ).run(childUserId, firstName, metadata, now, now);
+
+    // ── Create family_members row ───────────────────────────────────────
+    const memberId = `fm-${crypto.randomUUID()}`;
+
+    fastify.context.db.prepare(
+      `INSERT INTO family_members (id, family_group_id, user_id, role, age_bracket, joined_at)
+       VALUES (?, ?, ?, 'child', ?, ?)`,
+    ).run(memberId, familyGroupId, childUserId, ageBracket, now);
+
+    // ── Create user_preferences row with COPPA-safe defaults ────────────
+    const contentFilter = ageBracket === 'under_13' ? 'child_safe' : 'teen_safe';
+    const prefId = `pref-${crypto.randomUUID()}`;
+
+    fastify.context.db.prepare(
+      `INSERT INTO user_preferences (id, user_id, privacy_mode, account_type, content_filter_level, created_at, updated_at)
+       VALUES (?, ?, 'private', 'child', ?, ?, ?)`,
+    ).run(prefId, childUserId, contentFilter, now, now);
+
+    // ── Generate JWT for the child account ──────────────────────────────
+    const childToken = fastify.jwt.sign({
+      userId: childUserId,
+      accountType: 'child',
+      ageBracket,
+    });
+
+    return {
+      childUserId,
+      firstName,
+      ageBracket,
+      role: 'child',
+      familyGroupId,
+      contentFilterLevel: contentFilter,
+      token: childToken,
+      createdAt: now,
+    };
   });
 };
 

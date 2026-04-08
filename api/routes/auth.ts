@@ -125,6 +125,38 @@ const telegramAuthSchema = {
   additionalProperties: false,
 };
 
+// ============================================================================
+// JWT claim enrichment — includes accountType & ageBracket for child accounts
+// ============================================================================
+
+function buildJwtPayload(db: any, userId: string, tier: string): Record<string, unknown> {
+  const payload: Record<string, unknown> = { userId, tier };
+
+  // Check if this is a child account
+  try {
+    const prefs = db.prepare(
+      `SELECT account_type FROM user_preferences WHERE user_id = ?`,
+    ).get(userId) as { account_type: string | null } | undefined;
+
+    if (prefs?.account_type === 'child') {
+      payload.accountType = 'child';
+
+      // Look up age_bracket from family_members
+      const member = db.prepare(
+        `SELECT age_bracket FROM family_members WHERE user_id = ? AND role = 'child'`,
+      ).get(userId) as { age_bracket: string | null } | undefined;
+
+      if (member?.age_bracket) {
+        payload.ageBracket = member.age_bracket;
+      }
+    }
+  } catch {
+    // account_type/age_bracket columns may not exist yet — fall through
+  }
+
+  return payload;
+}
+
 const authRoutes: FastifyPluginAsync = async (fastify) => {
   // Telegram login widget verification
   fastify.post<{ Body: TelegramAuth }>('/auth/telegram', {
@@ -190,10 +222,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     // Generate JWT (expiry configured at server level)
-    const token = fastify.jwt.sign({
-      userId: user.id,
-      tier: user.tier,
-    });
+    const token = fastify.jwt.sign(buildJwtPayload(fastify.context.db, user.id, user.tier));
 
     return {
       token,
@@ -321,9 +350,8 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
       }
 
       const token = fastify.jwt.sign({
-        userId: user.id,
+        ...buildJwtPayload(fastify.context.db, user.id, user.tier),
         telegramId: user.telegram_id,
-        tier: user.tier,
       });
 
       return {
@@ -437,10 +465,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
         ).get(userId) as any;
       }
 
-      const token = fastify.jwt.sign({
-        userId: user.id,
-        tier: user.tier,
-      });
+      const token = fastify.jwt.sign(buildJwtPayload(fastify.context.db, user.id, user.tier));
 
       return {
         token,
@@ -513,10 +538,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
         `SELECT * FROM users WHERE id = ?`
       ).get(userId) as any;
 
-      const token = fastify.jwt.sign({
-        userId: user.id,
-        tier: user.tier,
-      });
+      const token = fastify.jwt.sign(buildJwtPayload(fastify.context.db, user.id, user.tier));
 
       return {
         token,
@@ -579,10 +601,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
         return { error: 'Invalid email or password' };
       }
 
-      const token = fastify.jwt.sign({
-        userId: user.id,
-        tier: user.tier,
-      });
+      const token = fastify.jwt.sign(buildJwtPayload(fastify.context.db, user.id, user.tier));
 
       return {
         token,
@@ -766,10 +785,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
         ).get(userId) as any;
       }
 
-      const token = fastify.jwt.sign({
-        userId: user.id,
-        tier: user.tier,
-      });
+      const token = fastify.jwt.sign(buildJwtPayload(fastify.context.db, user.id, user.tier));
 
       return {
         token,
@@ -838,10 +854,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
           return { error: 'User not found' };
         }
 
-        const token = fastify.jwt.sign({
-          userId: user.id,
-          tier: user.tier,
-        });
+        const token = fastify.jwt.sign(buildJwtPayload(fastify.context.db, user.id, user.tier));
 
         return {
           token,
@@ -917,10 +930,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
           } catch { /* ignore */ }
         }
 
-        const token = fastify.jwt.sign({
-          userId: user.id,
-          tier: user.tier,
-        });
+        const token = fastify.jwt.sign(buildJwtPayload(fastify.context.db, user.id, user.tier));
 
         return {
           token,

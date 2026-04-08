@@ -262,6 +262,8 @@ CREATE TABLE IF NOT EXISTS user_preferences (
   language TEXT DEFAULT 'en',      -- ISO 639-1 language code
   tone TEXT DEFAULT 'friendly' CHECK (tone IN ('friendly', 'professional', 'casual', 'technical')),
   privacy_mode TEXT DEFAULT 'private' CHECK (privacy_mode IN ('private', 'shared')),
+  account_type TEXT DEFAULT 'standard' CHECK (account_type IN ('standard', 'child')),
+  content_filter_level TEXT DEFAULT 'standard' CHECK (content_filter_level IN ('standard', 'child_safe', 'teen_safe')),
   onboarding_complete BOOLEAN NOT NULL DEFAULT FALSE,
   setup_wizard_complete BOOLEAN NOT NULL DEFAULT FALSE,
   deployment_complete BOOLEAN NOT NULL DEFAULT FALSE,
@@ -1034,6 +1036,7 @@ CREATE TABLE IF NOT EXISTS family_members (
   family_group_id TEXT NOT NULL REFERENCES family_groups(id) ON DELETE CASCADE,
   user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   role TEXT NOT NULL DEFAULT 'member' CHECK (role IN ('parent', 'child', 'member')),
+  age_bracket TEXT CHECK (age_bracket IN ('under_13', 'teen', 'adult') OR age_bracket IS NULL),
   joined_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000),
   UNIQUE(family_group_id, user_id)
 );
@@ -1057,3 +1060,13 @@ CREATE TABLE IF NOT EXISTS family_invite_codes (
 
 CREATE INDEX IF NOT EXISTS idx_family_invite_codes_code ON family_invite_codes(code);
 CREATE INDEX IF NOT EXISTS idx_family_invite_codes_group ON family_invite_codes(family_group_id);
+
+-- ============================================================================
+-- Safe Migrations — Family Mode COPPA columns
+-- ============================================================================
+
+-- Migration 5: account_type and content_filter_level for child accounts
+-- ALTER TABLE user_preferences ADD COLUMN account_type TEXT DEFAULT 'standard' CHECK (account_type IN ('standard', 'child'));
+-- ALTER TABLE user_preferences ADD COLUMN content_filter_level TEXT DEFAULT 'standard' CHECK (content_filter_level IN ('standard', 'child_safe', 'teen_safe'));
+-- Migration 6: age_bracket on family_members for child age tracking
+-- ALTER TABLE family_members ADD COLUMN age_bracket TEXT CHECK (age_bracket IN ('under_13', 'teen', 'adult') OR age_bracket IS NULL);

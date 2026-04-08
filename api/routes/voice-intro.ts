@@ -144,6 +144,16 @@ const voiceIntroRoutes: FastifyPluginAsync = async (fastify) => {
   } as any, async (request, reply: FastifyReply) => {
     const t0 = performance.now();
 
+    // ── Block under-13 accounts (COPPA) ─────────────────────────────────
+    const jwtPayload = request.user as { userId: string; ageBracket?: string } | undefined;
+    if (jwtPayload?.ageBracket === 'under_13') {
+      return reply.status(403).send({
+        error: 'Voice introduction is not available for under-13 accounts',
+        code: 'CHILD_ACCOUNT_RESTRICTED',
+        status: 403,
+      });
+    }
+
     // ── Validate audio body ─────────────────────────────────────────────
     const audioBuffer = request.body as Buffer;
 

@@ -220,6 +220,10 @@ export async function createServer(config: ApiConfig = {}) {
     `ALTER TABLE user_preferences ADD COLUMN setup_wizard_complete INTEGER NOT NULL DEFAULT 0`,
     // Deployment completion
     `ALTER TABLE user_preferences ADD COLUMN deployment_complete INTEGER NOT NULL DEFAULT 0`,
+    // Family mode — child account columns
+    `ALTER TABLE user_preferences ADD COLUMN account_type TEXT DEFAULT 'standard'`,
+    `ALTER TABLE user_preferences ADD COLUMN content_filter_level TEXT DEFAULT 'standard'`,
+    `ALTER TABLE family_members ADD COLUMN age_bracket TEXT`,
   ];
   for (const migration of safeMigrations) {
     try { db.exec(migration); } catch { /* column already exists — safe to ignore */ }
