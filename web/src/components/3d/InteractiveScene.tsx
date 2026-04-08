@@ -8,7 +8,8 @@
 import { Suspense, useRef, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { useGLTF, Environment, ContactShadows } from '@react-three/drei';
-import * as THREE from 'three';
+import { Box3, Vector3, MathUtils, ACESFilmicToneMapping } from 'three';
+import type { Group } from 'three';
 
 interface InteractiveSceneProps {
   glbUrl: string;
@@ -34,14 +35,14 @@ function FollowingModel({
   initialRotation?: [number, number, number];
 }) {
   const { scene } = useGLTF(url);
-  const groupRef = useRef<THREE.Group>(null);
+  const groupRef = useRef<Group>(null);
   const targetRotation = useRef({ x: 0, y: 0 });
 
   const clonedScene = useMemo(() => {
     const cloned = scene.clone();
-    const box = new THREE.Box3().setFromObject(cloned);
-    const center = box.getCenter(new THREE.Vector3());
-    const size = box.getSize(new THREE.Vector3());
+    const box = new Box3().setFromObject(cloned);
+    const center = box.getCenter(new Vector3());
+    const size = box.getSize(new Vector3());
 
     cloned.position.sub(center);
 
@@ -65,12 +66,12 @@ function FollowingModel({
 
     // Smooth lerp toward target (gentle, organic feel)
     const lerpSpeed = 3 * delta;
-    groupRef.current.rotation.y = THREE.MathUtils.lerp(
+    groupRef.current.rotation.y = MathUtils.lerp(
       groupRef.current.rotation.y,
       targetRotation.current.y,
       lerpSpeed,
     );
-    groupRef.current.rotation.x = THREE.MathUtils.lerp(
+    groupRef.current.rotation.x = MathUtils.lerp(
       groupRef.current.rotation.x,
       targetRotation.current.x,
       lerpSpeed,
@@ -124,7 +125,7 @@ export function InteractiveScene({
             alpha: true,
             antialias: true,
             powerPreference: 'high-performance',
-            toneMapping: THREE.ACESFilmicToneMapping,
+            toneMapping: ACESFilmicToneMapping,
             toneMappingExposure: 1.2,
           }}
           camera={{ position: [0, 0.3, 3.5], fov: 40 }}

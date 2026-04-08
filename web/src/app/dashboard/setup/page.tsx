@@ -349,9 +349,9 @@ export default function SetupPage() {
                 </p>
                 <div className="h-2 w-full rounded-full bg-white/5 overflow-hidden">
                   <motion.div
-                    className="h-full rounded-full bg-gradient-to-r from-cyan to-cyan/70"
-                    initial={{ width: 0 }}
-                    animate={{ width: `${progressToPercentage(completionStatus.progress)}%` }}
+                    className="h-full w-full rounded-full bg-gradient-to-r from-cyan to-cyan/70 origin-left"
+                    initial={{ scaleX: 0 }}
+                    animate={{ scaleX: progressToPercentage(completionStatus.progress) / 100 }}
                     transition={{ duration: 0.6, ease: 'easeOut' }}
                   />
                 </div>

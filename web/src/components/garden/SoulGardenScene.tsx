@@ -9,7 +9,7 @@ import { Suspense, useMemo } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
-import * as THREE from 'three';
+import { Color, ACESFilmicToneMapping } from 'three';
 
 import type { SoulTraits } from '@/lib/types';
 import {
@@ -78,7 +78,7 @@ function GardenInner({
   const depth = useMemo(() => mapDepth(traits.depth), [traits.depth]);
   const drift = useMemo(() => mapDrift(driftScore), [driftScore]);
 
-  const accentColor = useMemo(() => new THREE.Color(companionColor), [companionColor]);
+  const accentColor = useMemo(() => new Color(companionColor), [companionColor]);
 
   return (
     <>
@@ -199,7 +199,7 @@ export function SoulGardenScene({
             alpha: true,
             antialias: true,
             powerPreference: 'high-performance',
-            toneMapping: THREE.ACESFilmicToneMapping,
+            toneMapping: ACESFilmicToneMapping,
             toneMappingExposure: 1.1,
           }}
           camera={{ position: [0, 2.5, 6], fov: 45 }}

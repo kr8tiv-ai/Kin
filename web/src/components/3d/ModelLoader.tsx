@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { useGLTF, OrbitControls } from '@react-three/drei';
-import * as THREE from 'three';
+import { Box3, Vector3 } from 'three';
 
 interface ModelLoaderProps {
   url: string;
@@ -21,9 +21,9 @@ export function ModelLoader({
 
   const clonedScene = useMemo(() => {
     const cloned = scene.clone();
-    const box = new THREE.Box3().setFromObject(cloned);
-    const center = box.getCenter(new THREE.Vector3());
-    const size = box.getSize(new THREE.Vector3());
+    const box = new Box3().setFromObject(cloned);
+    const center = box.getCenter(new Vector3());
+    const size = box.getSize(new Vector3());
 
     cloned.position.sub(center);
 

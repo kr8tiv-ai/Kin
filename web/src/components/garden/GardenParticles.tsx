@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { Sparkles } from '@react-three/drei';
-import * as THREE from 'three';
+import { Color } from 'three';
 
 interface GardenParticlesProps {
   sparkleCount: number;
@@ -19,7 +19,7 @@ export function GardenParticles({
   vibrancy,
 }: GardenParticlesProps) {
   const color = useMemo(() => {
-    const c = new THREE.Color(companionColor);
+    const c = new Color(companionColor);
     const hsl = { h: 0, s: 0, l: 0 };
     c.getHSL(hsl);
     c.setHSL(hsl.h, hsl.s * vibrancy, Math.min(hsl.l + 0.3, 1.0));

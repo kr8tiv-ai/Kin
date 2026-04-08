@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import * as THREE from 'three';
+import { Color } from 'three';
 
 interface GardenAtmosphereProps {
   fogNear: number;
@@ -20,8 +20,8 @@ export function GardenAtmosphere({
 }: GardenAtmosphereProps) {
   const fogColor = useMemo(() => {
     // Base: dark scene fog
-    const base = new THREE.Color('#0a0a12');
-    const accent = new THREE.Color(companionColor);
+    const base = new Color('#0a0a12');
+    const accent = new Color(companionColor);
     // Blend in companion color based on creativity
     base.lerp(accent, colorVariety * 0.15 * vibrancy);
     return base;

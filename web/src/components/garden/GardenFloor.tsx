@@ -1,19 +1,19 @@
 'use client';
 
 import { useMemo } from 'react';
-import * as THREE from 'three';
+import { Color } from 'three';
 
 interface GardenFloorProps {
   warmTint: number;  // 0 = cold blue, 1 = warm amber
   vibrancy: number;  // 0.3–1.0 from drift
 }
 
-const COLD_COLOR = new THREE.Color('#1a3a5c');   // cold blue-gray
-const WARM_COLOR = new THREE.Color('#5c4a1a');   // warm amber-brown
+const COLD_COLOR = new Color('#1a3a5c');   // cold blue-gray
+const WARM_COLOR = new Color('#5c4a1a');   // warm amber-brown
 
 export function GardenFloor({ warmTint, vibrancy }: GardenFloorProps) {
   const color = useMemo(() => {
-    const base = new THREE.Color().lerpColors(COLD_COLOR, WARM_COLOR, warmTint);
+    const base = new Color().lerpColors(COLD_COLOR, WARM_COLOR, warmTint);
     // Reduce saturation when vibrancy is low (drift degradation)
     const hsl = { h: 0, s: 0, l: 0 };
     base.getHSL(hsl);

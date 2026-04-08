@@ -2,7 +2,8 @@
 
 import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import * as THREE from 'three';
+import { Color, MathUtils } from 'three';
+import type { Group } from 'three';
 
 interface GardenTreesProps {
   gridStrength: number;    // formality: 0 = organic, 1 = gridded
@@ -26,7 +27,7 @@ export function GardenTrees({
   vibrancy,
   companionColor,
 }: GardenTreesProps) {
-  const groupRef = useRef<THREE.Group>(null);
+  const groupRef = useRef<Group>(null);
 
   const trees = useMemo(() => {
     const items: Array<{
@@ -62,8 +63,8 @@ export function GardenTrees({
   }, [gridStrength, organicNoise, layerCount]);
 
   const canopyColor = useMemo(() => {
-    const base = new THREE.Color('#2d6b1e');
-    const accent = new THREE.Color(companionColor);
+    const base = new Color('#2d6b1e');
+    const accent = new Color(companionColor);
     base.lerp(accent, 0.15);
     const hsl = { h: 0, s: 0, l: 0 };
     base.getHSL(hsl);
@@ -78,7 +79,7 @@ export function GardenTrees({
   useFrame((state, delta) => {
     if (!groupRef.current) return;
     const rate = Math.min(4 * delta, 1);
-    lerpedVibrancy.current = THREE.MathUtils.lerp(lerpedVibrancy.current, vibrancy, rate);
+    lerpedVibrancy.current = MathUtils.lerp(lerpedVibrancy.current, vibrancy, rate);
 
     const t = state.clock.elapsedTime;
     const swayStrength = lerpedVibrancy.current; // reduce sway when drift degrades

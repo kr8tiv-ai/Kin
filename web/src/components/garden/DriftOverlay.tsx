@@ -2,7 +2,8 @@
 
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import * as THREE from 'three';
+import { MathUtils, DoubleSide } from 'three';
+import type { Mesh, Group, MeshBasicMaterial } from 'three';
 
 interface DriftOverlayProps {
   wiltFactor: number;   // 0 = healthy, 1 = fully wilted
@@ -15,8 +16,8 @@ interface DriftOverlayProps {
  * plus floating "ash" particles that indicate decay.
  */
 export function DriftOverlay({ wiltFactor, vibrancy }: DriftOverlayProps) {
-  const overlayRef = useRef<THREE.Mesh>(null);
-  const ashGroupRef = useRef<THREE.Group>(null);
+  const overlayRef = useRef<Mesh>(null);
+  const ashGroupRef = useRef<Group>(null);
 
   // Only show overlay when there's meaningful drift degradation
   const showOverlay = wiltFactor > 0.1;
@@ -27,15 +28,15 @@ export function DriftOverlay({ wiltFactor, vibrancy }: DriftOverlayProps) {
 
   useFrame((state, delta) => {
     const rate = Math.min(4 * delta, 1);
-    lerpedWilt.current = THREE.MathUtils.lerp(lerpedWilt.current, wiltFactor, rate);
-    lerpedVibrancy.current = THREE.MathUtils.lerp(lerpedVibrancy.current, vibrancy, rate);
+    lerpedWilt.current = MathUtils.lerp(lerpedWilt.current, wiltFactor, rate);
+    lerpedVibrancy.current = MathUtils.lerp(lerpedVibrancy.current, vibrancy, rate);
 
     if (overlayRef.current) {
       // Pulse the overlay opacity with breathing effect
       const t = state.clock.elapsedTime;
       const baseFade = lerpedWilt.current * 0.35;
       const pulse = Math.sin(t * 0.5) * 0.03 * lerpedWilt.current;
-      const mat = overlayRef.current.material as THREE.MeshBasicMaterial;
+      const mat = overlayRef.current.material as MeshBasicMaterial;
       mat.opacity = baseFade + pulse;
     }
 
@@ -79,7 +80,7 @@ export function DriftOverlay({ wiltFactor, vibrancy }: DriftOverlayProps) {
           transparent
           opacity={0}
           depthWrite={false}
-          side={THREE.DoubleSide}
+          side={DoubleSide}
         />
       </mesh>
 
@@ -93,7 +94,7 @@ export function DriftOverlay({ wiltFactor, vibrancy }: DriftOverlayProps) {
               transparent
               opacity={0.4 * wiltFactor * (1 - vibrancy)}
               depthWrite={false}
-              side={THREE.DoubleSide}
+              side={DoubleSide}
             />
           </mesh>
         ))}

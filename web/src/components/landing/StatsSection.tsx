@@ -30,30 +30,32 @@ function AnimatedCounter({
   isInView: boolean;
 }) {
   const [count, setCount] = useState(0);
+  const rafRef = useRef<number>(0);
+  const startTimeRef = useRef<number>(0);
 
   useEffect(() => {
     if (!isInView) return;
 
     const duration = 2000; // ms
-    const steps = 60;
-    const stepTime = duration / steps;
-    let currentStep = 0;
 
-    const timer = setInterval(() => {
-      currentStep++;
-      // Ease-out curve
-      const progress = 1 - Math.pow(1 - currentStep / steps, 3);
-      const currentValue = end * progress;
+    const animate = (timestamp: number) => {
+      if (!startTimeRef.current) startTimeRef.current = timestamp;
+      const elapsed = timestamp - startTimeRef.current;
+      const rawProgress = Math.min(elapsed / duration, 1);
+      // Ease-out cubic
+      const progress = 1 - Math.pow(1 - rawProgress, 3);
 
-      if (currentStep >= steps) {
-        setCount(end);
-        clearInterval(timer);
-      } else {
-        setCount(currentValue);
+      setCount(end * progress);
+
+      if (rawProgress < 1) {
+        rafRef.current = requestAnimationFrame(animate);
       }
-    }, stepTime);
+    };
 
-    return () => clearInterval(timer);
+    startTimeRef.current = 0;
+    rafRef.current = requestAnimationFrame(animate);
+
+    return () => cancelAnimationFrame(rafRef.current);
   }, [isInView, end]);
 
   // Format the displayed number

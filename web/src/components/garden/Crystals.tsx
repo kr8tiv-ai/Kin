@@ -2,7 +2,8 @@
 
 import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import * as THREE from 'three';
+import { Color, MathUtils } from 'three';
+import type { Group, Mesh, MeshStandardMaterial } from 'three';
 
 interface CrystalsProps {
   crystalCount: number;
@@ -24,7 +25,7 @@ export function Crystals({
   companionColor,
   vibrancy,
 }: CrystalsProps) {
-  const groupRef = useRef<THREE.Group>(null);
+  const groupRef = useRef<Group>(null);
 
   const crystals = useMemo(() => {
     const items: Array<{
@@ -53,7 +54,7 @@ export function Crystals({
   }, [crystalCount, angularity]);
 
   const crystalColor = useMemo(() => {
-    const base = new THREE.Color(companionColor);
+    const base = new Color(companionColor);
     const hsl = { h: 0, s: 0, l: 0 };
     base.getHSL(hsl);
     // Boost lightness for crystal glow
@@ -69,8 +70,8 @@ export function Crystals({
   useFrame((state, delta) => {
     if (!groupRef.current) return;
     const rate = Math.min(4 * delta, 1);
-    lerpedSharpness.current = THREE.MathUtils.lerp(lerpedSharpness.current, sharpness, rate);
-    lerpedVibrancy.current = THREE.MathUtils.lerp(lerpedVibrancy.current, vibrancy, rate);
+    lerpedSharpness.current = MathUtils.lerp(lerpedSharpness.current, sharpness, rate);
+    lerpedVibrancy.current = MathUtils.lerp(lerpedVibrancy.current, vibrancy, rate);
 
     const t = state.clock.elapsedTime;
     groupRef.current.children.forEach((child, i) => {
@@ -83,9 +84,9 @@ export function Crystals({
       child.position.y = baseY + Math.sin(t * 0.8 + i * 1.2) * 0.05;
 
       // Smoothly update emissive intensity on child material
-      const mesh = child as THREE.Mesh;
-      if (mesh.material && (mesh.material as THREE.MeshStandardMaterial).emissiveIntensity !== undefined) {
-        (mesh.material as THREE.MeshStandardMaterial).emissiveIntensity =
+      const mesh = child as Mesh;
+      if (mesh.material && (mesh.material as MeshStandardMaterial).emissiveIntensity !== undefined) {
+        (mesh.material as MeshStandardMaterial).emissiveIntensity =
           lerpedSharpness.current * 2 * lerpedVibrancy.current;
       }
     });

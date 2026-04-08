@@ -2,7 +2,8 @@
 
 import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import * as THREE from 'three';
+import { Color, MathUtils } from 'three';
+import type { Group } from 'three';
 
 interface FlowersProps {
   flowerCount: number;
@@ -31,7 +32,7 @@ export function Flowers({
   wiltFactor,
   companionColor,
 }: FlowersProps) {
-  const groupRef = useRef<THREE.Group>(null);
+  const groupRef = useRef<Group>(null);
 
   const flowers = useMemo(() => {
     const items: Array<{
@@ -57,8 +58,8 @@ export function Flowers({
 
       // Blend between grid and random based on formality
       const noise = organicNoise * (seededRandom(i * 3 + 2) - 0.5) * 0.8;
-      const x = THREE.MathUtils.lerp(rx, gx, gridStrength) + noise;
-      const z = THREE.MathUtils.lerp(rz, gz, gridStrength) + noise;
+      const x = MathUtils.lerp(rx, gx, gridStrength) + noise;
+      const z = MathUtils.lerp(rz, gz, gridStrength) + noise;
 
       const scale = (0.3 + seededRandom(i * 7) * 0.7) * petalSpread;
       const hue = seededRandom(i * 11) * 0.15 + warmTint * 0.1;
@@ -77,8 +78,8 @@ export function Flowers({
   useFrame((state, delta) => {
     if (!groupRef.current) return;
     const rate = Math.min(4 * delta, 1);
-    lerpedVibrancy.current = THREE.MathUtils.lerp(lerpedVibrancy.current, vibrancy, rate);
-    lerpedWiltFactor.current = THREE.MathUtils.lerp(lerpedWiltFactor.current, wiltFactor, rate);
+    lerpedVibrancy.current = MathUtils.lerp(lerpedVibrancy.current, vibrancy, rate);
+    lerpedWiltFactor.current = MathUtils.lerp(lerpedWiltFactor.current, wiltFactor, rate);
 
     const t = state.clock.elapsedTime;
     groupRef.current.children.forEach((child, i) => {
@@ -90,12 +91,12 @@ export function Flowers({
     });
   });
 
-  const accent = useMemo(() => new THREE.Color(companionColor), [companionColor]);
+  const accent = useMemo(() => new Color(companionColor), [companionColor]);
 
   return (
     <group ref={groupRef}>
       {flowers.map((f, i) => {
-        const flowerColor = new THREE.Color().setHSL(
+        const flowerColor = new Color().setHSL(
           f.hue + 0.85,
           0.7 * vibrancy,
           0.55 * vibrancy,

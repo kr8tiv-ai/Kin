@@ -5,7 +5,7 @@
 // Logo left (KIN + social icons + KR8TIV logo), nav links top-right.
 // ============================================================================
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -46,10 +46,15 @@ function SocialIcon({ icon, size }: { icon: string; size: number }) {
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const scrolledRef = useRef(false);
 
   useEffect(() => {
     function handleScroll() {
-      setScrolled(window.scrollY > 20);
+      const isScrolled = window.scrollY > 20;
+      if (scrolledRef.current !== isScrolled) {
+        scrolledRef.current = isScrolled;
+        setScrolled(isScrolled);
+      }
     }
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);

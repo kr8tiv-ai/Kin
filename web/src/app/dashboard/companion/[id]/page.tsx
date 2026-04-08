@@ -300,11 +300,11 @@ export default function CompanionDetailPage({
               </div>
               <div className="h-2 w-full overflow-hidden rounded-full bg-white/5">
                 <motion.div
-                  className={`h-full rounded-full ${
+                  className={`h-full w-full rounded-full origin-left ${
                     trait.value > 90 ? 'bg-cyan' : trait.value > 80 ? 'bg-gold' : 'bg-magenta'
                   }`}
-                  initial={{ width: 0 }}
-                  animate={{ width: `${trait.value}%` }}
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: trait.value / 100 }}
                   transition={{ duration: 0.8, delay: 0.2 }}
                 />
               </div>
@@ -351,11 +351,11 @@ export default function CompanionDetailPage({
                   </div>
                   <div className="h-2 w-full overflow-hidden rounded-full bg-white/5">
                     <motion.div
-                      className={`h-full rounded-full ${
+                      className={`h-full w-full rounded-full origin-left ${
                         skill.skillLevel >= 5 ? 'bg-cyan' : skill.skillLevel >= 3 ? 'bg-gold' : 'bg-magenta'
                       }`}
-                      initial={{ width: 0 }}
-                      animate={{ width: `${percent}%` }}
+                      initial={{ scaleX: 0 }}
+                      animate={{ scaleX: percent / 100 }}
                       transition={{ duration: 0.8, delay: 0.2 }}
                     />
                   </div>
