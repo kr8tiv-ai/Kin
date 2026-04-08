@@ -26,7 +26,32 @@ export interface UserPreferences {
   language: string;
   tone: 'friendly' | 'professional' | 'casual' | 'technical';
   privacyMode?: 'private' | 'shared';
+  proactiveEnabled?: boolean;
   onboardingComplete: boolean;
+}
+
+// ============================================================================
+// Proactive Companion
+// ============================================================================
+
+export interface ProactiveSettings {
+  proactiveEnabled: boolean;
+  quietStart: number | null;
+  quietEnd: number | null;
+  maxDaily: number;
+  channels: string[];
+  calendarConnected: boolean;
+}
+
+export interface ProactiveSuggestion {
+  id: string;
+  companionId: string;
+  content: string;
+  deliveryChannel: string;
+  status: string;
+  userFeedback: string | null;
+  createdAt: string;
+  deliveredAt: string | null;
 }
 
 export interface FrontierModelInfo {

@@ -19,6 +19,10 @@ import { DangerZone } from '@/components/dashboard/DangerZone';
 import { WalletCard } from '@/components/dashboard/WalletCard';
 import { PhantomConnect } from '@/components/dashboard/PhantomConnect';
 import { MigrationWizard } from '@/components/dashboard/MigrationWizard';
+import { ProactiveSettings } from '@/components/dashboard/ProactiveSettings';
+import { SuggestionHistory } from '@/components/dashboard/SuggestionHistory';
+import { useProactiveSettings } from '@/hooks/useProactiveSettings';
+import { useProactiveSuggestions } from '@/hooks/useProactiveSuggestions';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
 import { IOSInstallModal } from '@/components/pwa/IOSInstallModal';
 import type { UserPreferences } from '@/lib/types';
@@ -78,6 +82,8 @@ export default function SettingsPage() {
   const [timezone, setTimezone] = useState('');
   const [showIOSModal, setShowIOSModal] = useState(false);
   const pwa = usePWAInstall();
+  const proactiveSettings = useProactiveSettings();
+  const proactiveSuggestions = useProactiveSuggestions();
 
   // Detect timezone on mount
   useEffect(() => {
@@ -315,6 +321,43 @@ export default function SettingsPage() {
             </button>
           </div>
         </div>
+      </GlassCard>
+
+      {/* Proactive Companion Section */}
+      <GlassCard className="p-6" hover={false}>
+        <h2 className="mb-4 font-display text-lg font-semibold text-white">
+          Proactive Companion
+        </h2>
+        <p className="mb-4 text-sm text-white/50">
+          Let your companion anticipate your needs — meeting prep, follow-ups, and timely nudges.
+        </p>
+        {proactiveSettings.loading ? (
+          <div className="space-y-4">
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-6 w-64" />
+            <Skeleton className="h-6 w-32" />
+          </div>
+        ) : proactiveSettings.settings ? (
+          <>
+            <ProactiveSettings
+              settings={proactiveSettings.settings}
+              onUpdate={proactiveSettings.updateSettings}
+              onRefresh={proactiveSettings.refresh}
+            />
+            <div className="mt-6 border-t border-white/5 pt-4">
+              <h3 className="mb-3 text-sm font-semibold text-white/70">
+                Suggestion History
+              </h3>
+              <SuggestionHistory
+                suggestions={proactiveSuggestions.suggestions}
+                loading={proactiveSuggestions.loading}
+                onFeedback={proactiveSuggestions.sendFeedback}
+              />
+            </div>
+          </>
+        ) : proactiveSettings.error ? (
+          <p className="text-sm text-white/50">{proactiveSettings.error}</p>
+        ) : null}
       </GlassCard>
 
       {/* Memory Management Section */}
