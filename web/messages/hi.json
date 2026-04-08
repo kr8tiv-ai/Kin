@@ -1,0 +1,220 @@
+{
+  "common": {
+    "retry": "पुनः प्रयास",
+    "refresh": "रीफ़्रेश",
+    "save": "सहेजें",
+    "cancel": "रद्द करें",
+    "close": "बंद करें",
+    "loading": "लोड हो रहा है...",
+    "error": "कुछ गलत हो गया",
+    "logOut": "लॉग आउट",
+    "back": "वापस",
+    "continue": "जारी रखें",
+    "or": "या",
+    "learnMore": "और जानें",
+    "selected": "चयनित",
+    "change": "बदलें"
+  },
+  "dashboard": {
+    "sidebar": {
+      "overview": "अवलोकन",
+      "chat": "चैट",
+      "myCompanion": "मेरा साथी",
+      "soul": "आत्मा",
+      "collection": "संग्रह",
+      "projects": "प्रोजेक्ट",
+      "canvas": "कैनवास",
+      "progress": "प्रगति",
+      "skills": "कौशल",
+      "memories": "यादें",
+      "family": "परिवार",
+      "setup": "सेटअप",
+      "health": "स्वास्थ्य",
+      "billing": "बिलिंग",
+      "refer": "रेफ़र करें",
+      "help": "सहायता",
+      "settings": "सेटिंग्स",
+      "fleet": "फ्लीट",
+      "training": "प्रशिक्षण",
+      "admin": "एडमिन"
+    }
+  },
+  "settings": {
+    "title": "सेटिंग्स",
+    "subtitle": "अपनी प्रोफ़ाइल, प्राथमिकताएँ और खाता प्रबंधित करें।",
+    "profile": {
+      "title": "प्रोफ़ाइल",
+      "name": "नाम",
+      "telegramUsername": "Telegram उपयोगकर्ता नाम",
+      "notSet": "सेट नहीं है",
+      "userId": "यूज़र ID",
+      "memberSince": "सदस्य बने"
+    },
+    "preferences": {
+      "title": "प्राथमिकताएँ",
+      "displayName": "प्रदर्शन नाम",
+      "displayNameHint": "प्रदर्शन नाम आपकी Telegram प्रोफ़ाइल से सिंक होता है।",
+      "tone": "लहजा",
+      "toneHint": "आपका KIN आपसे कैसे बात करता है।",
+      "language": "भाषा",
+      "timezone": "समय क्षेत्र",
+      "detecting": "पता लगा रहे हैं...",
+      "timezoneHint": "आपके ब्राउज़र से पता लगाया गया",
+      "notifications": "सूचनाएँ",
+      "notificationsHint": "नई सुविधाओं और साथी की गतिविधियों के बारे में अपडेट प्राप्त करें।"
+    },
+    "proactive": {
+      "title": "सक्रिय साथी",
+      "description": "अपने साथी को आपकी ज़रूरतों का अनुमान लगाने दें — मीटिंग की तैयारी, फॉलो-अप और समय पर रिमाइंडर।",
+      "suggestionHistory": "सुझाव इतिहास"
+    },
+    "memory": {
+      "title": "मेमोरी प्रबंधन",
+      "count": "{count} यादें सहेजी गईं"
+    },
+    "wallets": {
+      "title": "वॉलेट"
+    },
+    "installApp": {
+      "title": "ऐप इंस्टॉल करें",
+      "description": "तुरंत एक्सेस और ऑफ़लाइन सपोर्ट के लिए KIN को अपने डिवाइस में जोड़ें।",
+      "installed": "इस डिवाइस पर KIN इंस्टॉल है",
+      "install": "KIN इंस्टॉल करें",
+      "iosHow": "iOS पर कैसे इंस्टॉल करें",
+      "browserHint": "KIN इंस्टॉल करने के लिए इस पेज को किसी सपोर्टेड ब्राउज़र (Chrome, Edge, Safari) में खोलें।"
+    },
+    "dataPrivacy": {
+      "title": "डेटा और गोपनीयता",
+      "description": "प्राइवेट मोड में, आपका साथी केवल लोकल AI का उपयोग करता है। शेयर्ड मोड में, उन्नत AI जटिल अनुरोधों को संभालता है और आपके साथी को सीखने में मदद करता है।",
+      "childLocked": "🔒 बच्चों के खातों के लिए गोपनीयता प्राइवेट पर सेट है। केवल लोकल AI का उपयोग होता है।",
+      "keepPrivate": "बातचीत प्राइवेट रखें",
+      "keepPrivateHint": "आपका साथी केवल लोकल मॉडल का उपयोग करता है। आपके डिवाइस से कुछ भी बाहर नहीं जाता।",
+      "helpLearn": "अपने साथी को सीखने में मदद करें",
+      "helpLearnHint": "जटिल प्रश्न उन्नत AI का उपयोग करते हैं। प्रतिक्रियाएँ समय के साथ आपके साथी को बेहतर बनाती हैं।",
+      "moveYourKin": "अपना KIN स्थानांतरित करें",
+      "moveDescription": "अपने साथी, बातचीत और प्रशिक्षण डेटा को डिवाइस या होस्टिंग मोड के बीच ट्रांसफ़र करें।",
+      "exportArchive": "आर्काइव निर्यात करें",
+      "importArchive": "आर्काइव आयात करें"
+    }
+  },
+  "chat": {
+    "newChat": "नई चैट",
+    "exchanges": "{count} बातचीत",
+    "loadingConversation": "बातचीत लोड हो रही है...",
+    "emptyState": "{name} से चैट शुरू करें। {tagline} के बारे में कुछ भी पूछें।",
+    "placeholder": "{name} को संदेश...",
+    "sendMessage": "संदेश भेजें",
+    "copyMessage": "संदेश कॉपी करें",
+    "stopPlayback": "प्लेबैक रोकें",
+    "listen": "सुनें",
+    "voice": {
+      "voiceMessage": "वॉइस मैसेज",
+      "stopRecording": "रिकॉर्डिंग रोकें",
+      "wakeWordActive": "रिकॉर्डिंग — वेक वर्ड सक्रिय",
+      "processingVoice": "आवाज़ प्रोसेस हो रही है...",
+      "playingResponse": "प्रतिक्रिया चल रही है",
+      "clickToStop": "रिकॉर्डिंग रोकने के लिए क्लिक करें",
+      "listeningForWakeWord": "वेक वर्ड सुन रहे हैं...",
+      "processingYourVoice": "आपकी आवाज़ प्रोसेस हो रही है...",
+      "playingCompanionResponse": "साथी की प्रतिक्रिया चल रही है",
+      "startVoiceSession": "वॉइस सेशन शुरू करें",
+      "pushToTalk": "बोलने के लिए दबाएँ",
+      "disableWakeWord": "वेक वर्ड बंद करें",
+      "enableWakeWord": "वेक वर्ड चालू करें",
+      "wakeWordActiveTitle": "वेक वर्ड सक्रिय — हैंड्स-फ्री सुन रहे हैं",
+      "enableWakeWordTitle": "हैंड्स-फ्री के लिए वेक वर्ड चालू करें",
+      "endVoice": "वॉइस समाप्त करें",
+      "listening": "सुन रहे हैं...",
+      "waitingForWakeWord": "वेक वर्ड की प्रतीक्षा...",
+      "processing": "प्रोसेसिंग...",
+      "speaking": "{name} बोल रहा है...",
+      "listeningIndicator": "🎙️ वेक वर्ड सुन रहे हैं...",
+      "recordingIndicator": "🔴 रिकॉर्डिंग — अभी बोलें",
+      "processingIndicator": "⏳ आपकी आवाज़ प्रोसेस हो रही है...",
+      "respondingIndicator": "🔊 {name} जवाब दे रहा है..."
+    }
+  },
+  "onboard": {
+    "welcome": {
+      "title": "KIN में आपका स्वागत है",
+      "subtitle": "KIN आपको एक गहराई से सक्षम AI साथी देता है जो पहली बातचीत से ही व्यक्तिगत लगता है। हम पर्दे के पीछे बुद्धिमत्ता का प्रबंधन करते हैं ताकि आप महत्वपूर्ण बातों पर ध्यान केंद्रित कर सकें।",
+      "featureUnderstandsTitle": "आपको समझता है",
+      "featureUnderstandsDesc": "आपका KIN आपके लक्ष्यों, संदर्भ और शैली से शुरू होता है ताकि यह पहले जवाब से ही उपयोगी लगे।",
+      "featureComplexityTitle": "जटिलता को चुपचाप संभालता है",
+      "featureComplexityDesc": "मेमोरी, मॉडल रूटिंग और उन्नत AI पर्दे के पीछे रहते हैं जबकि अनुभव शांत और स्पष्ट रहता है।",
+      "featureChannelsTitle": "जहाँ आप हैं वहाँ मिलता है",
+      "featureChannelsDesc": "अभी डैशबोर्ड पर अपने KIN से मिलें, फिर जैसे-जैसे आपकी दुनिया आगे बढ़ती है, विभिन्न चैनलों से रिश्ता जारी रखें।",
+      "buildMyKin": "मेरा KIN बनाएँ",
+      "skipToCompanions": "पहले से पता है कौन सा KIN चाहिए? साथियों पर जाएँ →"
+    },
+    "chooseCompanion": {
+      "title": "अपना साथी चुनें",
+      "subtitle": "हर साथी की अनूठी ताकत है। अपनी ज़रूरतों के अनुसार चुनें।",
+      "quickSetup": "त्वरित सेटअप — डिफ़ॉल्ट विकल्पों के साथ अंत तक जाएँ"
+    },
+    "quickIntro": {
+      "pickTitle": "अपना साथी चुनें",
+      "pickSubtitle": "अपनी शैली से मेल खाने वाले किसी को चुनें।",
+      "selected": "{name} चयनित"
+    },
+    "preferences": {
+      "title": "अपने KIN को बताएँ कैसे मदद करें",
+      "subtitle": "अपनी पहली असली बातचीत के लिए लहजा, गति और प्राथमिकताएँ तय करें।",
+      "nameLabel": "आपका KIN आपको क्या बुलाए?",
+      "namePlaceholder": "आपका नाम, उपनाम या जो सही लगे",
+      "guidanceLabel": "आपको कितना मार्गदर्शन चाहिए?",
+      "beginner": "शुरुआती",
+      "beginnerDesc": "सरल भाषा में समझाएँ",
+      "intermediate": "मध्यवर्ती",
+      "intermediateDesc": "मेरे साथ चलें",
+      "advanced": "उन्नत",
+      "advancedDesc": "तकनीकी बात करें",
+      "toneLabel": "आपका KIN कैसे बोले?",
+      "friendly": "मिलनसार",
+      "professional": "पेशेवर",
+      "casual": "अनौपचारिक",
+      "technical": "तकनीकी",
+      "goalsLabel": "पहले किसमें मदद चाहिए?",
+      "goalLearnToCode": "कोडिंग सीखें",
+      "goalBuildWebsite": "वेबसाइट बनाएँ",
+      "goalGrowBrand": "ब्रांड बढ़ाएँ",
+      "goalFinances": "वित्त प्रबंधन",
+      "goalCreative": "रचनात्मक बनें",
+      "goalDailyCompanion": "दैनिक साथी",
+      "languageLabel": "कौन सी भाषा सबसे स्वाभाविक लगती है?",
+      "privacyLabel": "KIN संवेदनशील संदर्भ कैसे संभाले?",
+      "keepPrivate": "चीज़ें प्राइवेट रखें",
+      "keepPrivateDesc": "व्यक्तिगत या संवेदनशील बातचीत के लिए लोकल-फ़र्स्ट रहें।",
+      "letLearn": "KIN को और स्मार्ट बनने दें",
+      "letLearnDesc": "जब मदद मिले तब उन्नत मॉडल का उपयोग करें और समय के साथ सुधार करें।"
+    },
+    "ready": {
+      "title": "आपका KIN तैयार है",
+      "subtitle": "हमने पर्दे के पीछे सेटअप संभाल लिया है। आपकी पहली बातचीत आपके लक्ष्यों, शैली और अभी सबसे महत्वपूर्ण बातों के संदर्भ के साथ खुलेगी।",
+      "readyToMeet": "{name} आपसे मिलने के लिए तैयार है!",
+      "firstConversation": "हम एक असली पहली बातचीत खोलेंगे ताकि {name} आपका स्वागत एक साथी के रूप में करे, खाली चैटबॉट के रूप में नहीं।",
+      "completing": "आपकी पहली बातचीत खोल रहे हैं...",
+      "meetButton": "{name} से मिलें",
+      "meetDefault": "अपने KIN से मिलें",
+      "exploreDashboard": "डैशबोर्ड देखें",
+      "installCTA": "📲 KIN को होम स्क्रीन पर जोड़ें",
+      "telegramCTA": "कभी भी Telegram पर अपने साथी से चैट करें"
+    }
+  },
+  "auth": {
+    "title": "अपने से मिलें",
+    "titleAccent": "KIN",
+    "subtitle": "आपका AI साथी जो आपके साथ बढ़ता है।",
+    "signInCTA": "शुरू करने के लिए साइन इन करें।",
+    "openInTelegram": "Telegram में खोलें",
+    "getTelegram": "Telegram पाएँ",
+    "features": "सुविधाएँ",
+    "genesisSix": "Genesis Six",
+    "howItWorks": "कैसे काम करता है",
+    "mint": "Mint",
+    "about": "हमारे बारे में",
+    "terms": "शर्तें",
+    "privacy": "गोपनीयता",
+    "copyright": "© 2026 KR8TIV AI"
+  }
+}

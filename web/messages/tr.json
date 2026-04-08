@@ -1,0 +1,220 @@
+{
+  "common": {
+    "retry": "Tekrar Dene",
+    "refresh": "Yenile",
+    "save": "Kaydet",
+    "cancel": "İptal",
+    "close": "Kapat",
+    "loading": "Yükleniyor...",
+    "error": "Bir şeyler yanlış gitti",
+    "logOut": "Çıkış Yap",
+    "back": "Geri",
+    "continue": "Devam",
+    "or": "veya",
+    "learnMore": "Daha Fazla Bilgi",
+    "selected": "seçildi",
+    "change": "değiştir"
+  },
+  "dashboard": {
+    "sidebar": {
+      "overview": "Genel Bakış",
+      "chat": "Sohbet",
+      "myCompanion": "Yoldaşım",
+      "soul": "Ruh",
+      "collection": "Koleksiyon",
+      "projects": "Projeler",
+      "canvas": "Tuval",
+      "progress": "İlerleme",
+      "skills": "Yetenekler",
+      "memories": "Anılar",
+      "family": "Aile",
+      "setup": "Kurulum",
+      "health": "Sağlık",
+      "billing": "Faturalama",
+      "refer": "Davet Et",
+      "help": "Yardım",
+      "settings": "Ayarlar",
+      "fleet": "Filo",
+      "training": "Eğitim",
+      "admin": "Yönetici"
+    }
+  },
+  "settings": {
+    "title": "Ayarlar",
+    "subtitle": "Profilini, tercihlerini ve hesabını yönet.",
+    "profile": {
+      "title": "Profil",
+      "name": "İsim",
+      "telegramUsername": "Telegram Kullanıcı Adı",
+      "notSet": "Ayarlanmadı",
+      "userId": "Kullanıcı ID",
+      "memberSince": "Üyelik Tarihi"
+    },
+    "preferences": {
+      "title": "Tercihler",
+      "displayName": "Görünen Ad",
+      "displayNameHint": "Görünen ad Telegram profilinden senkronize edilir.",
+      "tone": "Üslup",
+      "toneHint": "KIN'inin seninle nasıl konuştuğu.",
+      "language": "Dil",
+      "timezone": "Saat Dilimi",
+      "detecting": "Algılanıyor...",
+      "timezoneHint": "Tarayıcından algılandı",
+      "notifications": "Bildirimler",
+      "notificationsHint": "Yeni özellikler ve yoldaş etkinlikleri hakkında güncellemeler al."
+    },
+    "proactive": {
+      "title": "Proaktif Yoldaş",
+      "description": "Yoldaşının ihtiyaçlarını önceden tahmin etmesine izin ver — toplantı hazırlığı, takipler ve zamanında hatırlatmalar.",
+      "suggestionHistory": "Öneri Geçmişi"
+    },
+    "memory": {
+      "title": "Bellek Yönetimi",
+      "count": "{count} anı kayıtlı"
+    },
+    "wallets": {
+      "title": "Cüzdanlar"
+    },
+    "installApp": {
+      "title": "Uygulamayı Yükle",
+      "description": "Anında erişim ve çevrimdışı destek için KIN'i cihazına ekle.",
+      "installed": "KIN bu cihaza yüklendi",
+      "install": "KIN'i Yükle",
+      "iosHow": "iOS'ta Nasıl Yüklenir",
+      "browserHint": "KIN'i yüklemek için bu sayfayı desteklenen bir tarayıcıda (Chrome, Edge, Safari) aç."
+    },
+    "dataPrivacy": {
+      "title": "Veri ve Gizlilik",
+      "description": "Gizli modda yoldaşın sadece yerel yapay zekâ kullanır. Paylaşımlı modda gelişmiş yapay zekâ karmaşık istekleri işler ve yoldaşının öğrenmesine yardımcı olur.",
+      "childLocked": "🔒 Çocuk hesapları için gizlilik özel olarak ayarlanmıştır. Sadece yerel yapay zekâ kullanılır.",
+      "keepPrivate": "Sohbetleri gizli tut",
+      "keepPrivateHint": "Yoldaşın sadece yerel modeli kullanır. Hiçbir şey cihazından çıkmaz.",
+      "helpLearn": "Yoldaşının öğrenmesine yardım et",
+      "helpLearnHint": "Karmaşık sorular gelişmiş yapay zekâ kullanır. Yanıtlar zamanla yoldaşını geliştirir.",
+      "moveYourKin": "KIN'ini Taşı",
+      "moveDescription": "Yoldaşını, sohbetlerini ve eğitim verilerini cihazlar veya barındırma modları arasında aktar.",
+      "exportArchive": "Arşivi Dışa Aktar",
+      "importArchive": "Arşivi İçe Aktar"
+    }
+  },
+  "chat": {
+    "newChat": "Yeni sohbet",
+    "exchanges": "{count} mesaj",
+    "loadingConversation": "Sohbet yükleniyor...",
+    "emptyState": "{name} ile sohbet etmeye başla. {tagline} hakkında her şeyi sor.",
+    "placeholder": "{name}'e mesaj...",
+    "sendMessage": "Mesaj gönder",
+    "copyMessage": "Mesajı kopyala",
+    "stopPlayback": "Oynatmayı durdur",
+    "listen": "Dinle",
+    "voice": {
+      "voiceMessage": "Sesli mesaj",
+      "stopRecording": "Kaydı durdur",
+      "wakeWordActive": "Kayıt — uyandırma kelimesi aktif",
+      "processingVoice": "Ses işleniyor...",
+      "playingResponse": "Yanıt oynatılıyor",
+      "clickToStop": "Kaydı durdurmak için tıkla",
+      "listeningForWakeWord": "Uyandırma kelimesi dinleniyor...",
+      "processingYourVoice": "Sesin işleniyor...",
+      "playingCompanionResponse": "Yoldaş yanıtı oynatılıyor",
+      "startVoiceSession": "Sesli oturum başlat",
+      "pushToTalk": "Konuşmak için bas",
+      "disableWakeWord": "Uyandırma kelimesini devre dışı bırak",
+      "enableWakeWord": "Uyandırma kelimesini etkinleştir",
+      "wakeWordActiveTitle": "Uyandırma kelimesi aktif — eller serbest dinleme",
+      "enableWakeWordTitle": "Eller serbest için uyandırma kelimesini etkinleştir",
+      "endVoice": "Sesi sonlandır",
+      "listening": "Dinliyor...",
+      "waitingForWakeWord": "Uyandırma kelimesi bekleniyor...",
+      "processing": "İşleniyor...",
+      "speaking": "{name} konuşuyor...",
+      "listeningIndicator": "🎙️ Uyandırma kelimesi dinleniyor...",
+      "recordingIndicator": "🔴 Kayıt — şimdi konuş",
+      "processingIndicator": "⏳ Sesin işleniyor...",
+      "respondingIndicator": "🔊 {name} yanıt veriyor..."
+    }
+  },
+  "onboard": {
+    "welcome": {
+      "title": "KIN'e Hoş Geldin",
+      "subtitle": "KIN, ilk sohbetten itibaren kişisel hissettiren derinlemesine yetenekli bir yapay zekâ yoldaşı sunar. Zekâyı perde arkasında yönetiyoruz, böylece önemli olana odaklanabilirsin.",
+      "featureUnderstandsTitle": "Seni Anlıyor",
+      "featureUnderstandsDesc": "KIN'in hedeflerin, bağlamın ve stilinle başlar, böylece ilk yanıttan itibaren faydalı hisseder.",
+      "featureComplexityTitle": "Karmaşıklığı Sessizce Yönetir",
+      "featureComplexityDesc": "Bellek, model yönlendirme ve gelişmiş yapay zekâ perde arkasında kalırken deneyim sakin ve net kalır.",
+      "featureChannelsTitle": "Olduğun Yerde Görünür",
+      "featureChannelsDesc": "Şimdi panelde KIN'inle tanış, sonra dünyam hareket ettikçe kanallar üzerinden ilişkiyi sürdür.",
+      "buildMyKin": "KIN'imi Oluştur",
+      "skipToCompanions": "Hangi KIN'i istediğini zaten biliyor musun? Yoldaşlara git →"
+    },
+    "chooseCompanion": {
+      "title": "Yoldaşını Seç",
+      "subtitle": "Her yoldaşın benzersiz güçlü yanları var. İhtiyaçlarına uygun olanı seç.",
+      "quickSetup": "Hızlı Kurulum — varsayılanlarla sona atla"
+    },
+    "quickIntro": {
+      "pickTitle": "Yoldaşını Seç",
+      "pickSubtitle": "Tarzına uyan birini seç.",
+      "selected": "{name} seçildi"
+    },
+    "preferences": {
+      "title": "KIN'ine Nasıl Yardım Edeceğini Söyle",
+      "subtitle": "İlk gerçek sohbetin için üslup, hız ve öncelikleri belirle.",
+      "nameLabel": "KIN'in sana ne diye hitap etsin?",
+      "namePlaceholder": "Adın, takma adın veya doğru hissettiren",
+      "guidanceLabel": "Ne kadar rehberlik istiyorsun?",
+      "beginner": "Başlangıç",
+      "beginnerDesc": "Basitçe anlat",
+      "intermediate": "Orta",
+      "intermediateDesc": "Benimle birlikte ilerle",
+      "advanced": "İleri",
+      "advancedDesc": "Teknik konuşalım",
+      "toneLabel": "KIN'in nasıl konuşsun?",
+      "friendly": "Samimi",
+      "professional": "Profesyonel",
+      "casual": "Rahat",
+      "technical": "Teknik",
+      "goalsLabel": "Önce ne konuda yardım istiyorsun?",
+      "goalLearnToCode": "Kodlamayı Öğren",
+      "goalBuildWebsite": "Web Sitesi Oluştur",
+      "goalGrowBrand": "Markamı Büyüt",
+      "goalFinances": "Finansları Yönet",
+      "goalCreative": "Yaratıcı Ol",
+      "goalDailyCompanion": "Günlük Yoldaş",
+      "languageLabel": "Hangi dil en doğal hissediyor?",
+      "privacyLabel": "KIN'in hassas bağlamı nasıl ele almalı?",
+      "keepPrivate": "Her şeyi gizli tut",
+      "keepPrivateDesc": "Kişisel veya hassas sohbetler için yerel kalın.",
+      "letLearn": "KIN'inin daha akıllı olmasına izin ver",
+      "letLearnDesc": "İşe yaradığında gelişmiş modelleri kullan ve zamanla geliş."
+    },
+    "ready": {
+      "title": "KIN'in Hazır",
+      "subtitle": "Kurulumu perde arkasında hallettik. İlk sohbetin hedeflerin, stilin ve şu an en önemli olan şeyler hakkında bağlamla açılacak.",
+      "readyToMeet": "{name} seninle tanışmaya hazır!",
+      "firstConversation": "Gerçek bir ilk sohbet açacağız, böylece {name} seni boş bir chatbot gibi değil, bir yoldaş gibi karşılayacak.",
+      "completing": "İlk sohbetin açılıyor...",
+      "meetButton": "{name} ile Tanış",
+      "meetDefault": "KIN'inle Tanış",
+      "exploreDashboard": "Paneli Keşfet",
+      "installCTA": "📲 KIN'i Ana Ekrana Ekle",
+      "telegramCTA": "İstediğin zaman Telegram'da yoldaşınla sohbet et"
+    }
+  },
+  "auth": {
+    "title": "Tanış",
+    "titleAccent": "KIN",
+    "subtitle": "Seninle büyüyen yapay zekâ yoldaşın.",
+    "signInCTA": "Başlamak için giriş yap.",
+    "openInTelegram": "Telegram'da Aç",
+    "getTelegram": "Telegram'ı İndir",
+    "features": "Özellikler",
+    "genesisSix": "Genesis Six",
+    "howItWorks": "Nasıl Çalışır",
+    "mint": "Mint",
+    "about": "Hakkında",
+    "terms": "Şartlar",
+    "privacy": "Gizlilik",
+    "copyright": "© 2026 KR8TIV AI"
+  }
+}

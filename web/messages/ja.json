@@ -1,0 +1,220 @@
+{
+  "common": {
+    "retry": "再試行",
+    "refresh": "更新",
+    "save": "保存",
+    "cancel": "キャンセル",
+    "close": "閉じる",
+    "loading": "読み込み中...",
+    "error": "エラーが発生しました",
+    "logOut": "ログアウト",
+    "back": "戻る",
+    "continue": "続ける",
+    "or": "または",
+    "learnMore": "詳しく見る",
+    "selected": "選択済み",
+    "change": "変更"
+  },
+  "dashboard": {
+    "sidebar": {
+      "overview": "概要",
+      "chat": "チャット",
+      "myCompanion": "マイコンパニオン",
+      "soul": "ソウル",
+      "collection": "コレクション",
+      "projects": "プロジェクト",
+      "canvas": "キャンバス",
+      "progress": "進捗",
+      "skills": "スキル",
+      "memories": "メモリー",
+      "family": "ファミリー",
+      "setup": "セットアップ",
+      "health": "ヘルス",
+      "billing": "請求",
+      "refer": "紹介",
+      "help": "ヘルプ",
+      "settings": "設定",
+      "fleet": "フリート",
+      "training": "トレーニング",
+      "admin": "管理"
+    }
+  },
+  "settings": {
+    "title": "設定",
+    "subtitle": "プロフィール、設定、アカウントを管理します。",
+    "profile": {
+      "title": "プロフィール",
+      "name": "名前",
+      "telegramUsername": "Telegramユーザー名",
+      "notSet": "未設定",
+      "userId": "ユーザーID",
+      "memberSince": "登録日"
+    },
+    "preferences": {
+      "title": "環境設定",
+      "displayName": "表示名",
+      "displayNameHint": "表示名はTelegramプロフィールから同期されます。",
+      "tone": "トーン",
+      "toneHint": "KINがあなたに話しかける方法。",
+      "language": "言語",
+      "timezone": "タイムゾーン",
+      "detecting": "検出中...",
+      "timezoneHint": "ブラウザから検出",
+      "notifications": "通知",
+      "notificationsHint": "新機能やコンパニオンの活動に関するお知らせを受け取ります。"
+    },
+    "proactive": {
+      "title": "プロアクティブ・コンパニオン",
+      "description": "コンパニオンがあなたのニーズを先読み — 会議の準備、フォローアップ、タイムリーなリマインダー。",
+      "suggestionHistory": "提案履歴"
+    },
+    "memory": {
+      "title": "メモリー管理",
+      "count": "{count}件のメモリーを保存中"
+    },
+    "wallets": {
+      "title": "ウォレット"
+    },
+    "installApp": {
+      "title": "アプリをインストール",
+      "description": "即座にアクセスとオフラインサポートのためにKINをデバイスに追加します。",
+      "installed": "このデバイスにKINがインストールされています",
+      "install": "KINをインストール",
+      "iosHow": "iOSでのインストール方法",
+      "browserHint": "KINをインストールするには、対応ブラウザ（Chrome、Edge、Safari）でこのページを開いてください。"
+    },
+    "dataPrivacy": {
+      "title": "データとプライバシー",
+      "description": "プライベートモードでは、コンパニオンはローカルAIのみを使用します。共有モードでは、高度なAIが複雑なリクエストを処理し、コンパニオンの学習を助けます。",
+      "childLocked": "🔒 子供アカウントのプライバシーはプライベートに設定されています。ローカルAIのみ使用されます。",
+      "keepPrivate": "会話をプライベートに保つ",
+      "keepPrivateHint": "コンパニオンはローカルモデルのみを使用します。デバイスの外に何も出ません。",
+      "helpLearn": "コンパニオンの学習を助ける",
+      "helpLearnHint": "複雑な質問は高度なAIを使用します。応答は時間とともにコンパニオンを改善します。",
+      "moveYourKin": "KINを移動",
+      "moveDescription": "コンパニオン、会話、トレーニングデータをデバイスやホスティングモード間で転送します。",
+      "exportArchive": "アーカイブをエクスポート",
+      "importArchive": "アーカイブをインポート"
+    }
+  },
+  "chat": {
+    "newChat": "新しいチャット",
+    "exchanges": "{count}件のやり取り",
+    "loadingConversation": "会話を読み込み中...",
+    "emptyState": "{name}とチャットを始めましょう。{tagline}について何でも聞いてください。",
+    "placeholder": "{name}にメッセージ...",
+    "sendMessage": "メッセージを送信",
+    "copyMessage": "メッセージをコピー",
+    "stopPlayback": "再生を停止",
+    "listen": "聴く",
+    "voice": {
+      "voiceMessage": "音声メッセージ",
+      "stopRecording": "録音を停止",
+      "wakeWordActive": "録音中 — ウェイクワードアクティブ",
+      "processingVoice": "音声を処理中...",
+      "playingResponse": "応答を再生中",
+      "clickToStop": "クリックして録音を停止",
+      "listeningForWakeWord": "ウェイクワードを待機中...",
+      "processingYourVoice": "音声を処理中...",
+      "playingCompanionResponse": "コンパニオンの応答を再生中",
+      "startVoiceSession": "音声セッションを開始",
+      "pushToTalk": "押して話す",
+      "disableWakeWord": "ウェイクワードを無効化",
+      "enableWakeWord": "ウェイクワードを有効化",
+      "wakeWordActiveTitle": "ウェイクワードアクティブ — ハンズフリーで聴取",
+      "enableWakeWordTitle": "ハンズフリーのウェイクワードを有効化",
+      "endVoice": "音声を終了",
+      "listening": "聴取中...",
+      "waitingForWakeWord": "ウェイクワードを待機中...",
+      "processing": "処理中...",
+      "speaking": "{name}が話しています...",
+      "listeningIndicator": "🎙️ ウェイクワードを待機中...",
+      "recordingIndicator": "🔴 録音中 — 話してください",
+      "processingIndicator": "⏳ 音声を処理中...",
+      "respondingIndicator": "🔊 {name}が応答中..."
+    }
+  },
+  "onboard": {
+    "welcome": {
+      "title": "KINへようこそ",
+      "subtitle": "KINは最初の会話から個人的に感じられる、非常に優秀なAIコンパニオンを提供します。私たちが裏側でインテリジェンスを管理するので、あなたは大切なことに集中できます。",
+      "featureUnderstandsTitle": "あなたを理解する",
+      "featureUnderstandsDesc": "あなたのKINは、目標、コンテキスト、スタイルから始めるので、最初の返答から役立つと感じられます。",
+      "featureComplexityTitle": "複雑さを静かに処理",
+      "featureComplexityDesc": "メモリー、モデルルーティング、高度なAIは裏側にとどまり、体験は穏やかでクリアなままです。",
+      "featureChannelsTitle": "あなたのいる場所に",
+      "featureChannelsDesc": "今すぐダッシュボードでKINに会い、世界が動くにつれてチャネルを通じて関係を続けましょう。",
+      "buildMyKin": "マイKINを作成",
+      "skipToCompanions": "どのKINが欲しいかわかっていますか？コンパニオンへ →"
+    },
+    "chooseCompanion": {
+      "title": "コンパニオンを選ぶ",
+      "subtitle": "各コンパニオンにはユニークな強みがあります。ニーズに合ったものを選んでください。",
+      "quickSetup": "クイックセットアップ — デフォルトで最後までスキップ"
+    },
+    "quickIntro": {
+      "pickTitle": "コンパニオンを選ぶ",
+      "pickSubtitle": "あなたのスタイルに合った相手を選んでください。",
+      "selected": "{name}を選択"
+    },
+    "preferences": {
+      "title": "KINにサポート方法を伝える",
+      "subtitle": "最初の本格的な会話のためのトーン、ペース、優先事項を設定します。",
+      "nameLabel": "KINにどう呼んでもらいますか？",
+      "namePlaceholder": "名前、ニックネーム、しっくりくるもの",
+      "guidanceLabel": "どの程度のガイダンスが必要ですか？",
+      "beginner": "初心者",
+      "beginnerDesc": "わかりやすく説明して",
+      "intermediate": "中級",
+      "intermediateDesc": "一緒に進めて",
+      "advanced": "上級",
+      "advancedDesc": "専門的に話して",
+      "toneLabel": "KINにどんな話し方をしてほしいですか？",
+      "friendly": "フレンドリー",
+      "professional": "プロフェッショナル",
+      "casual": "カジュアル",
+      "technical": "テクニカル",
+      "goalsLabel": "最初に何を手伝ってほしいですか？",
+      "goalLearnToCode": "プログラミングを学ぶ",
+      "goalBuildWebsite": "ウェブサイトを作る",
+      "goalGrowBrand": "ブランドを成長させる",
+      "goalFinances": "財務を管理する",
+      "goalCreative": "クリエイティブになる",
+      "goalDailyCompanion": "デイリーコンパニオン",
+      "languageLabel": "最も自然に感じる言語は？",
+      "privacyLabel": "KINはどのようにセンシティブなコンテキストを扱うべきですか？",
+      "keepPrivate": "プライベートに保つ",
+      "keepPrivateDesc": "個人的な会話やセンシティブな会話はローカル優先で。",
+      "letLearn": "KINをもっと賢くする",
+      "letLearnDesc": "役立つ場合に高度なモデルを使用し、時間とともに改善します。"
+    },
+    "ready": {
+      "title": "KINの準備ができました",
+      "subtitle": "セットアップは裏側で完了しました。最初の会話は、あなたの目標、スタイル、今最も大切なことについてのコンテキストとともに始まります。",
+      "readyToMeet": "{name}があなたに会う準備ができました！",
+      "firstConversation": "空のチャットボットではなく、コンパニオンとして{name}があなたを迎える本格的な最初の会話を開きます。",
+      "completing": "最初の会話を開始中...",
+      "meetButton": "{name}に会う",
+      "meetDefault": "KINに会う",
+      "exploreDashboard": "ダッシュボードを探索",
+      "installCTA": "📲 KINをホーム画面に追加",
+      "telegramCTA": "いつでもTelegramでコンパニオンとチャットできます"
+    }
+  },
+  "auth": {
+    "title": "あなたの",
+    "titleAccent": "KIN",
+    "subtitle": "あなたと共に成長するAIコンパニオン。",
+    "signInCTA": "サインインして始めましょう。",
+    "openInTelegram": "Telegramで開く",
+    "getTelegram": "Telegramを入手",
+    "features": "機能",
+    "genesisSix": "Genesis Six",
+    "howItWorks": "仕組み",
+    "mint": "Mint",
+    "about": "概要",
+    "terms": "利用規約",
+    "privacy": "プライバシー",
+    "copyright": "© 2026 KR8TIV AI"
+  }
+}

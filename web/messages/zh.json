@@ -1,0 +1,220 @@
+{
+  "common": {
+    "retry": "重试",
+    "refresh": "刷新",
+    "save": "保存",
+    "cancel": "取消",
+    "close": "关闭",
+    "loading": "加载中...",
+    "error": "出了点问题",
+    "logOut": "退出登录",
+    "back": "返回",
+    "continue": "继续",
+    "or": "或",
+    "learnMore": "了解更多",
+    "selected": "已选择",
+    "change": "更改"
+  },
+  "dashboard": {
+    "sidebar": {
+      "overview": "概览",
+      "chat": "聊天",
+      "myCompanion": "我的伙伴",
+      "soul": "灵魂",
+      "collection": "收藏",
+      "projects": "项目",
+      "canvas": "画布",
+      "progress": "进度",
+      "skills": "技能",
+      "memories": "记忆",
+      "family": "家族",
+      "setup": "设置",
+      "health": "健康",
+      "billing": "账单",
+      "refer": "推荐",
+      "help": "帮助",
+      "settings": "设置",
+      "fleet": "舰队",
+      "training": "训练",
+      "admin": "管理"
+    }
+  },
+  "settings": {
+    "title": "设置",
+    "subtitle": "管理你的资料、偏好和账户。",
+    "profile": {
+      "title": "个人资料",
+      "name": "姓名",
+      "telegramUsername": "Telegram 用户名",
+      "notSet": "未设置",
+      "userId": "用户 ID",
+      "memberSince": "注册时间"
+    },
+    "preferences": {
+      "title": "偏好设置",
+      "displayName": "显示名称",
+      "displayNameHint": "显示名称从你的 Telegram 个人资料同步。",
+      "tone": "语气",
+      "toneHint": "你的 KIN 和你说话的方式。",
+      "language": "语言",
+      "timezone": "时区",
+      "detecting": "检测中...",
+      "timezoneHint": "从你的浏览器检测",
+      "notifications": "通知",
+      "notificationsHint": "接收关于新功能和伙伴活动的更新。"
+    },
+    "proactive": {
+      "title": "主动伙伴",
+      "description": "让你的伙伴预见你的需求 — 会议准备、后续跟进和适时提醒。",
+      "suggestionHistory": "建议历史"
+    },
+    "memory": {
+      "title": "记忆管理",
+      "count": "已存储 {count} 条记忆"
+    },
+    "wallets": {
+      "title": "钱包"
+    },
+    "installApp": {
+      "title": "安装应用",
+      "description": "将 KIN 添加到你的设备，获得即时访问和离线支持。",
+      "installed": "KIN 已安装在此设备上",
+      "install": "安装 KIN",
+      "iosHow": "如何在 iOS 上安装",
+      "browserHint": "在受支持的浏览器（Chrome、Edge、Safari）中打开此页面以安装 KIN。"
+    },
+    "dataPrivacy": {
+      "title": "数据与隐私",
+      "description": "隐私模式下，你的伙伴仅使用本地 AI。共享模式下，高级 AI 处理复杂请求并帮助伙伴学习。",
+      "childLocked": "🔒 儿童账户的隐私已设为私密。仅使用本地 AI。",
+      "keepPrivate": "保持对话私密",
+      "keepPrivateHint": "你的伙伴仅使用本地模型。数据不会离开你的设备。",
+      "helpLearn": "帮助伙伴学习",
+      "helpLearnHint": "复杂问题使用高级 AI。回答会随时间改善你的伙伴。",
+      "moveYourKin": "移动你的 KIN",
+      "moveDescription": "在设备或托管模式之间转移你的伙伴、对话和训练数据。",
+      "exportArchive": "导出归档",
+      "importArchive": "导入归档"
+    }
+  },
+  "chat": {
+    "newChat": "新聊天",
+    "exchanges": "{count} 条对话",
+    "loadingConversation": "正在加载对话...",
+    "emptyState": "开始与 {name} 聊天。关于 {tagline}，随便问吧。",
+    "placeholder": "给 {name} 发消息...",
+    "sendMessage": "发送消息",
+    "copyMessage": "复制消息",
+    "stopPlayback": "停止播放",
+    "listen": "收听",
+    "voice": {
+      "voiceMessage": "语音消息",
+      "stopRecording": "停止录音",
+      "wakeWordActive": "录音中 — 唤醒词已激活",
+      "processingVoice": "正在处理语音...",
+      "playingResponse": "正在播放回复",
+      "clickToStop": "点击停止录音",
+      "listeningForWakeWord": "正在监听唤醒词...",
+      "processingYourVoice": "正在处理你的语音...",
+      "playingCompanionResponse": "正在播放伙伴回复",
+      "startVoiceSession": "开始语音会话",
+      "pushToTalk": "按住说话",
+      "disableWakeWord": "关闭唤醒词",
+      "enableWakeWord": "开启唤醒词",
+      "wakeWordActiveTitle": "唤醒词已激活 — 免提收听",
+      "enableWakeWordTitle": "开启唤醒词实现免提",
+      "endVoice": "结束语音",
+      "listening": "正在收听...",
+      "waitingForWakeWord": "等待唤醒词...",
+      "processing": "处理中...",
+      "speaking": "{name} 正在说话...",
+      "listeningIndicator": "🎙️ 正在监听唤醒词...",
+      "recordingIndicator": "🔴 录音中 — 请说话",
+      "processingIndicator": "⏳ 正在处理你的语音...",
+      "respondingIndicator": "🔊 {name} 正在回复..."
+    }
+  },
+  "onboard": {
+    "welcome": {
+      "title": "欢迎来到 KIN",
+      "subtitle": "KIN 为你提供一个从第一次对话就感觉私密的深度 AI 伙伴。我们在幕后管理智能，让你可以专注于重要的事情。",
+      "featureUnderstandsTitle": "理解你",
+      "featureUnderstandsDesc": "你的 KIN 从你的目标、背景和风格开始，从第一个回复就让你觉得有用。",
+      "featureComplexityTitle": "悄悄处理复杂性",
+      "featureComplexityDesc": "记忆、模型路由和高级 AI 在幕后运作，而体验保持平静和清晰。",
+      "featureChannelsTitle": "出现在你身边",
+      "featureChannelsDesc": "现在在仪表板上认识你的 KIN，然后随着你的世界移动通过各种渠道继续这段关系。",
+      "buildMyKin": "创建我的 KIN",
+      "skipToCompanions": "已经知道想要哪个 KIN？前往伙伴 →"
+    },
+    "chooseCompanion": {
+      "title": "选择你的伙伴",
+      "subtitle": "每个伙伴都有独特的优势。选择适合你需求的那个。",
+      "quickSetup": "快速设置 — 使用默认值跳到最后"
+    },
+    "quickIntro": {
+      "pickTitle": "选择你的伙伴",
+      "pickSubtitle": "选择与你风格相配的伙伴。",
+      "selected": "已选择 {name}"
+    },
+    "preferences": {
+      "title": "告诉 KIN 如何帮助你",
+      "subtitle": "为你的第一次真正对话设定语气、节奏和优先级。",
+      "nameLabel": "KIN 应该怎么称呼你？",
+      "namePlaceholder": "你的名字、昵称或感觉合适的称呼",
+      "guidanceLabel": "你需要多少指导？",
+      "beginner": "初学者",
+      "beginnerDesc": "用简单的方式解释",
+      "intermediate": "中级",
+      "intermediateDesc": "和我同步推进",
+      "advanced": "高级",
+      "advancedDesc": "和我聊专业的",
+      "toneLabel": "KIN 应该怎么说话？",
+      "friendly": "友好",
+      "professional": "专业",
+      "casual": "随意",
+      "technical": "技术性",
+      "goalsLabel": "你首先想要什么帮助？",
+      "goalLearnToCode": "学习编程",
+      "goalBuildWebsite": "建立网站",
+      "goalGrowBrand": "发展品牌",
+      "goalFinances": "管理财务",
+      "goalCreative": "激发创意",
+      "goalDailyCompanion": "日常伙伴",
+      "languageLabel": "哪种语言最自然？",
+      "privacyLabel": "KIN 应该如何处理敏感内容？",
+      "keepPrivate": "保持私密",
+      "keepPrivateDesc": "个人或敏感对话优先使用本地模型。",
+      "letLearn": "让 KIN 变得更聪明",
+      "letLearnDesc": "在有帮助时使用高级模型，随时间不断改善。"
+    },
+    "ready": {
+      "title": "你的 KIN 已准备就绪",
+      "subtitle": "我们已在幕后完成设置。你的第一次对话将以关于你的目标、风格和当前最重要事项的背景开始。",
+      "readyToMeet": "{name} 已准备好与你见面！",
+      "firstConversation": "我们将打开一次真正的第一次对话，让 {name} 以伙伴而非空白聊天机器人的身份问候你。",
+      "completing": "正在开启你的第一次对话...",
+      "meetButton": "认识 {name}",
+      "meetDefault": "认识你的 KIN",
+      "exploreDashboard": "探索仪表板",
+      "installCTA": "📲 将 KIN 添加到主屏幕",
+      "telegramCTA": "随时在 Telegram 上与你的伙伴聊天"
+    }
+  },
+  "auth": {
+    "title": "认识你的",
+    "titleAccent": "KIN",
+    "subtitle": "与你一起成长的 AI 伙伴。",
+    "signInCTA": "登录开始。",
+    "openInTelegram": "在 Telegram 中打开",
+    "getTelegram": "获取 Telegram",
+    "features": "功能",
+    "genesisSix": "Genesis Six",
+    "howItWorks": "工作原理",
+    "mint": "Mint",
+    "about": "关于",
+    "terms": "条款",
+    "privacy": "隐私",
+    "copyright": "© 2026 KR8TIV AI"
+  }
+}

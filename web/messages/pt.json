@@ -1,0 +1,220 @@
+{
+  "common": {
+    "retry": "Tentar novamente",
+    "refresh": "Atualizar",
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "close": "Fechar",
+    "loading": "Carregando...",
+    "error": "Algo deu errado",
+    "logOut": "Sair",
+    "back": "Voltar",
+    "continue": "Continuar",
+    "or": "ou",
+    "learnMore": "Saiba mais",
+    "selected": "selecionado",
+    "change": "alterar"
+  },
+  "dashboard": {
+    "sidebar": {
+      "overview": "Visão geral",
+      "chat": "Chat",
+      "myCompanion": "Meu Companheiro",
+      "soul": "Alma",
+      "collection": "Coleção",
+      "projects": "Projetos",
+      "canvas": "Tela",
+      "progress": "Progresso",
+      "skills": "Habilidades",
+      "memories": "Memórias",
+      "family": "Família",
+      "setup": "Configuração",
+      "health": "Saúde",
+      "billing": "Cobrança",
+      "refer": "Indicar",
+      "help": "Ajuda",
+      "settings": "Configurações",
+      "fleet": "Frota",
+      "training": "Treinamento",
+      "admin": "Admin"
+    }
+  },
+  "settings": {
+    "title": "Configurações",
+    "subtitle": "Gerencie seu perfil, preferências e conta.",
+    "profile": {
+      "title": "Perfil",
+      "name": "Nome",
+      "telegramUsername": "Usuário do Telegram",
+      "notSet": "Não definido",
+      "userId": "ID do usuário",
+      "memberSince": "Membro desde"
+    },
+    "preferences": {
+      "title": "Preferências",
+      "displayName": "Nome de exibição",
+      "displayNameHint": "O nome de exibição é sincronizado do seu perfil do Telegram.",
+      "tone": "Tom",
+      "toneHint": "Como seu KIN fala com você.",
+      "language": "Idioma",
+      "timezone": "Fuso horário",
+      "detecting": "Detectando...",
+      "timezoneHint": "Detectado pelo seu navegador",
+      "notifications": "Notificações",
+      "notificationsHint": "Receba atualizações sobre novos recursos e atividades do companheiro."
+    },
+    "proactive": {
+      "title": "Companheiro Proativo",
+      "description": "Deixe seu companheiro antecipar suas necessidades — preparação de reuniões, acompanhamentos e lembretes oportunos.",
+      "suggestionHistory": "Histórico de sugestões"
+    },
+    "memory": {
+      "title": "Gerenciamento de memória",
+      "count": "{count, plural, one {# memória} other {# memórias}} armazenadas"
+    },
+    "wallets": {
+      "title": "Carteiras"
+    },
+    "installApp": {
+      "title": "Instalar App",
+      "description": "Adicione o KIN ao seu dispositivo para acesso instantâneo e suporte offline.",
+      "installed": "KIN está instalado neste dispositivo",
+      "install": "Instalar KIN",
+      "iosHow": "Como instalar no iOS",
+      "browserHint": "Abra esta página em um navegador compatível (Chrome, Edge, Safari) para instalar o KIN."
+    },
+    "dataPrivacy": {
+      "title": "Dados e Privacidade",
+      "description": "Quando privado, seu companheiro usa apenas IA local. Quando compartilhado, a IA avançada lida com solicitações complexas e ajuda seu companheiro a aprender.",
+      "childLocked": "🔒 A privacidade está definida como privada para contas infantis. Apenas IA local é usada.",
+      "keepPrivate": "Manter conversas privadas",
+      "keepPrivateHint": "Seu companheiro usa apenas o modelo local. Nada sai do seu dispositivo.",
+      "helpLearn": "Ajudar seu companheiro a aprender",
+      "helpLearnHint": "Perguntas complexas usam IA avançada. As respostas melhoram seu companheiro ao longo do tempo.",
+      "moveYourKin": "Mover Seu KIN",
+      "moveDescription": "Transfira seu companheiro, conversas e dados de treinamento entre dispositivos ou modos de hospedagem.",
+      "exportArchive": "Exportar arquivo",
+      "importArchive": "Importar arquivo"
+    }
+  },
+  "chat": {
+    "newChat": "Novo chat",
+    "exchanges": "{count} trocas",
+    "loadingConversation": "Carregando conversa...",
+    "emptyState": "Comece a conversar com {name}. Pergunte qualquer coisa sobre {tagline}.",
+    "placeholder": "Mensagem para {name}...",
+    "sendMessage": "Enviar mensagem",
+    "copyMessage": "Copiar mensagem",
+    "stopPlayback": "Parar reprodução",
+    "listen": "Ouvir",
+    "voice": {
+      "voiceMessage": "Mensagem de voz",
+      "stopRecording": "Parar gravação",
+      "wakeWordActive": "Gravando — palavra de ativação ativa",
+      "processingVoice": "Processando voz...",
+      "playingResponse": "Reproduzindo resposta",
+      "clickToStop": "Clique para parar a gravação",
+      "listeningForWakeWord": "Ouvindo palavra de ativação...",
+      "processingYourVoice": "Processando sua voz...",
+      "playingCompanionResponse": "Reproduzindo resposta do companheiro",
+      "startVoiceSession": "Iniciar sessão de voz",
+      "pushToTalk": "Pressione para falar",
+      "disableWakeWord": "Desativar palavra de ativação",
+      "enableWakeWord": "Ativar palavra de ativação",
+      "wakeWordActiveTitle": "Palavra de ativação ativa — ouvindo sem as mãos",
+      "enableWakeWordTitle": "Ativar palavra de ativação para modo viva-voz",
+      "endVoice": "Encerrar voz",
+      "listening": "Ouvindo...",
+      "waitingForWakeWord": "Aguardando palavra de ativação...",
+      "processing": "Processando...",
+      "speaking": "{name} está falando...",
+      "listeningIndicator": "🎙️ Ouvindo palavra de ativação...",
+      "recordingIndicator": "🔴 Gravando — fale agora",
+      "processingIndicator": "⏳ Processando sua voz...",
+      "respondingIndicator": "🔊 {name} está respondendo..."
+    }
+  },
+  "onboard": {
+    "welcome": {
+      "title": "Bem-vindo ao KIN",
+      "subtitle": "O KIN oferece um companheiro de IA profundamente capaz que parece pessoal desde a primeira conversa. Cuidamos da inteligência nos bastidores para que você possa focar no que importa.",
+      "featureUnderstandsTitle": "Entende Você",
+      "featureUnderstandsDesc": "Seu KIN começa com seus objetivos, contexto e estilo para ser útil desde a primeira resposta.",
+      "featureComplexityTitle": "Lida com a Complexidade Silenciosamente",
+      "featureComplexityDesc": "Memória, roteamento de modelos e IA avançada ficam nos bastidores enquanto a experiência permanece calma e clara.",
+      "featureChannelsTitle": "Aparece Onde Você Está",
+      "featureChannelsDesc": "Conheça seu KIN no painel agora, depois continue o relacionamento pelos canais conforme seu mundo se move.",
+      "buildMyKin": "Criar Meu KIN",
+      "skipToCompanions": "Já sabe qual KIN quer? Ir para companheiros →"
+    },
+    "chooseCompanion": {
+      "title": "Escolha Seu Companheiro",
+      "subtitle": "Cada companheiro tem forças únicas. Escolha o que se encaixa nas suas necessidades.",
+      "quickSetup": "Configuração rápida — pular para o final com opções padrão"
+    },
+    "quickIntro": {
+      "pickTitle": "Escolha Seu Companheiro",
+      "pickSubtitle": "Escolha alguém que combine com seu estilo.",
+      "selected": "{name} selecionado"
+    },
+    "preferences": {
+      "title": "Diga ao Seu KIN Como Ajudar",
+      "subtitle": "Defina o tom, ritmo e prioridades para sua primeira conversa real.",
+      "nameLabel": "Como seu KIN deve te chamar?",
+      "namePlaceholder": "Seu nome, apelido ou o que parecer certo",
+      "guidanceLabel": "Quanta orientação você quer?",
+      "beginner": "Iniciante",
+      "beginnerDesc": "Explique de forma simples",
+      "intermediate": "Intermediário",
+      "intermediateDesc": "Avance comigo",
+      "advanced": "Avançado",
+      "advancedDesc": "Vamos falar tecnicamente",
+      "toneLabel": "Como seu KIN deve soar?",
+      "friendly": "Amigável",
+      "professional": "Profissional",
+      "casual": "Casual",
+      "technical": "Técnico",
+      "goalsLabel": "Com o que você quer ajuda primeiro?",
+      "goalLearnToCode": "Aprender a programar",
+      "goalBuildWebsite": "Criar um site",
+      "goalGrowBrand": "Crescer minha marca",
+      "goalFinances": "Gerenciar finanças",
+      "goalCreative": "Ser criativo",
+      "goalDailyCompanion": "Companheiro diário",
+      "languageLabel": "Qual idioma parece mais natural?",
+      "privacyLabel": "Como seu KIN deve lidar com contexto sensível?",
+      "keepPrivate": "Manter as coisas privadas",
+      "keepPrivateDesc": "Ficar local para conversas pessoais ou sensíveis.",
+      "letLearn": "Deixar seu KIN ficar mais inteligente",
+      "letLearnDesc": "Usar modelos avançados quando ajudar e melhorar ao longo do tempo."
+    },
+    "ready": {
+      "title": "Seu KIN Está Pronto",
+      "subtitle": "Cuidamos da configuração nos bastidores. Sua primeira conversa será aberta com contexto sobre seus objetivos, seu estilo e o que mais importa agora.",
+      "readyToMeet": "{name} está pronto para te conhecer!",
+      "firstConversation": "Vamos abrir uma primeira conversa real para que {name} te cumprimente como um companheiro, não como um chatbot vazio.",
+      "completing": "Abrindo sua primeira conversa...",
+      "meetButton": "Conhecer {name}",
+      "meetDefault": "Conhecer seu KIN",
+      "exploreDashboard": "Explorar o painel",
+      "installCTA": "📲 Adicionar KIN à tela inicial",
+      "telegramCTA": "Converse com seu companheiro no Telegram a qualquer momento em"
+    }
+  },
+  "auth": {
+    "title": "Conheça Seu",
+    "titleAccent": "KIN",
+    "subtitle": "Seu companheiro de IA que cresce com você.",
+    "signInCTA": "Faça login para começar.",
+    "openInTelegram": "Abrir no Telegram",
+    "getTelegram": "Baixar Telegram",
+    "features": "Recursos",
+    "genesisSix": "Genesis Six",
+    "howItWorks": "Como funciona",
+    "mint": "Mint",
+    "about": "Sobre",
+    "terms": "Termos",
+    "privacy": "Privacidade",
+    "copyright": "© 2026 KR8TIV AI"
+  }
+}
