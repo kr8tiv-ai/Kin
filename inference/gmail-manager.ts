@@ -100,9 +100,19 @@ export const GMAIL_SCOPES = [
 /**
  * Derive a 256-bit key from JWT_SECRET via SHA-256.
  * Deterministic — same secret always produces the same key.
+ * Cached at module level to avoid re-hashing on every encrypt/decrypt call.
  */
+let _cachedKeySecret: string | null = null;
+let _cachedKeyBuffer: Buffer | null = null;
+
 function deriveKey(secret: string): Buffer {
-  return crypto.createHash('sha256').update(secret).digest();
+  if (_cachedKeySecret === secret && _cachedKeyBuffer) {
+    return _cachedKeyBuffer;
+  }
+  const key = crypto.createHash('sha256').update(secret).digest();
+  _cachedKeySecret = secret;
+  _cachedKeyBuffer = key;
+  return key;
 }
 
 /**

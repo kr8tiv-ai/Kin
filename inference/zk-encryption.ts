@@ -7,6 +7,9 @@
  */
 
 import crypto from 'crypto';
+import { promisify } from 'util';
+
+const pbkdf2Async = promisify(crypto.pbkdf2);
 
 export interface EncryptedData {
   ciphertext: string;
@@ -25,13 +28,13 @@ export interface ZKKeyConfig {
 class ZKEncryption {
   private keyCache: Map<string, Buffer> = new Map();
 
-  deriveKey(userId: string, password: string, salt?: Buffer): { key: Buffer; salt: Buffer } {
+  async deriveKey(userId: string, password: string, salt?: Buffer): Promise<{ key: Buffer; salt: Buffer }> {
     const cacheKey = `${userId}:${password}`;
     const cached = this.keyCache.get(cacheKey);
     if (cached) return { key: cached, salt: salt! };
 
     const saltBuffer = salt ?? crypto.randomBytes(32);
-    const key = crypto.pbkdf2Sync(password, saltBuffer, 100000, 32, 'sha512');
+    const key = await pbkdf2Async(password, saltBuffer, 100000, 32, 'sha512');
     
     if (!salt) {
       this.keyCache.set(cacheKey, key);
@@ -40,9 +43,9 @@ class ZKEncryption {
     return { key, salt: saltBuffer };
   }
 
-  encrypt(plaintext: string, userId: string, password: string): EncryptedData {
+  async encrypt(plaintext: string, userId: string, password: string): Promise<EncryptedData> {
     const salt = crypto.randomBytes(32);
-    const { key } = this.deriveKey(userId, password, salt);
+    const { key } = await this.deriveKey(userId, password, salt);
     
     const iv = crypto.randomBytes(16);
     const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
@@ -59,9 +62,9 @@ class ZKEncryption {
     };
   }
 
-  decrypt(encrypted: EncryptedData, userId: string, password: string): string {
+  async decrypt(encrypted: EncryptedData, userId: string, password: string): Promise<string> {
     const salt = Buffer.from(encrypted.salt, 'base64');
-    const { key } = this.deriveKey(userId, password, salt);
+    const { key } = await this.deriveKey(userId, password, salt);
     
     const iv = Buffer.from(encrypted.iv, 'base64');
     const authTag = Buffer.from(encrypted.authTag, 'base64');
@@ -75,13 +78,13 @@ class ZKEncryption {
     return plaintext;
   }
 
-  encryptObject(obj: Record<string, unknown>, userId: string, password: string): EncryptedData {
+  async encryptObject(obj: Record<string, unknown>, userId: string, password: string): Promise<EncryptedData> {
     const plaintext = JSON.stringify(obj);
     return this.encrypt(plaintext, userId, password);
   }
 
-  decryptObject(encrypted: EncryptedData, userId: string, password: string): Record<string, unknown> {
-    const plaintext = this.decrypt(encrypted, userId, password);
+  async decryptObject(encrypted: EncryptedData, userId: string, password: string): Promise<Record<string, unknown>> {
+    const plaintext = await this.decrypt(encrypted, userId, password);
     return JSON.parse(plaintext);
   }
 
@@ -89,9 +92,9 @@ class ZKEncryption {
     return crypto.createHash('sha256').update(data).digest('hex');
   }
 
-  verifyKey(userId: string, password: string, encryptedSample: EncryptedData): boolean {
+  async verifyKey(userId: string, password: string, encryptedSample: EncryptedData): Promise<boolean> {
     try {
-      this.decrypt(encryptedSample, userId, password);
+      await this.decrypt(encryptedSample, userId, password);
       return true;
     } catch {
       return false;

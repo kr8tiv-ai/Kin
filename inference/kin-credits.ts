@@ -75,8 +75,18 @@ const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 12; // 96-bit IV for GCM
 const AUTH_TAG_LENGTH = 16;
 
+/** Module-level cache: secret → derived key. Avoids re-hashing on every encrypt/decrypt. */
+let _cachedKeySecret: string | null = null;
+let _cachedKeyBuffer: Buffer | null = null;
+
 function deriveKey(secret: string): Buffer {
-  return crypto.createHash('sha256').update(secret).digest();
+  if (_cachedKeySecret === secret && _cachedKeyBuffer) {
+    return _cachedKeyBuffer;
+  }
+  const key = crypto.createHash('sha256').update(secret).digest();
+  _cachedKeySecret = secret;
+  _cachedKeyBuffer = key;
+  return key;
 }
 
 /** Encrypt plaintext → `iv:authTag:ciphertext` (hex-encoded). */
