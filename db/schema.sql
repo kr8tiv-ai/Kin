@@ -1063,6 +1063,17 @@ CREATE INDEX IF NOT EXISTS idx_family_invite_codes_code ON family_invite_codes(c
 CREATE INDEX IF NOT EXISTS idx_family_invite_codes_group ON family_invite_codes(family_group_id);
 
 -- ============================================================================
+-- Composite Indexes — cover frequent (user_id, companion_id) queries
+-- ============================================================================
+
+CREATE INDEX IF NOT EXISTS idx_memories_user_companion ON memories(user_id, companion_id);
+CREATE INDEX IF NOT EXISTS idx_conversations_user_companion ON conversations(user_id, companion_id);
+CREATE INDEX IF NOT EXISTS idx_companion_souls_user_companion ON companion_souls(user_id, companion_id);
+CREATE INDEX IF NOT EXISTS idx_companion_skills_companion_user ON companion_skills(companion_id, user_id);
+CREATE INDEX IF NOT EXISTS idx_companion_customizations_user_companion ON companion_customizations(user_id, companion_id);
+CREATE INDEX IF NOT EXISTS idx_user_companions_user_companion ON user_companions(user_id, companion_id);
+
+-- ============================================================================
 -- Safe Migrations — Family Mode COPPA columns
 -- ============================================================================
 

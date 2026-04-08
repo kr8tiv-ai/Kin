@@ -6,6 +6,7 @@
  */
 
 import Fastify from 'fastify';
+import compress from '@fastify/compress';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import jwt from '@fastify/jwt';
@@ -544,6 +545,9 @@ export async function createServer(config: ApiConfig = {}) {
 
   // Error handling
   await fastify.register(sensible);
+
+  // HTTP compression (gzip/brotli)
+  await fastify.register(compress, { global: true });
 
   // Security headers
   await fastify.register(helmet, {

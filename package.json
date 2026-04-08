@@ -26,6 +26,7 @@
     "doctor": "tsx scripts/doctor.ts"
   },
   "dependencies": {
+    "@fastify/compress": "^8.3.1",
     "@fastify/cors": "^10.0.1",
     "@fastify/helmet": "^12.0.1",
     "@fastify/jwt": "^10.0.0",

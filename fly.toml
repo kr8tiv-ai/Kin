@@ -20,8 +20,7 @@ kill_timeout = "30s"
   NODE_ENV = "production"
   OLLAMA_HOST = "kin-inference.internal"
   OLLAMA_PORT = "11434"
-  # Required secret placeholder: set with `fly secrets set JWT_SECRET=<value>`
-  JWT_SECRET = "__SET_WITH_FLY_SECRETS__"
+  # JWT_SECRET must be set via `fly secrets set JWT_SECRET=<value>` — never in [env].
   # Runtime image refs kept explicit for validator + operator clarity.
   KIN_WEB_IMAGE = "ghcr.io/kr8tiv-ai/kin-web:latest"
   KIN_INFERENCE_IMAGE = "ghcr.io/kr8tiv-ai/kin-inference:latest"
