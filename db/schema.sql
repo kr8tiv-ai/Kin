@@ -1010,3 +1010,50 @@ CREATE INDEX IF NOT EXISTS idx_proactive_suggestions_signal ON proactive_suggest
 -- ALTER TABLE user_preferences ADD COLUMN proactive_quiet_end INTEGER;
 -- ALTER TABLE user_preferences ADD COLUMN proactive_max_daily INTEGER DEFAULT 5;
 -- ALTER TABLE user_preferences ADD COLUMN proactive_channels TEXT DEFAULT '[]';
+
+-- ============================================================================
+-- Family Groups — shared companion, private threads
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS family_groups (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  created_by TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000),
+  updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000)
+);
+
+CREATE INDEX IF NOT EXISTS idx_family_groups_created_by ON family_groups(created_by);
+
+-- ============================================================================
+-- Family Members — role-based membership within a family group
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS family_members (
+  id TEXT PRIMARY KEY,
+  family_group_id TEXT NOT NULL REFERENCES family_groups(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  role TEXT NOT NULL DEFAULT 'member' CHECK (role IN ('parent', 'child', 'member')),
+  joined_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000),
+  UNIQUE(family_group_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_family_members_group ON family_members(family_group_id);
+CREATE INDEX IF NOT EXISTS idx_family_members_user ON family_members(user_id);
+
+-- ============================================================================
+-- Family Invite Codes — time-limited join codes for family groups
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS family_invite_codes (
+  id TEXT PRIMARY KEY,
+  family_group_id TEXT NOT NULL REFERENCES family_groups(id) ON DELETE CASCADE,
+  code TEXT NOT NULL UNIQUE,
+  created_by TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'used', 'expired')),
+  created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000),
+  expires_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_family_invite_codes_code ON family_invite_codes(code);
+CREATE INDEX IF NOT EXISTS idx_family_invite_codes_group ON family_invite_codes(family_group_id);

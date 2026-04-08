@@ -68,6 +68,7 @@ import firstMessageRoutes from './routes/first-message.js';
 import canvasRoutes from './routes/canvas.js';
 import proactiveRoutes from './routes/proactive.js';
 import calendarAuthRoutes from './routes/calendar-auth.js';
+import familyRoutes from './routes/family.js';
 
 // Mission Control imports
 import { initMissionControlClient, getMissionControlClient } from '../inference/mission-control.js';
@@ -653,6 +654,7 @@ export async function createServer(config: ApiConfig = {}) {
     await protectedFastify.register(canvasRoutes);
     await protectedFastify.register(proactiveRoutes);
     await protectedFastify.register(calendarAuthRoutes);
+    await protectedFastify.register(familyRoutes);
   });
 
   // Webhook ingestion routes (HMAC-authenticated, no JWT)
