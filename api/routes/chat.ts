@@ -15,6 +15,7 @@ import crypto from 'crypto';
 import { supervisedChat } from '../../inference/supervisor.js';
 import { FallbackHandler, type Message } from '../../inference/fallback-handler.js';
 import { buildCompanionPrompt, buildSoulPrompt } from '../../inference/companion-prompts.js';
+import type { AgeBracket } from '../../inference/child-safety.js';
 import { getCompanionConfig } from '../../companions/config.js';
 import { scoreDrift, needsReinforcement, buildReinforcementPrefix } from '../../inference/soul-drift.js';
 import { getProviderHealth } from '../../inference/providers/circuit-breaker.js';
@@ -226,7 +227,8 @@ const chatRoutes: FastifyPluginAsync = async (fastify) => {
     config: { rateLimit: { max: 30, timeWindow: '1 minute' } },
     preHandler: [enforceMessageLimit()],
   } as any, async (request, reply: FastifyReply) => {
-    const userId = (request.user as { userId: string }).userId;
+    const userId = (request.user as { userId: string; ageBracket?: string }).userId;
+    const ageBracket = ((request.user as { ageBracket?: string }).ageBracket ?? 'adult') as AgeBracket;
     const { companionId = 'cipher', message, conversationId: existingConvoId } = request.body;
 
     // Validate companion exists
@@ -316,6 +318,7 @@ const chatRoutes: FastifyPluginAsync = async (fastify) => {
         privacyMode,
         userTier,
         kinCredential,
+        ageBracket,
         memoryFallback: async () => {
           const rows = fastify.context.db.prepare(`
             SELECT memory_type, content FROM memories
@@ -382,7 +385,8 @@ const chatRoutes: FastifyPluginAsync = async (fastify) => {
     config: { rateLimit: { max: 30, timeWindow: '1 minute' } },
     preHandler: [enforceMessageLimit()],
   } as any, async (request, reply: FastifyReply) => {
-    const userId = (request.user as { userId: string }).userId;
+    const userId = (request.user as { userId: string; ageBracket?: string }).userId;
+    const streamAgeBracket = ((request.user as { ageBracket?: string }).ageBracket ?? 'adult') as AgeBracket;
     const { companionId = 'cipher', message, conversationId: existingConvoId } = request.body;
 
     // Validate companion exists
@@ -538,6 +542,7 @@ const chatRoutes: FastifyPluginAsync = async (fastify) => {
             privacyMode: streamPrivacyMode,
             userTier: streamUserTier,
             kinCredential: streamKinCredential,
+            ageBracket: streamAgeBracket,
             memoryFallback: async () => {
               const rows = fastify.context.db.prepare(`
                 SELECT memory_type, content FROM memories

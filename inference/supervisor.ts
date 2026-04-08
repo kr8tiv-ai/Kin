@@ -27,6 +27,7 @@ import { getMetricsCollector, type RequestMetric } from './metrics.js';
 import { getSupermemoryClient } from './memory/supermemory.js';
 import { extractObservations } from './observation-extractor.js';
 import { getTrainingDataCollector } from './training-data.js';
+import { buildChildSafetyPrompt, isWebSearchBlockedByAge, type AgeBracket } from './child-safety.js';
 
 // In-character fallback messages when no LLM is available at all
 const NO_LLM_FALLBACKS: Record<string, string> = {
@@ -100,6 +101,12 @@ export interface SupervisorOptions {
     credential: string;
     providerId: FrontierProviderId;
   };
+  /**
+   * User's age bracket for child safety prompt injection.
+   * Populated from JWT claims (set by buildJwtPayload in auth.ts).
+   * under_13/13_to_17 get safety boundary prompts; adult (or undefined) gets none.
+   */
+  ageBracket?: AgeBracket;
 }
 
 // ============================================================================
@@ -392,6 +399,24 @@ export async function supervisedChat(
           content: messages[systemIdx]!.content + memoryBlock,
         };
       }
+    }
+  }
+
+  // ── Child safety prompt injection ──
+  // Inject age-appropriate safety boundaries into the system message for child/teen accounts.
+  // Must happen before routing so both local and frontier paths see the safety prompt.
+  const ageBracket = options?.ageBracket ?? 'adult';
+  if (ageBracket !== 'adult') {
+    const safetyPrompt = buildChildSafetyPrompt(ageBracket);
+    if (safetyPrompt) {
+      const systemIdx = messages.findIndex(m => m.role === 'system');
+      if (systemIdx >= 0) {
+        messages[systemIdx] = {
+          ...messages[systemIdx]!,
+          content: messages[systemIdx]!.content + '\n\n' + safetyPrompt,
+        };
+      }
+      console.log(`[supervisor] Child safety prompt injected for ageBracket=${ageBracket}`);
     }
   }
 
