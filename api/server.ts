@@ -66,6 +66,8 @@ import missionControlRoutes from './routes/mission-control.js';
 import kinCreditsRoutes from './routes/kin-credits.js';
 import firstMessageRoutes from './routes/first-message.js';
 import canvasRoutes from './routes/canvas.js';
+import proactiveRoutes from './routes/proactive.js';
+import calendarAuthRoutes from './routes/calendar-auth.js';
 
 // Mission Control imports
 import { initMissionControlClient, getMissionControlClient } from '../inference/mission-control.js';
@@ -97,6 +99,10 @@ import approvalRoutes from './routes/approvals.js';
 
 // KIN Credits imports
 import { CredentialManager, setCredentialManager } from '../inference/kin-credits.js';
+
+// Proactive companion imports
+import { ProactiveManager, getProactiveManager } from '../inference/proactive-manager.js';
+import { Cron } from 'croner';
 
 // Inference imports for WebSocket streaming chat
 import crypto from 'crypto';
@@ -441,6 +447,37 @@ export async function createServer(config: ApiConfig = {}) {
   }
 
   // --------------------------------------------------------------------------
+  // Proactive companion initialisation
+  // --------------------------------------------------------------------------
+
+  const proactiveManager = getProactiveManager(db, channelDelivery);
+
+  // Register 15-minute proactive scan cron
+  let proactiveCron: Cron | null = null;
+  try {
+    const optedIn = db.prepare(
+      `SELECT COUNT(*) as cnt FROM user_preferences WHERE proactive_enabled = TRUE`,
+    ).get() as { cnt: number } | undefined;
+
+    if (optedIn && optedIn.cnt > 0) {
+      proactiveCron = new Cron('*/15 * * * *', async () => {
+        try {
+          await proactiveManager.runScan();
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          console.error(`[proactive] Cron scan error: ${msg}`);
+        }
+      });
+      fastify.log.info(`[proactive] Cron registered (${optedIn.cnt} opted-in user(s))`);
+    } else {
+      fastify.log.info('[proactive] No opted-in users — cron not started');
+    }
+  } catch {
+    // proactive columns may not exist yet (migration not applied) — safe to skip
+    fastify.log.info('[proactive] Proactive columns not available — cron not started');
+  }
+
+  // --------------------------------------------------------------------------
   // Mission Control auto-connect (opt-in via MC_URL + MC_API_KEY env vars)
   // --------------------------------------------------------------------------
 
@@ -614,6 +651,8 @@ export async function createServer(config: ApiConfig = {}) {
     await protectedFastify.register(kinCreditsRoutes);
     await protectedFastify.register(firstMessageRoutes);
     await protectedFastify.register(canvasRoutes);
+    await protectedFastify.register(proactiveRoutes);
+    await protectedFastify.register(calendarAuthRoutes);
   });
 
   // Webhook ingestion routes (HMAC-authenticated, no JWT)
@@ -738,6 +777,7 @@ export async function createServer(config: ApiConfig = {}) {
   fastify.addHook('onClose', async () => {
     schedulerManager.shutdown();
     pipelineManager.shutdown();
+    if (proactiveCron) proactiveCron.stop();
     getMissionControlClient().disconnect();
     await frontierProxy.stop();
     creditDb.close();

@@ -950,3 +950,63 @@ CREATE TABLE IF NOT EXISTS kin_credits (
 CREATE INDEX IF NOT EXISTS idx_kin_credits_user ON kin_credits(user_id);
 CREATE INDEX IF NOT EXISTS idx_kin_credits_provider ON kin_credits(provider_id);
 CREATE INDEX IF NOT EXISTS idx_kin_credits_status ON kin_credits(status);
+
+-- ============================================================================
+-- Proactive Companion — Context Signals
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS context_signals (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  companion_id TEXT NOT NULL REFERENCES companions(id),
+  signal_type TEXT NOT NULL
+    CHECK (signal_type IN ('calendar_event', 'time_pattern', 'conversation_gap')),
+  payload TEXT NOT NULL DEFAULT '{}',      -- JSON blob with signal-specific data
+  confidence REAL NOT NULL DEFAULT 0.5 CHECK (confidence BETWEEN 0 AND 1),
+  status TEXT NOT NULL DEFAULT 'pending'
+    CHECK (status IN ('pending', 'delivered', 'dismissed', 'expired')),
+  created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000),
+  delivered_at INTEGER,
+  expires_at INTEGER
+);
+
+CREATE INDEX IF NOT EXISTS idx_context_signals_user ON context_signals(user_id);
+CREATE INDEX IF NOT EXISTS idx_context_signals_companion ON context_signals(companion_id);
+CREATE INDEX IF NOT EXISTS idx_context_signals_status ON context_signals(status);
+CREATE INDEX IF NOT EXISTS idx_context_signals_type ON context_signals(signal_type);
+
+-- ============================================================================
+-- Proactive Companion — Suggestions
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS proactive_suggestions (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  companion_id TEXT NOT NULL REFERENCES companions(id),
+  signal_id TEXT REFERENCES context_signals(id),
+  content TEXT NOT NULL,
+  delivery_channel TEXT NOT NULL
+    CHECK (delivery_channel IN ('telegram', 'whatsapp', 'discord', 'api')),
+  delivery_recipient_id TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending'
+    CHECK (status IN ('pending', 'delivered', 'acted_on', 'dismissed', 'expired')),
+  user_feedback TEXT CHECK (user_feedback IN ('helpful', 'not_helpful') OR user_feedback IS NULL),
+  created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000),
+  delivered_at INTEGER
+);
+
+CREATE INDEX IF NOT EXISTS idx_proactive_suggestions_user ON proactive_suggestions(user_id);
+CREATE INDEX IF NOT EXISTS idx_proactive_suggestions_companion ON proactive_suggestions(companion_id);
+CREATE INDEX IF NOT EXISTS idx_proactive_suggestions_status ON proactive_suggestions(status);
+CREATE INDEX IF NOT EXISTS idx_proactive_suggestions_signal ON proactive_suggestions(signal_id);
+
+-- ============================================================================
+-- Proactive Companion — user_preferences extension (safe ALTER TABLEs)
+-- ============================================================================
+
+-- Migration 4: Proactive companion columns
+-- ALTER TABLE user_preferences ADD COLUMN proactive_enabled BOOLEAN DEFAULT FALSE;
+-- ALTER TABLE user_preferences ADD COLUMN proactive_quiet_start INTEGER;
+-- ALTER TABLE user_preferences ADD COLUMN proactive_quiet_end INTEGER;
+-- ALTER TABLE user_preferences ADD COLUMN proactive_max_daily INTEGER DEFAULT 5;
+-- ALTER TABLE user_preferences ADD COLUMN proactive_channels TEXT DEFAULT '[]';
