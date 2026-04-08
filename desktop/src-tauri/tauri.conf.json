@@ -1,0 +1,48 @@
+{
+  "$schema": "https://raw.githubusercontent.com/nicoverbruggen/tauri-v2-schema/main/tauri.conf.json",
+  "productName": "KIN Companion",
+  "version": "0.1.0",
+  "identifier": "com.kr8tiv.kin",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:3001",
+    "beforeDevCommand": "",
+    "beforeBuildCommand": ""
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "KIN Companion",
+        "width": 400,
+        "height": 600,
+        "decorations": false,
+        "transparent": true,
+        "visible": false,
+        "resizable": false,
+        "alwaysOnTop": true,
+        "skipTaskbar": true
+      }
+    ],
+    "trayIcon": {
+      "iconPath": "icons/icon-32x32.png",
+      "tooltip": "KIN Companion",
+      "iconAsTemplate": true
+    },
+    "security": {
+      "csp": "default-src 'self'; connect-src 'self' http://localhost:3001 http://localhost:3002 https://*.meetyourkin.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "icon": [
+      "icons/icon-32x32.png",
+      "icons/icon-128x128.png",
+      "icons/icon-512x512.png"
+    ],
+    "targets": "all",
+    "macOS": {
+      "minimumSystemVersion": "10.15"
+    }
+  }
+}
