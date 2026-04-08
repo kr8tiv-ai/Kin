@@ -64,6 +64,7 @@ import schedulerRoutes, { webhookRoutes } from './routes/scheduler.js';
 import mediaRoutes from './routes/media.js';
 import missionControlRoutes from './routes/mission-control.js';
 import kinCreditsRoutes from './routes/kin-credits.js';
+import firstMessageRoutes from './routes/first-message.js';
 
 // Mission Control imports
 import { initMissionControlClient, getMissionControlClient } from '../inference/mission-control.js';
@@ -607,6 +608,7 @@ export async function createServer(config: ApiConfig = {}) {
     await protectedFastify.register(mediaRoutes);
     await protectedFastify.register(missionControlRoutes);
     await protectedFastify.register(kinCreditsRoutes);
+    await protectedFastify.register(firstMessageRoutes);
   });
 
   // Webhook ingestion routes (HMAC-authenticated, no JWT)

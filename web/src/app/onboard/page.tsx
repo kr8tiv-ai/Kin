@@ -47,14 +47,28 @@ export default function OnboardPage() {
     setSparkleTrigger((t) => t + 1);
   }, [onboarding]);
 
+  // Build userProfile for the first-message endpoint
+  const userProfile = {
+    displayName: onboarding.preferences.displayName || undefined,
+    interests: onboarding.memories.interests
+      ? onboarding.memories.interests.split(',').map((s: string) => s.trim()).filter(Boolean)
+      : onboarding.preferences.goals.length > 0
+        ? onboarding.preferences.goals
+        : undefined,
+    goals: onboarding.preferences.goals.length > 0
+      ? onboarding.preferences.goals
+      : undefined,
+  };
+
   const handleComplete = useCallback(async () => {
     try {
       await onboarding.complete();
-      router.push('/dashboard/chat');
+      // Don't navigate immediately — StepReady will fetch the first message,
+      // then show a "Start Chatting →" button that navigates to /dashboard/chat
     } catch {
       // Error is displayed in StepReady via onboarding.error
     }
-  }, [onboarding, router]);
+  }, [onboarding]);
 
   // ── Quick-mode handlers ───────────────────────────────────────────────
 
@@ -132,6 +146,8 @@ export default function OnboardPage() {
             completing={onboarding.completing}
             error={onboarding.error}
             onComplete={handleComplete}
+            userProfile={userProfile}
+            flowMode="quick"
           />
         )}
 
@@ -193,6 +209,8 @@ export default function OnboardPage() {
             completing={onboarding.completing}
             error={onboarding.error}
             onComplete={handleComplete}
+            userProfile={userProfile}
+            flowMode="detailed"
           />
         )}
       </AnimatePresence>
