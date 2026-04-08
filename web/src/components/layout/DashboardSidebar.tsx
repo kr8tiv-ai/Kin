@@ -5,6 +5,7 @@
 // ============================================================================
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/providers/AuthProvider';
@@ -127,7 +128,7 @@ export function DashboardSidebar({ className, onNavigate }: DashboardSidebarProp
           </div>
         </div>
         <a href="https://kr8tiv.ai" target="_blank" rel="noopener noreferrer" className="block mt-1">
-          <img src="/kr8tiv-logo.png" alt="KR8TIV" style={{ height: '18px', width: 'auto', opacity: 0.6, filter: 'brightness(2)', transition: 'opacity 0.3s' }} />
+          <Image src="/kr8tiv-logo.png" alt="KR8TIV" width={52} height={18} style={{ height: '18px', width: 'auto', opacity: 0.6, filter: 'brightness(2)', transition: 'opacity 0.3s' }} />
         </a>
       </div>
 

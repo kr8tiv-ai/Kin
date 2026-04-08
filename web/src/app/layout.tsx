@@ -5,7 +5,7 @@ import { getLocale, getMessages } from 'next-intl/server';
 import { AuthProvider } from '@/providers/AuthProvider';
 import { LocaleProvider } from '@/providers/LocaleProvider';
 import { ToastProvider } from '@/providers/ToastProvider';
-import { SupportWidget } from '@/components/ui/SupportWidget';
+import { LazySupportWidget } from '@/components/ui/LazySupportWidget';
 import { AnalyticsInit } from '@/components/AnalyticsInit';
 import { Analytics } from '@vercel/analytics/react';
 import './globals.css';
@@ -103,7 +103,7 @@ export default async function RootLayout({
             </AuthProvider>
           </LocaleProvider>
         </NextIntlClientProvider>
-        <SupportWidget />
+        <LazySupportWidget />
         <AnalyticsInit />
         <Analytics />
         <div className="grain-overlay" aria-hidden="true" />

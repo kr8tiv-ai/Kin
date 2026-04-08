@@ -29,7 +29,8 @@ const nextConfig: NextConfig = {
   },
   outputFileTracingRoot: resolve(__dirname),
   images: {
-    unoptimized: true,
+    // Allow Next.js image optimization for local assets.
+    // Remote patterns can be added here when needed.
   },
   async headers() {
     return [

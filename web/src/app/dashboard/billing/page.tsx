@@ -5,6 +5,7 @@
 // Aligned with meetyourkin.com pricing (source of truth).
 // ============================================================================
 
+import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/providers/AuthProvider';
 import { useBilling } from '@/hooks/useBilling';
@@ -478,7 +479,10 @@ function GenesisRevenueShare() {
   const tier = distributions[0].genesisTier;
   const rewardPercent = distributions[0].rewardPercent;
   const genesisTierInfo = GENESIS_TIERS.find((t) => t.id === tier);
-  const totalEarned = distributions.reduce((sum, d) => sum + d.amount, 0);
+  const totalEarned = useMemo(
+    () => distributions.reduce((sum, d) => sum + d.amount, 0),
+    [distributions],
+  );
 
   return (
     <GlassCard className="p-6" hover={false} glow="gold">

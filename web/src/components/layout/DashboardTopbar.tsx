@@ -5,6 +5,7 @@
 // ============================================================================
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/providers/AuthProvider';
 import { DashboardSidebar } from './DashboardSidebar';
@@ -71,7 +72,7 @@ export function DashboardTopbar() {
             KIN
           </span>
           <a href="https://kr8tiv.ai" target="_blank" rel="noopener noreferrer" className="opacity-60 hover:opacity-100 transition-opacity">
-            <img src="/kr8tiv-logo.png" alt="KR8TIV" style={{ height: '16px', width: 'auto', filter: 'brightness(2)' }} />
+            <Image src="/kr8tiv-logo.png" alt="KR8TIV" width={46} height={16} style={{ height: '16px', width: 'auto', filter: 'brightness(2)' }} />
           </a>
         </div>
 

@@ -4,7 +4,7 @@
 // Skills Marketplace — Browse, toggle, and request custom skills.
 // ============================================================================
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useSkills } from '@/hooks/useSkills';
 import { GlassCard } from '@/components/ui/GlassCard';
@@ -76,16 +76,19 @@ export default function SkillsPage() {
   const [toggling, setToggling] = useState<string | null>(null);
   const [selectedSkill, setSelectedSkill] = useState<Skill | null>(null);
 
-  // Filter skills
-  const filtered = skills.filter((s) => {
-    const matchesCategory =
-      activeCategory === 'all' || s.category === activeCategory;
-    const matchesSearch =
-      !search ||
-      s.displayName.toLowerCase().includes(search.toLowerCase()) ||
-      s.description.toLowerCase().includes(search.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+  // Filter skills — memoized to avoid recomputing on unrelated re-renders.
+  const filtered = useMemo(
+    () => skills.filter((s) => {
+      const matchesCategory =
+        activeCategory === 'all' || s.category === activeCategory;
+      const matchesSearch =
+        !search ||
+        s.displayName.toLowerCase().includes(search.toLowerCase()) ||
+        s.description.toLowerCase().includes(search.toLowerCase());
+      return matchesCategory && matchesSearch;
+    }),
+    [skills, activeCategory, search],
+  );
 
   const handleToggle = async (skillId: string, currentActive: boolean) => {
     setToggling(skillId);

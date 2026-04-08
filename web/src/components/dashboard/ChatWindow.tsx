@@ -6,7 +6,7 @@
 // message reactions, quick-reply chips, enhanced typing indicator.
 // ============================================================================
 
-import { useRef, useEffect, useState, useCallback, type FormEvent } from 'react';
+import { useRef, useEffect, useState, useCallback, memo, type FormEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslations } from 'next-intl';
 import { GlassCard } from '@/components/ui/GlassCard';
@@ -614,7 +614,7 @@ function VoiceStateIndicator({ state, companionName, t }: { state: VoiceSessionS
 // ChatBubble — Individual message with markdown, copy, and reactions
 // ============================================================================
 
-function ChatBubble({
+const ChatBubble = memo(function ChatBubble({
   message,
   companion,
   isNewest,
@@ -826,4 +826,6 @@ function ChatBubble({
       </div>
     </motion.div>
   );
-}
+});
+
+ChatBubble.displayName = 'ChatBubble';

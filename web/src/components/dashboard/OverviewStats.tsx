@@ -4,6 +4,7 @@
 // Overview Stats — Row of stat cards for the dashboard overview.
 // ============================================================================
 
+import { useMemo } from 'react';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { formatNumber } from '@/lib/utils';
 import type { Conversation } from '@/lib/types';
@@ -35,33 +36,36 @@ export function OverviewStats({
   level,
   loading = false,
 }: OverviewStatsProps) {
-  const totalMessages = conversations.reduce(
-    (sum, c) => sum + c.messageCount,
-    0,
+  const totalMessages = useMemo(
+    () => conversations.reduce((sum, c) => sum + c.messageCount, 0),
+    [conversations],
   );
 
-  const stats: StatCard[] = [
-    {
-      label: 'Total Messages',
-      value: formatNumber(totalMessages),
-      accent: 'cyan',
-    },
-    {
-      label: 'Active Projects',
-      value: formatNumber(projectCount),
-      accent: 'magenta',
-    },
-    {
-      label: 'Current Streak',
-      value: `${streak}d`,
-      accent: 'gold',
-    },
-    {
-      label: 'Level',
-      value: level.toString(),
-      accent: 'cyan',
-    },
-  ];
+  const stats: StatCard[] = useMemo(
+    () => [
+      {
+        label: 'Total Messages',
+        value: formatNumber(totalMessages),
+        accent: 'cyan' as const,
+      },
+      {
+        label: 'Active Projects',
+        value: formatNumber(projectCount),
+        accent: 'magenta' as const,
+      },
+      {
+        label: 'Current Streak',
+        value: `${streak}d`,
+        accent: 'gold' as const,
+      },
+      {
+        label: 'Level',
+        value: level.toString(),
+        accent: 'cyan' as const,
+      },
+    ],
+    [totalMessages, projectCount, streak, level],
+  );
 
   if (loading) {
     return (

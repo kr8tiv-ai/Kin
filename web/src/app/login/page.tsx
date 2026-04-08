@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/providers/AuthProvider';
@@ -63,7 +64,7 @@ export default function LoginPage() {
             </div>
           </div>
           <a href="https://kr8tiv.ai" target="_blank" rel="noopener noreferrer" className="hidden sm:block">
-            <img src="/kr8tiv-logo.png" alt="KR8TIV" style={{ height: '28px', width: 'auto', opacity: 0.6, filter: 'brightness(2)', transition: 'opacity 0.3s' }} />
+            <Image src="/kr8tiv-logo.png" alt="KR8TIV" width={80} height={28} style={{ height: '28px', width: 'auto', opacity: 0.6, filter: 'brightness(2)', transition: 'opacity 0.3s' }} />
           </a>
         </div>
         <div className="hidden sm:flex items-center gap-8">

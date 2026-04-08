@@ -1,10 +1,13 @@
 'use client';
 
 // ============================================================================
-// useApi — Generic data-fetching hook backed by the KIN API client.
+// useApi — Generic data-fetching hook backed by SWR + KIN API client.
+// Preserves the same return shape {data, loading, error, refresh, mutate}
+// while gaining SWR's deduplication, caching, and revalidation.
 // ============================================================================
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback } from 'react';
+import useSWR from 'swr';
 import { kinApi } from '@/lib/api';
 
 interface UseApiOptions {
@@ -22,50 +25,57 @@ interface UseApiResult<T> {
   mutate: (data: T) => void;
 }
 
+/** SWR fetcher that delegates to kinApi.get(). */
+async function fetcher<T>(path: string): Promise<T> {
+  return kinApi.get<T>(path);
+}
+
 export function useApi<T>(
   path: string,
   options?: UseApiOptions,
 ): UseApiResult<T> {
-  const [data, setData] = useState<T | null>(null);
-  const [loading, setLoading] = useState(!options?.skip);
-  const [error, setError] = useState<string | null>(null);
+  // Pass null as the key when skip is true — SWR won't fetch.
+  const key = options?.skip ? null : path;
 
-  // Track the latest path to avoid stale responses
-  const pathRef = useRef(path);
-  pathRef.current = path;
-
-  const fetchData = useCallback(async () => {
-    if (options?.skip) return;
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const result = await kinApi.get<T>(pathRef.current);
-      setData(result);
-    } catch (err) {
-      // Don't set error for auth redirects
-      const message =
-        err instanceof Error ? err.message : 'Failed to load data';
-      if (message !== 'Unauthorized') {
-        setError(message);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [options?.skip]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData, path]);
+  const { data, error: swrError, isLoading, mutate: swrMutate } = useSWR<T>(
+    key,
+    fetcher,
+    {
+      // Don't throw on errors — we handle them via the error return value.
+      shouldRetryOnError: false,
+      // Suppress auto-revalidation on window focus for now to match
+      // the previous manual-fetch behavior. Can be enabled later.
+      revalidateOnFocus: false,
+    },
+  );
 
   const refresh = useCallback(() => {
-    fetchData();
-  }, [fetchData]);
+    swrMutate();
+  }, [swrMutate]);
 
-  const mutate = useCallback((newData: T) => {
-    setData(newData);
-  }, []);
+  const mutate = useCallback(
+    (newData: T) => {
+      // Optimistic update — sets local data without revalidation.
+      swrMutate(newData, { revalidate: false });
+    },
+    [swrMutate],
+  );
 
-  return { data, loading, error, refresh, mutate };
+  // Map SWR error to a string, suppressing auth redirects like before.
+  let errorMessage: string | null = null;
+  if (swrError) {
+    const message =
+      swrError instanceof Error ? swrError.message : 'Failed to load data';
+    if (message !== 'Unauthorized') {
+      errorMessage = message;
+    }
+  }
+
+  return {
+    data: data ?? null,
+    loading: isLoading,
+    error: errorMessage,
+    refresh,
+    mutate,
+  };
 }

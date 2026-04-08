@@ -69,8 +69,11 @@ export default function ChatPage() {
     }
   }, [companions, defaultCompanionId, selectedId]);
 
-  const companionConversations = conversations.filter(
-    (conversation) => conversation.companionId === selectedId,
+  const companionConversations = useMemo(
+    () => conversations.filter(
+      (conversation) => conversation.companionId === selectedId,
+    ),
+    [conversations, selectedId],
   );
 
   const handleSelectConversation = useCallback((convoId: string) => {
