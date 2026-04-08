@@ -8,14 +8,22 @@ import crypto from 'crypto';
 interface MemoryQuery {
   type?: 'personal' | 'preference' | 'context' | 'event';
   limit?: number;
+  sort?: 'importance_desc' | 'created_at_desc';
+  offset?: number;
+  companionId?: string;
+}
+
+interface BatchDeleteBody {
+  ids: string[];
 }
 
 const memoryRoutes: FastifyPluginAsync = async (fastify) => {
   // Get user's memories
   fastify.get<{ Querystring: MemoryQuery }>('/memories', async (request) => {
     const userId = (request.user as { userId: string }).userId;
-    const { type, limit: rawLimit = 100 } = request.query;
+    const { type, limit: rawLimit = 100, sort = 'importance_desc', offset: rawOffset = 0, companionId } = request.query;
     const limit = Math.min(Math.max(Number(rawLimit) || 100, 1), 100);
+    const offset = Math.max(Number(rawOffset) || 0, 0);
 
     let query = `
       SELECT * FROM memories 
@@ -28,8 +36,19 @@ const memoryRoutes: FastifyPluginAsync = async (fastify) => {
       params.push(type);
     }
 
-    query += ' ORDER BY importance DESC, last_accessed_at DESC LIMIT ?';
-    params.push(limit);
+    if (companionId) {
+      query += ' AND companion_id = ?';
+      params.push(companionId);
+    }
+
+    if (sort === 'created_at_desc') {
+      query += ' ORDER BY created_at DESC';
+    } else {
+      query += ' ORDER BY importance DESC, last_accessed_at DESC';
+    }
+
+    query += ' LIMIT ? OFFSET ?';
+    params.push(limit, offset);
 
     const memories = fastify.context.db.prepare(query).all(...params) as any[];
 
@@ -42,6 +61,7 @@ const memoryRoutes: FastifyPluginAsync = async (fastify) => {
         importance: m.importance,
         isTransferable: m.is_transferable === 1,
         createdAt: new Date(m.created_at).toISOString(),
+        lastAccessedAt: m.last_accessed_at ? new Date(m.last_accessed_at).toISOString() : null,
         accessCount: m.access_count,
       })),
     };
@@ -120,6 +140,42 @@ const memoryRoutes: FastifyPluginAsync = async (fastify) => {
       }
 
       return { success: true };
+    }
+  );
+
+  // Batch delete memories
+  fastify.post<{ Body: BatchDeleteBody }>(
+    '/memories/batch-delete',
+    async (request, reply) => {
+      const userId = (request.user as { userId: string }).userId;
+      const { ids } = request.body || {};
+
+      if (!Array.isArray(ids) || ids.length === 0) {
+        reply.status(400);
+        return { error: 'ids must be a non-empty array' };
+      }
+
+      if (ids.length > 100) {
+        reply.status(400);
+        return { error: 'Maximum 100 ids per batch delete' };
+      }
+
+      // Validate all ids are strings
+      if (ids.some((id) => typeof id !== 'string')) {
+        reply.status(400);
+        return { error: 'All ids must be strings' };
+      }
+
+      const placeholders = ids.map(() => '?').join(',');
+      const deleteStmt = fastify.context.db.prepare(
+        `DELETE FROM memories WHERE id IN (${placeholders}) AND user_id = ?`
+      );
+
+      const result = fastify.context.db.transaction(() => {
+        return deleteStmt.run(...ids, userId);
+      })();
+
+      return { success: true, deleted: result.changes };
     }
   );
 };

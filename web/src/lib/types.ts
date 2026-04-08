@@ -152,7 +152,10 @@ export interface Memory {
   type: 'personal' | 'preference' | 'context' | 'event';
   content: string;
   importance: number;
+  isTransferable: boolean;
   createdAt: string;
+  lastAccessedAt: string | null;
+  accessCount: number;
 }
 
 export interface ProgressData {
