@@ -68,34 +68,27 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
 
     const db = fastify.context.db;
 
-    const totalUsers = (db.prepare(`SELECT COUNT(*) AS c FROM users`).get() as any).c;
-
-    // "Active today" — users with a message in the last 24 h (epoch ms)
+    // Single compound query replaces 5 separate COUNT queries
     const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
-    const activeToday = (db.prepare(`
-      SELECT COUNT(DISTINCT m.conversation_id) AS c
-      FROM messages m
-      JOIN conversations c ON m.conversation_id = c.id
-      WHERE m.timestamp >= ?
-    `).get(oneDayAgo) as any).c;
-
-    const totalMessages = (db.prepare(`SELECT COUNT(*) AS c FROM messages`).get() as any).c;
-
-    const totalProjects = (db.prepare(`SELECT COUNT(*) AS c FROM projects`).get() as any).c;
-
-    // Revenue: count of active/trialing paid subscriptions
-    const paidSubs = (db.prepare(`
-      SELECT COUNT(*) AS c
-      FROM subscriptions
-      WHERE plan != 'free' AND status IN ('active', 'trialing')
-    `).get() as any).c;
+    const stats = db.prepare(`
+      SELECT
+        (SELECT COUNT(*) FROM users) AS total_users,
+        (SELECT COUNT(DISTINCT m.conversation_id)
+         FROM messages m
+         JOIN conversations c ON m.conversation_id = c.id
+         WHERE m.timestamp >= ?) AS active_today,
+        (SELECT COUNT(*) FROM messages) AS total_messages,
+        (SELECT COUNT(*) FROM projects) AS total_projects,
+        (SELECT COUNT(*) FROM subscriptions
+         WHERE plan != 'free' AND status IN ('active', 'trialing')) AS paid_subs
+    `).get(oneDayAgo) as any;
 
     return {
-      totalUsers,
-      activeToday,
-      totalMessages,
-      totalProjects,
-      paidSubscriptions: paidSubs,
+      totalUsers: stats.total_users,
+      activeToday: stats.active_today,
+      totalMessages: stats.total_messages,
+      totalProjects: stats.total_projects,
+      paidSubscriptions: stats.paid_subs,
     };
   });
 

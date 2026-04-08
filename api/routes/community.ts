@@ -68,14 +68,19 @@ class CommunityStore {
   }
 
   addActivity(activity: CommunityActivity): void {
-    this.activities.unshift(activity);
+    this.activities.push(activity);
+    // Trim oldest entries from the front when over capacity
     if (this.activities.length > 1000) {
-      this.activities = this.activities.slice(0, 1000);
+      this.activities = this.activities.slice(-1000);
     }
   }
 
   getRecentActivity(limit: number = 50): CommunityActivity[] {
-    return this.activities.slice(0, limit);
+    // Read from the end (most recent) without copying the whole array
+    const start = Math.max(0, this.activities.length - limit);
+    const recent = this.activities.slice(start);
+    recent.reverse();
+    return recent;
   }
 
   updateLeaderboard(entries: LeaderboardEntry[]): void {

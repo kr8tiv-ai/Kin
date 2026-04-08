@@ -348,22 +348,38 @@ class AdvantageDetector {
    * when no eval comparison data is available for a category.
    */
   getReports(): AdvantageReport[] {
-    const categories = new Set(this.history.map((h) => h.taskCategory));
+    // Single-pass groupBy — O(n) instead of O(n²) repeated .filter()
+    const grouped = new Map<string, {
+      wins: number;
+      total: number;
+      localLatencySum: number;
+      frontierLatencySum: number;
+      qualityDeltaSum: number;
+      qualityDeltaCount: number;
+    }>();
+
+    for (const h of this.history) {
+      let group = grouped.get(h.taskCategory);
+      if (!group) {
+        group = { wins: 0, total: 0, localLatencySum: 0, frontierLatencySum: 0, qualityDeltaSum: 0, qualityDeltaCount: 0 };
+        grouped.set(h.taskCategory, group);
+      }
+      group.total++;
+      if (h.localWins) group.wins++;
+      group.localLatencySum += h.localLatency;
+      group.frontierLatencySum += h.frontierLatency;
+      if (h.qualityDelta !== undefined) {
+        group.qualityDeltaSum += h.qualityDelta;
+        group.qualityDeltaCount++;
+      }
+    }
+
     const reports: AdvantageReport[] = [];
 
-    for (const category of categories) {
-      const points = this.history.filter((h) => h.taskCategory === category);
-
-      if (points.length === 0) continue;
-
-      const wins = points.filter((p) => p.localWins).length;
-      const total = points.length;
-      const winRate = wins / total;
-
-      const localAvg =
-        points.reduce((sum, p) => sum + p.localLatency, 0) / total;
-      const frontierAvg =
-        points.reduce((sum, p) => sum + p.frontierLatency, 0) / total;
+    for (const [category, g] of grouped) {
+      const winRate = g.wins / g.total;
+      const localAvg = g.localLatencySum / g.total;
+      const frontierAvg = g.frontierLatencySum / g.total;
       const latencySavings = frontierAvg - localAvg;
 
       const localAdvantage =
@@ -376,13 +392,9 @@ class AdvantageDetector {
         recommendation = 'hybrid';
       }
 
-      // BUG FIX: Compute average quality delta from qualityDelta field
-      // (local - frontier from eval comparisons), not from raw qualityScore.
-      const deltaPoints = points.filter((p) => p.qualityDelta !== undefined);
       const averageQualityDelta =
-        deltaPoints.length > 0
-          ? deltaPoints.reduce((sum, p) => sum + p.qualityDelta!, 0) /
-            deltaPoints.length
+        g.qualityDeltaCount > 0
+          ? g.qualityDeltaSum / g.qualityDeltaCount
           : undefined;
 
       reports.push({
@@ -390,7 +402,7 @@ class AdvantageDetector {
         localAdvantage,
         averageLatencySavings: latencySavings,
         winRate,
-        sampleSize: total,
+        sampleSize: g.total,
         recommendation,
         averageQualityDelta,
       });

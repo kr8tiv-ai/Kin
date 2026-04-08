@@ -311,14 +311,16 @@ interface SupervisorLogEntry {
   latencyMs: number;
 }
 
-const supervisorLog: SupervisorLogEntry[] = [];
+// Circular buffer for supervisor log — avoids O(n) Array.shift()
+const supervisorLogBuffer: (SupervisorLogEntry | null)[] = new Array(500).fill(null);
+let supervisorLogWriteIdx = 0;
+let supervisorLogCount = 0;
 const MAX_LOG_ENTRIES = 500;
 
 function logSupervisorCall(entry: SupervisorLogEntry): void {
-  supervisorLog.push(entry);
-  if (supervisorLog.length > MAX_LOG_ENTRIES) {
-    supervisorLog.shift();
-  }
+  supervisorLogBuffer[supervisorLogWriteIdx] = entry;
+  supervisorLogWriteIdx = (supervisorLogWriteIdx + 1) % MAX_LOG_ENTRIES;
+  if (supervisorLogCount < MAX_LOG_ENTRIES) supervisorLogCount++;
   console.log(
     `[supervisor] ${entry.route} | companion=${entry.companionId} | ` +
     `msg=${entry.messageLength}chars | context=${entry.contextMessages}msgs | ` +
@@ -330,7 +332,14 @@ function logSupervisorCall(entry: SupervisorLogEntry): void {
  * Get the supervisor call log for auditing.
  */
 export function getSupervisorLog(): SupervisorLogEntry[] {
-  return [...supervisorLog];
+  if (supervisorLogCount < MAX_LOG_ENTRIES) {
+    return supervisorLogBuffer.slice(0, supervisorLogCount) as SupervisorLogEntry[];
+  }
+  // Buffer is full — read from writeIdx (oldest) wrapping around
+  return [
+    ...supervisorLogBuffer.slice(supervisorLogWriteIdx),
+    ...supervisorLogBuffer.slice(0, supervisorLogWriteIdx),
+  ] as SupervisorLogEntry[];
 }
 
 // ============================================================================

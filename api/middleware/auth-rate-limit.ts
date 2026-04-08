@@ -86,12 +86,21 @@ function getOrCreate(map: Map<string, BucketEntry>, key: string): BucketEntry {
 
 function countInWindow(entry: BucketEntry, windowMs: number): number {
   const cutoff = Date.now() - windowMs;
-  return entry.timestamps.filter((t) => t > cutoff).length;
+  let count = 0;
+  for (const t of entry.timestamps) {
+    if (t > cutoff) count++;
+  }
+  return count;
 }
 
 function secondsUntilSlotFrees(entry: BucketEntry, windowMs: number): number {
   if (entry.timestamps.length === 0) return 0;
-  const oldest = Math.min(...entry.timestamps.filter((t) => t > Date.now() - windowMs));
+  const cutoff = Date.now() - windowMs;
+  let oldest = Infinity;
+  for (const t of entry.timestamps) {
+    if (t > cutoff && t < oldest) oldest = t;
+  }
+  if (oldest === Infinity) return 0;
   const freeAt = oldest + windowMs;
   return Math.max(1, Math.ceil((freeAt - Date.now()) / 1000));
 }

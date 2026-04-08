@@ -150,13 +150,19 @@ export function estimateChatTokens(messages: Array<{ role: string; content: stri
  * Collects and aggregates inference metrics
  */
 export class MetricsCollector {
-  private metrics: RequestMetric[] = [];
+  /** Fixed-size circular buffer for metrics */
+  private buffer: (RequestMetric | null)[];
+  /** Write index for circular buffer */
+  private writeIdx = 0;
+  /** Number of items currently stored */
+  private count = 0;
   private maxMetrics = 10000;
   private thresholds: MetricThresholds;
   private callbacks: MetricCallback[] = [];
   private pendingRequests: Map<string, { start: number; provider: string; model: string }> = new Map();
 
   constructor(thresholds?: Partial<MetricThresholds>) {
+    this.buffer = new Array(this.maxMetrics).fill(null);
     this.thresholds = {
       latencyWarningMs: thresholds?.latencyWarningMs ?? 3000,
       latencyErrorMs: thresholds?.latencyErrorMs ?? 10000,
@@ -164,6 +170,26 @@ export class MetricsCollector {
       successRateError: thresholds?.successRateError ?? 0.90,
       hourlyCostWarningUsd: thresholds?.hourlyCostWarningUsd ?? 5.0,
     };
+  }
+
+  /** Add a metric to the circular buffer (O(1), no array copy) */
+  private pushMetric(metric: RequestMetric): void {
+    this.buffer[this.writeIdx] = metric;
+    this.writeIdx = (this.writeIdx + 1) % this.maxMetrics;
+    if (this.count < this.maxMetrics) this.count++;
+  }
+
+  /** Read all stored metrics in insertion order */
+  private get metrics(): RequestMetric[] {
+    if (this.count < this.maxMetrics) {
+      // Buffer not yet full — entries are 0..writeIdx-1
+      return this.buffer.slice(0, this.count) as RequestMetric[];
+    }
+    // Buffer is full — oldest entry is at writeIdx, wrap around
+    return [
+      ...this.buffer.slice(this.writeIdx),
+      ...this.buffer.slice(0, this.writeIdx),
+    ] as RequestMetric[];
   }
 
   // ==========================================================================
@@ -197,13 +223,8 @@ export class MetricsCollector {
       timestamp: new Date().toISOString(),
     };
 
-    this.metrics.push(fullMetric);
+    this.pushMetric(fullMetric);
     this.pendingRequests.delete(metric.requestId);
-
-    // Trim old metrics
-    if (this.metrics.length > this.maxMetrics) {
-      this.metrics = this.metrics.slice(-this.maxMetrics);
-    }
 
     // Check thresholds
     this.checkThresholds(fullMetric);
@@ -219,11 +240,7 @@ export class MetricsCollector {
    * Record a request directly (without start/stop)
    */
   record(metric: RequestMetric): void {
-    this.metrics.push(metric);
-
-    if (this.metrics.length > this.maxMetrics) {
-      this.metrics = this.metrics.slice(-this.maxMetrics);
-    }
+    this.pushMetric(metric);
 
     this.checkThresholds(metric);
     this.emit({ type: 'request_end', metric });
@@ -618,7 +635,9 @@ export class MetricsCollector {
    * Clear all metrics
    */
   clear(): void {
-    this.metrics = [];
+    this.buffer = new Array(this.maxMetrics).fill(null);
+    this.writeIdx = 0;
+    this.count = 0;
     this.pendingRequests.clear();
   }
 }

@@ -103,6 +103,20 @@ const trainingRoutes: FastifyPluginAsync = async (fastify) => {
         }
       }
 
+      // Pre-seed curation rows for hashes not yet in DB so PUT /verdict
+      // can always resolve companion_id via SQLite instead of scanning JSONL.
+      const unseeded = hashes.filter((h) => !verdictMap.has(h));
+      if (unseeded.length > 0) {
+        const insertStmt = fastify.context.db.prepare(
+          `INSERT OR IGNORE INTO training_curation (id, entry_hash, companion_id, verdict, created_at, updated_at)
+           VALUES (?, ?, ?, 'pending', ?, ?)`
+        );
+        const now = Date.now();
+        for (const hash of unseeded) {
+          insertStmt.run(`tc-${crypto.randomUUID()}`, hash, companionId, now, now);
+        }
+      }
+
       const responseEntries = pageEntries.map((entry) => ({
         hash: entry.hash,
         messages: entry.line.messages,
@@ -152,23 +166,15 @@ const trainingRoutes: FastifyPluginAsync = async (fastify) => {
           `UPDATE training_curation SET verdict = ?, updated_at = ? WHERE entry_hash = ?`
         ).run(verdict, now, entryHash);
       } else {
-        // New entry — we need companion_id. Search all companions for this hash.
-        let companionId: string | null = null;
-        for (const cid of getCompanionIds()) {
-          const entries = await readTrainingEntries(cid);
-          if (entries.some((e) => e.hash === entryHash)) {
-            companionId = cid;
-            break;
-          }
-        }
-
-        // If hash not found in any file, still insert with 'unknown' companion
-        // to support pre-setting verdicts for entries that may appear later
+        // Entries page pre-seeds curation rows, so this path only runs for
+        // direct API calls with hashes not yet browsed. Use 'unknown' companion
+        // — the entries endpoint will backfill companion_id when the entry
+        // is next loaded from JSONL.
         const id = `tc-${crypto.randomUUID()}`;
         fastify.context.db.prepare(
           `INSERT INTO training_curation (id, entry_hash, companion_id, verdict, created_at, updated_at)
            VALUES (?, ?, ?, ?, ?, ?)`
-        ).run(id, entryHash, companionId ?? 'unknown', verdict, now, now);
+        ).run(id, entryHash, 'unknown', verdict, now, now);
       }
 
       // Return the updated record
