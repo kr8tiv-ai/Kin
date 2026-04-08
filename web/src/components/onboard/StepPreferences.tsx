@@ -5,6 +5,7 @@
 // ============================================================================
 
 import { motion } from 'framer-motion';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { Input } from '@/components/ui/Input';
@@ -57,6 +58,9 @@ export function StepPreferences({
   onNext,
   onBack,
 }: StepPreferencesProps) {
+  const t = useTranslations('onboard.preferences');
+  const tc = useTranslations('common');
+
   const toggleGoal = (goal: string) => {
     const current = preferences.goals;
     const next = current.includes(goal)
@@ -74,17 +78,17 @@ export function StepPreferences({
       className="flex flex-col items-center"
     >
       <h1 className="mb-2 text-center font-display text-2xl font-bold text-white sm:text-3xl">
-        Tell Your KIN How To Help
+        {t('title')}
       </h1>
       <p className="mb-8 text-center text-sm text-white/40">
-        Set the tone, pace, and priorities for your first real conversation.
+        {t('subtitle')}
       </p>
 
       <div className="mb-8 w-full space-y-5">
         <GlassCard className="p-5" hover={false}>
           <Input
-            label="What should your KIN call you?"
-            placeholder="Your name, nickname, or what feels right"
+            label={t('nameLabel')}
+            placeholder={t('namePlaceholder')}
             value={preferences.displayName}
             onChange={(e) => onChange({ displayName: e.target.value })}
           />

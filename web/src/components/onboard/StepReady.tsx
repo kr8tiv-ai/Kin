@@ -6,6 +6,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
+import { useTranslations } from 'next-intl';
 import { getCompanion, getCompanionColor } from '@/lib/companions';
 import { track } from '@/lib/analytics';
 import { CompanionViewer } from '@/components/3d/CompanionViewer';
@@ -207,6 +208,7 @@ export function StepReady({
   error,
   onComplete,
 }: StepReadyProps) {
+  const t = useTranslations('onboard.ready');
   const companion = selectedCompanionId ? getCompanion(selectedCompanionId) : null;
   const companionColor = selectedCompanionId
     ? getCompanionColor(selectedCompanionId)
@@ -244,7 +246,7 @@ export function StepReady({
         className="mb-2 text-center font-display text-3xl font-bold sm:text-4xl"
       >
         <span className="bg-gradient-to-r from-cyan via-magenta to-gold bg-clip-text text-transparent">
-          Your KIN Is Ready
+          {t('title')}
         </span>
       </motion.h1>
 
@@ -254,9 +256,7 @@ export function StepReady({
         transition={{ delay: 0.18 }}
         className="max-w-lg text-center text-sm leading-relaxed text-white/45"
       >
-        We&apos;ve handled the setup behind the curtain. Your first conversation
-        will open with context about your goals, your style, and what matters
-        most right now.
+        {t('subtitle')}
       </motion.p>
 
       {companion && (
@@ -281,7 +281,7 @@ export function StepReady({
             transition={{ delay: 0.5 }}
             className="mt-4 text-center text-base font-medium text-white"
           >
-            {companion.emoji} {companion.name} is ready to meet you!
+            {companion.emoji} {t('readyToMeet', { name: companion.name })}
           </motion.p>
 
           <motion.p
@@ -290,8 +290,7 @@ export function StepReady({
             transition={{ delay: 0.58 }}
             className="mt-2 max-w-md text-center text-xs leading-relaxed text-white/35"
           >
-            We&apos;ll open a real first conversation so {companion.name} can
-            greet you like a companion, not a blank chatbot.
+            {t('firstConversation', { name: companion.name })}
           </motion.p>
 
           <motion.div
@@ -323,8 +322,8 @@ export function StepReady({
           disabled={completing}
         >
           {completing
-            ? 'Opening your first conversation...'
-            : `Meet ${companion?.name ?? 'your KIN'}`}
+            ? t('completing')
+            : companion?.name ? t('meetButton', { name: companion.name }) : t('meetDefault')}
         </Button>
         <Button
           variant="outline"
@@ -332,7 +331,7 @@ export function StepReady({
           href="/dashboard"
           disabled={completing}
         >
-          Explore Dashboard
+          {t('exploreDashboard')}
         </Button>
       </div>
 
@@ -349,7 +348,7 @@ export function StepReady({
             onClick={handleInstallCTA}
             className="text-sm text-cyan/60 hover:text-cyan transition-colors underline underline-offset-2"
           >
-            📲 Add KIN to Home Screen
+            {t('installCTA')}
           </button>
         </motion.div>
       )}
@@ -357,7 +356,7 @@ export function StepReady({
       <IOSInstallModal open={showIOSModal} onClose={() => setShowIOSModal(false)} />
 
       <p className="mt-6 text-center text-[11px] text-white/20">
-        Chat with your companion on Telegram anytime at{' '}
+        {t('telegramCTA')}{' '}
         <a
           href="https://t.me/KinCompanionBot"
           target="_blank"

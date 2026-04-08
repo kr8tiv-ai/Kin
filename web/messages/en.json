@@ -7,7 +7,13 @@
     "close": "Close",
     "loading": "Loading...",
     "error": "Something went wrong",
-    "logOut": "Log Out"
+    "logOut": "Log Out",
+    "back": "Back",
+    "continue": "Continue",
+    "or": "or",
+    "learnMore": "Learn More",
+    "selected": "selected",
+    "change": "change"
   },
   "dashboard": {
     "sidebar": {
@@ -127,5 +133,88 @@
       "processingIndicator": "⏳ Processing your voice...",
       "respondingIndicator": "🔊 {name} is responding..."
     }
+  },
+  "onboard": {
+    "welcome": {
+      "title": "Welcome to KIN",
+      "subtitle": "KIN gives you a deeply capable AI companion that feels personal from the first conversation. We handle the intelligence behind the curtain so you can stay focused on what matters.",
+      "featureUnderstandsTitle": "Understands You",
+      "featureUnderstandsDesc": "Your KIN starts with your goals, context, and style so it feels useful from the very first reply.",
+      "featureComplexityTitle": "Handles Complexity Quietly",
+      "featureComplexityDesc": "Memory, model routing, and advanced AI stay behind the curtain while the experience stays calm and clear.",
+      "featureChannelsTitle": "Shows Up Where You Are",
+      "featureChannelsDesc": "Meet your KIN in the dashboard now, then keep the relationship going across channels as your world moves.",
+      "buildMyKin": "Build My KIN",
+      "skipToCompanions": "Already know which KIN you want? Jump to companions →"
+    },
+    "chooseCompanion": {
+      "title": "Choose Your Companion",
+      "subtitle": "Each companion has unique strengths. Pick the one that fits your needs.",
+      "quickSetup": "Quick Setup — skip to finish with defaults"
+    },
+    "quickIntro": {
+      "pickTitle": "Pick Your Companion",
+      "pickSubtitle": "Choose someone who matches your vibe.",
+      "selected": "{name} selected"
+    },
+    "preferences": {
+      "title": "Tell Your KIN How To Help",
+      "subtitle": "Set the tone, pace, and priorities for your first real conversation.",
+      "nameLabel": "What should your KIN call you?",
+      "namePlaceholder": "Your name, nickname, or what feels right",
+      "guidanceLabel": "How much guidance do you want?",
+      "beginner": "Beginner",
+      "beginnerDesc": "Break it down simply",
+      "intermediate": "Intermediate",
+      "intermediateDesc": "Move with me",
+      "advanced": "Advanced",
+      "advancedDesc": "Talk shop with me",
+      "toneLabel": "How should your KIN sound?",
+      "friendly": "Friendly",
+      "professional": "Professional",
+      "casual": "Casual",
+      "technical": "Technical",
+      "goalsLabel": "What do you want help with first?",
+      "goalLearnToCode": "Learn to Code",
+      "goalBuildWebsite": "Build a Website",
+      "goalGrowBrand": "Grow My Brand",
+      "goalFinances": "Manage Finances",
+      "goalCreative": "Get Creative",
+      "goalDailyCompanion": "Daily Companion",
+      "languageLabel": "What language feels most natural?",
+      "privacyLabel": "How should your KIN handle sensitive context?",
+      "keepPrivate": "Keep things private",
+      "keepPrivateDesc": "Stay local-first for personal or sensitive conversations.",
+      "letLearn": "Let your KIN get smarter",
+      "letLearnDesc": "Use frontier models when it helps and improve over time."
+    },
+    "ready": {
+      "title": "Your KIN Is Ready",
+      "subtitle": "We've handled the setup behind the curtain. Your first conversation will open with context about your goals, your style, and what matters most right now.",
+      "readyToMeet": "{name} is ready to meet you!",
+      "firstConversation": "We'll open a real first conversation so {name} can greet you like a companion, not a blank chatbot.",
+      "completing": "Opening your first conversation...",
+      "meetButton": "Meet {name}",
+      "meetDefault": "Meet your KIN",
+      "exploreDashboard": "Explore Dashboard",
+      "installCTA": "📲 Add KIN to Home Screen",
+      "telegramCTA": "Chat with your companion on Telegram anytime at"
+    }
+  },
+  "auth": {
+    "title": "Meet Your",
+    "titleAccent": "KIN",
+    "subtitle": "Your AI companion that grows with you.",
+    "signInCTA": "Sign in to begin.",
+    "openInTelegram": "Open in Telegram",
+    "getTelegram": "Get Telegram",
+    "features": "Features",
+    "genesisSix": "Genesis Six",
+    "howItWorks": "How It Works",
+    "mint": "Mint",
+    "about": "About",
+    "terms": "Terms",
+    "privacy": "Privacy",
+    "copyright": "© 2026 KR8TIV AI"
   }
 }

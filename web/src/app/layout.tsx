@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
-import { Outfit, Plus_Jakarta_Sans, JetBrains_Mono } from 'next/font/google';
+import { Outfit, Plus_Jakarta_Sans, JetBrains_Mono, Noto_Sans } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
 import { AuthProvider } from '@/providers/AuthProvider';
+import { LocaleProvider } from '@/providers/LocaleProvider';
 import { ToastProvider } from '@/providers/ToastProvider';
 import { SupportWidget } from '@/components/ui/SupportWidget';
 import { AnalyticsInit } from '@/components/AnalyticsInit';
@@ -25,6 +26,13 @@ const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin'],
   variable: '--font-mono',
   display: 'swap',
+});
+
+const notoSans = Noto_Sans({
+  subsets: ['latin', 'cyrillic', 'greek'],
+  variable: '--font-noto',
+  display: 'swap',
+  weight: ['400', '500', '600', '700'],
 });
 
 export const metadata: Metadata = {
@@ -66,7 +74,7 @@ export default async function RootLayout({
   return (
     <html
       lang={locale}
-      className={`dark ${outfit.variable} ${plusJakarta.variable} ${jetbrainsMono.variable}`}
+      className={`dark ${outfit.variable} ${plusJakarta.variable} ${jetbrainsMono.variable} ${notoSans.variable}`}
     >
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -76,17 +84,24 @@ export default async function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="KIN" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+        {/* CJK font support — loaded from Google Fonts CDN to avoid bundling full CJK glyphs */}
+        <link
+          href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
       </head>
       <body className="font-body">
         <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[9999] focus:rounded-lg focus:bg-cyan focus:px-4 focus:py-2 focus:text-black focus:text-sm focus:font-semibold">
           Skip to content
         </a>
         <NextIntlClientProvider locale={locale} messages={messages}>
-          <AuthProvider>
-            <ToastProvider>
-              {children}
-            </ToastProvider>
-          </AuthProvider>
+          <LocaleProvider initialLocale={locale}>
+            <AuthProvider>
+              <ToastProvider>
+                {children}
+              </ToastProvider>
+            </AuthProvider>
+          </LocaleProvider>
         </NextIntlClientProvider>
         <SupportWidget />
         <AnalyticsInit />

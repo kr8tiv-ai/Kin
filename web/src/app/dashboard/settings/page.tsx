@@ -8,6 +8,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/providers/AuthProvider';
+import { useLocale } from '@/providers/LocaleProvider';
 import { useMemories } from '@/hooks/useMemories';
 import { kinApi } from '@/lib/api';
 import { cn, formatDate } from '@/lib/utils';
@@ -34,13 +35,19 @@ import type { UserPreferences } from '@/lib/types';
 
 const LANGUAGE_OPTIONS = [
   { value: 'en', label: 'English' },
-  { value: 'es', label: 'Spanish' },
-  { value: 'fr', label: 'French' },
-  { value: 'de', label: 'German' },
-  { value: 'pt', label: 'Portuguese' },
-  { value: 'ja', label: 'Japanese' },
-  { value: 'ko', label: 'Korean' },
-  { value: 'zh', label: 'Chinese' },
+  { value: 'es', label: 'Español' },
+  { value: 'fr', label: 'Français' },
+  { value: 'de', label: 'Deutsch' },
+  { value: 'pt', label: 'Português' },
+  { value: 'ja', label: '日本語' },
+  { value: 'ko', label: '한국어' },
+  { value: 'zh', label: '中文' },
+  { value: 'ar', label: 'العربية' },
+  { value: 'hi', label: 'हिन्दी' },
+  { value: 'ru', label: 'Русский' },
+  { value: 'it', label: 'Italiano' },
+  { value: 'tr', label: 'Türkçe' },
+  { value: 'vi', label: 'Tiếng Việt' },
 ];
 
 const TONE_OPTIONS = [
@@ -70,12 +77,12 @@ const TIER_BORDER_CLASSES: Record<string, string> = {
 
 export default function SettingsPage() {
   const { user } = useAuth();
+  const { locale, setLocale } = useLocale();
   const t = useTranslations('settings');
   const tc = useTranslations('common');
   const { memories, loading, error, refresh, deleteMemory, deleting } =
     useMemories();
 
-  const [language, setLanguage] = useState('en');
   const [tone, setTone] = useState('friendly');
   const [displayName, setDisplayName] = useState('');
   const [notifications, setNotifications] = useState(true);
@@ -270,8 +277,8 @@ export default function SettingsPage() {
             </label>
             <select
               id="language-select"
-              value={language}
-              onChange={(e) => setLanguage(e.target.value)}
+              value={locale}
+              onChange={(e) => setLocale(e.target.value)}
               className="w-full max-w-xs rounded-lg border border-white/10 bg-surface px-4 py-2.5 text-sm text-white transition-colors focus:border-cyan focus:outline-none focus:ring-1 focus:ring-cyan/30"
             >
               {LANGUAGE_OPTIONS.map((opt) => (

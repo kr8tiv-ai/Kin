@@ -8,6 +8,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { COMPANION_LIST, getCompanion } from '@/lib/companions';
 import { CompanionViewer } from '@/components/3d/CompanionViewer';
@@ -220,6 +221,8 @@ export function StepChooseCompanion({
   onBack,
   onQuickSetup,
 }: StepChooseCompanionProps) {
+  const t = useTranslations('onboard.chooseCompanion');
+  const tc = useTranslations('common');
   const selectedCompanion = selectedId ? getCompanion(selectedId) : null;
   const strengths = selectedId ? STRENGTHS[selectedId] : null;
 
@@ -271,10 +274,10 @@ export function StepChooseCompanion({
         className="flex flex-col items-center"
       >
         <h1 className="mb-2 text-center font-display text-2xl font-bold text-white sm:text-3xl">
-          Choose Your Companion
+          {t('title')}
         </h1>
         <p className="mb-8 text-center text-sm text-white/40">
-          Each companion has unique strengths. Pick the one that fits your needs.
+          {t('subtitle')}
         </p>
 
         {/* Companion grid with staggered animations */}
@@ -421,10 +424,10 @@ export function StepChooseCompanion({
         {/* Navigation */}
         <div className="flex items-center gap-4">
           <Button variant="ghost" onClick={onBack}>
-            Back
+            {tc('back')}
           </Button>
           <Button onClick={onNext} disabled={!selectedId}>
-            Continue
+            {tc('continue')}
           </Button>
         </div>
 
@@ -435,7 +438,7 @@ export function StepChooseCompanion({
             onClick={onQuickSetup}
             className="mt-2 text-[11px] text-white/30 underline underline-offset-2 transition-colors hover:text-white/50"
           >
-            Quick Setup — skip to finish with defaults
+            {t('quickSetup')}
           </button>
         )}
       </motion.div>
