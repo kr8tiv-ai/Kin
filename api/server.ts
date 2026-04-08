@@ -236,10 +236,13 @@ export async function createServer(config: ApiConfig = {}) {
   // Fleet control plane initialisation
   // --------------------------------------------------------------------------
 
-  const fleetDbPath = path.join(
-    path.dirname(resolvedConfig.databasePath),
-    'fleet.db',
-  );
+  const usesEphemeralFleetDb = resolvedConfig.databasePath === ':memory:';
+  const fleetDbPath = usesEphemeralFleetDb
+    ? path.join(process.cwd(), 'data', `fleet.test.${process.pid}.db`)
+    : path.join(
+      path.dirname(resolvedConfig.databasePath),
+      'fleet.db',
+    );
   const fleetDb = new FleetDb(fleetDbPath);
   fleetDb.init();
 
@@ -724,17 +727,25 @@ export async function createServer(config: ApiConfig = {}) {
 
   const closeHandlers: (() => Promise<void>)[] = [];
 
+  if (usesEphemeralFleetDb) {
+    closeHandlers.push(async () => {
+      if (fs.existsSync(fleetDbPath)) {
+        await fs.promises.rm(fleetDbPath, { force: true });
+      }
+    });
+  }
+
   fastify.addHook('onClose', async () => {
     schedulerManager.shutdown();
     pipelineManager.shutdown();
     getMissionControlClient().disconnect();
-    for (const handler of closeHandlers) {
-      await handler();
-    }
     await frontierProxy.stop();
     creditDb.close();
     fleetDb.close();
     db.close();
+    for (const handler of closeHandlers) {
+      await handler();
+    }
   });
 
   return fastify;

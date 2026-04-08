@@ -1,67 +1,9 @@
-/**
- * First Message Endpoint Tests
- *
- * Tests POST /kin/first-message — generate a personalized first companion
- * message on onboarding completion.
- *
- * Uses Fastify inject() with mocked supervisedChat.
- */
-
-import { describe, it, expect, vi, beforeAll, afterAll, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 
-// ============================================================================
-// Mocks — hoisted before any imports that reference them
-// ============================================================================
-
-const mockSupervisedChat = vi.fn();
-
-vi.mock('../inference/supervisor.js', () => ({
-  supervisedChat: (...args: any[]) => mockSupervisedChat(...args),
-}));
-
-vi.mock('../inference/fallback-handler.js', () => ({
-  FallbackHandler: class {},
-}));
-
-vi.mock('../inference/companion-prompts.js', () => ({
-  buildCompanionPrompt: vi.fn().mockReturnValue('mock system prompt'),
-  COMPANION_SYSTEM_PROMPTS: {
-    cipher: 'mock prompt',
-    mischief: 'mock prompt',
-    vortex: 'mock prompt',
-    forge: 'mock prompt',
-    aether: 'mock prompt',
-    catalyst: 'mock prompt',
-  },
-  COMPANION_SHORT_PROMPTS: {
-    cipher: 'mock short',
-    mischief: 'mock short',
-    vortex: 'mock short',
-    forge: 'mock short',
-    aether: 'mock short',
-    catalyst: 'mock short',
-  },
-  getAvailableCompanions: () => ['cipher', 'mischief', 'vortex', 'forge', 'aether', 'catalyst'],
-  buildSoulPrompt: () => '',
-}));
-
-// ============================================================================
-// Server setup
-// ============================================================================
-
 let server: FastifyInstance | null = null;
-let skipReason = '';
-
-function isOptionalDependencyError(err: unknown): boolean {
-  const msg = err instanceof Error ? err.message : String(err);
-  return (
-    msg.includes('better-sqlite3') ||
-    msg.includes('ERR_DLOPEN_FAILED') ||
-    msg.includes('ERR_MODULE_NOT_FOUND') ||
-    msg.includes('dockerode')
-  );
-}
+let token = '';
+let userId = '';
 
 async function getAuthToken(app: FastifyInstance): Promise<string> {
   const res = await app.inject({
@@ -74,196 +16,151 @@ async function getAuthToken(app: FastifyInstance): Promise<string> {
 }
 
 beforeAll(async () => {
-  try {
-    // Race server creation against a timeout — better-sqlite3 can hang
-    // indefinitely on Windows/WSL when native bindings aren't available (K001)
-    const timeout = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('Server creation timed out — likely better-sqlite3 native module hang')), 20_000),
-    );
+  const { createServer } = await import('../api/server.js');
 
-    const create = async () => {
-      const { createServer } = await import('../api/server.js');
-      const s = await createServer({
-        environment: 'development',
-        databasePath: ':memory:',
-        jwtSecret: 'test-secret',
-      });
-      await s.ready();
-      return s;
-    };
+  server = await createServer({
+    environment: 'development',
+    databasePath: ':memory:',
+    jwtSecret: 'first-message-test-secret',
+    rateLimitMax: 10000,
+  });
 
-    server = await Promise.race([create(), timeout]);
-  } catch (err) {
-    if (isOptionalDependencyError(err) || (err instanceof Error && err.message.includes('timed out'))) {
-      skipReason = `Skipping — ${(err as Error).message.slice(0, 100)}`;
-      console.warn(skipReason);
-    } else {
-      throw err;
-    }
-  }
-}, 25_000);
+  await server.ready();
+
+  const login = await server.inject({
+    method: 'POST',
+    url: '/auth/dev-login',
+    payload: { telegramId: 991001, firstName: 'Jordan' },
+  });
+
+  const loginBody = login.json<{ token: string; user: { id: string } }>();
+  token = loginBody.token;
+  userId = loginBody.user.id;
+});
 
 afterAll(async () => {
   if (server) await server.close();
 });
 
-beforeEach(() => {
-  mockSupervisedChat.mockReset();
-});
+describe('first-message route', () => {
+  it('requires auth', async () => {
+    if (!server) return;
 
-// ============================================================================
-// Tests
-// ============================================================================
-
-describe('POST /kin/first-message', () => {
-  it('generates a personalized first message', async () => {
-    if (!server) return console.warn(skipReason);
-
-    mockSupervisedChat.mockResolvedValueOnce({
-      content: 'Hey there, Alex! Excited to start building awesome things together! 🐙',
-      route: 'local',
-      supervisorUsed: false,
-      latencyMs: 150,
-      companionId: 'cipher',
-      inputTokens: 0,
-      outputTokens: 0,
-      costUsd: 0,
-    });
-
-    const token = await getAuthToken(server);
-    const res = await server.inject({
+    const response = await server.inject({
       method: 'POST',
-      url: '/kin/first-message',
-      headers: { authorization: `Bearer ${token}` },
-      payload: {
-        companionId: 'cipher',
-        userProfile: {
-          displayName: 'Alex',
-          interests: ['web design', 'React'],
-          goals: ['build a portfolio site'],
-        },
-      },
-    });
-
-    expect(res.statusCode).toBe(200);
-    const body = JSON.parse(res.body);
-    expect(body.message).toBeTruthy();
-    expect(body.companionId).toBe('cipher');
-    expect(body.route).toBe('local');
-    expect(body.latencyMs).toBeTypeOf('number');
-
-    // Verify supervisedChat was called with user context in the prompt
-    expect(mockSupervisedChat).toHaveBeenCalledOnce();
-    const [messages, companionId] = mockSupervisedChat.mock.calls[0];
-    expect(companionId).toBe('cipher');
-    expect(messages).toHaveLength(2);
-    expect(messages[0].role).toBe('system');
-    expect(messages[1].role).toBe('user');
-    expect(messages[1].content).toContain('Alex');
-    expect(messages[1].content).toContain('web design');
-    expect(messages[1].content).toContain('build a portfolio site');
-  });
-
-  it('returns 404 for invalid companion ID', async () => {
-    if (!server) return console.warn(skipReason);
-
-    const token = await getAuthToken(server);
-    const res = await server.inject({
-      method: 'POST',
-      url: '/kin/first-message',
-      headers: { authorization: `Bearer ${token}` },
-      payload: {
-        companionId: 'nonexistent-companion',
-      },
-    });
-
-    expect(res.statusCode).toBe(404);
-    const body = JSON.parse(res.body);
-    expect(body.error).toBe('Companion not found');
-    expect(mockSupervisedChat).not.toHaveBeenCalled();
-  });
-
-  it('uses fallback text when no userProfile is provided', async () => {
-    if (!server) return console.warn(skipReason);
-
-    mockSupervisedChat.mockResolvedValueOnce({
-      content: 'Hey friend! Ready to explore some cool strategies together? 🐉',
-      route: 'local',
-      supervisorUsed: false,
-      latencyMs: 120,
-      companionId: 'vortex',
-      inputTokens: 0,
-      outputTokens: 0,
-      costUsd: 0,
-    });
-
-    const token = await getAuthToken(server);
-    const res = await server.inject({
-      method: 'POST',
-      url: '/kin/first-message',
-      headers: { authorization: `Bearer ${token}` },
-      payload: {
-        companionId: 'vortex',
-      },
-    });
-
-    expect(res.statusCode).toBe(200);
-    const body = JSON.parse(res.body);
-    expect(body.message).toBeTruthy();
-    expect(body.companionId).toBe('vortex');
-
-    // Verify fallback defaults are used in the prompt
-    const [messages] = mockSupervisedChat.mock.calls[0];
-    expect(messages[1].content).toContain('friend');
-    expect(messages[1].content).toContain('exploring new things');
-    expect(messages[1].content).toContain('learning and growing');
-  });
-
-  it('returns 500 when supervisor fails', async () => {
-    if (!server) return console.warn(skipReason);
-
-    mockSupervisedChat.mockRejectedValueOnce(new Error('Ollama connection refused'));
-
-    const token = await getAuthToken(server);
-    const res = await server.inject({
-      method: 'POST',
-      url: '/kin/first-message',
-      headers: { authorization: `Bearer ${token}` },
-      payload: {
-        companionId: 'cipher',
-        userProfile: { displayName: 'Test' },
-      },
-    });
-
-    expect(res.statusCode).toBe(500);
-    const body = JSON.parse(res.body);
-    expect(body.error).toBe('Failed to generate first companion message');
-  });
-
-  it('requires authentication', async () => {
-    if (!server) return console.warn(skipReason);
-
-    const res = await server.inject({
-      method: 'POST',
-      url: '/kin/first-message',
+      url: '/first-message',
       payload: { companionId: 'cipher' },
     });
 
-    expect(res.statusCode).toBe(401);
+    expect(response.statusCode).toBe(401);
   });
 
-  it('validates request body — missing companionId', async () => {
-    if (!server) return console.warn(skipReason);
+  it('returns 404 when the companion is not claimed', async () => {
+    if (!server) return;
 
-    const token = await getAuthToken(server);
-    const res = await server.inject({
+    const response = await server.inject({
+      method: 'POST',
+      url: '/first-message',
+      headers: { authorization: `Bearer ${token}` },
+      payload: { companionId: 'cipher' },
+    });
+
+    expect(response.statusCode).toBe(404);
+  });
+
+  it('creates a personalized starter conversation and assistant welcome on both route paths', async () => {
+    if (!server) return;
+
+    server.context.db.prepare(`
+      INSERT INTO user_companions (id, user_id, companion_id, is_active)
+      VALUES ('uc-first', ?, 'cipher', 1)
+    `).run(userId);
+
+    server.context.db.prepare(`
+      INSERT INTO user_preferences (
+        id, user_id, display_name, experience_level, goals, language, tone, privacy_mode, onboarding_complete
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+      ON CONFLICT(user_id) DO UPDATE SET
+        display_name = excluded.display_name,
+        experience_level = excluded.experience_level,
+        goals = excluded.goals,
+        language = excluded.language,
+        tone = excluded.tone,
+        privacy_mode = excluded.privacy_mode,
+        onboarding_complete = excluded.onboarding_complete
+    `).run(
+      'pref-first',
+      userId,
+      'Jordan',
+      'beginner',
+      JSON.stringify(['Build a Website', 'Grow My Brand']),
+      'en',
+      'friendly',
+      'private',
+    );
+
+    server.context.db.prepare(`
+      INSERT INTO memories (id, user_id, companion_id, memory_type, content, importance, is_transferable)
+      VALUES
+        ('mem-occ', ?, 'cipher', 'personal', 'Occupation/Industry: founder', 0.8, 1),
+        ('mem-interest', ?, 'cipher', 'preference', 'Interests: design systems and storytelling', 0.8, 1),
+        ('mem-project', ?, 'cipher', 'context', 'Currently working on: a premium landing page', 0.8, 1)
+    `).run(userId, userId, userId);
+
+    const legacyResponse = await server.inject({
       method: 'POST',
       url: '/kin/first-message',
       headers: { authorization: `Bearer ${token}` },
-      payload: {},
+      payload: { companionId: 'cipher' },
     });
 
-    // Fastify schema validation returns 400
-    expect(res.statusCode).toBe(400);
+    expect(legacyResponse.statusCode).toBe(200);
+
+    const response = await server.inject({
+      method: 'POST',
+      url: '/first-message',
+      headers: { authorization: `Bearer ${token}` },
+      payload: { companionId: 'cipher' },
+    });
+
+    expect(response.statusCode).toBe(200);
+
+    const body = response.json<{
+      conversationId: string;
+      companionId: string;
+      companionName: string;
+      welcomeMessage: string;
+      suggestedReplies: string[];
+    }>();
+
+    expect(body.companionId).toBe('cipher');
+    expect(body.companionName).toBe('Cipher');
+    expect(body.conversationId).toMatch(/^conv-/);
+    expect(body.welcomeMessage).toContain('Hi Jordan');
+    expect(body.welcomeMessage).toContain('a premium landing page');
+    expect(body.welcomeMessage).toContain('build a website');
+    expect(body.welcomeMessage).toContain('privacy first');
+    expect(body.suggestedReplies).toHaveLength(3);
+    expect(body.suggestedReplies[0]).toContain('a premium landing page');
+
+    const conversation = server.context.db.prepare(`
+      SELECT id, title FROM conversations WHERE id = ?
+    `).get(body.conversationId) as { id: string; title: string } | undefined;
+    expect(conversation?.title).toBe('Meet Cipher');
+
+    const messages = server.context.db.prepare(`
+      SELECT role, content, model, provider FROM messages WHERE conversation_id = ?
+    `).all(body.conversationId) as Array<{
+      role: string;
+      content: string;
+      model: string | null;
+      provider: string | null;
+    }>;
+
+    expect(messages).toHaveLength(1);
+    expect(messages[0]?.role).toBe('assistant');
+    expect(messages[0]?.content).toBe(body.welcomeMessage);
+    expect(messages[0]?.model).toBe('starter-seed');
+    expect(messages[0]?.provider).toBe('local');
   });
 });

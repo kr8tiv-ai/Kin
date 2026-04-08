@@ -73,6 +73,14 @@ export interface Message {
   provider?: string;
 }
 
+export interface StarterConversation {
+  conversationId: string;
+  companionId: string;
+  companionName: string;
+  welcomeMessage: string;
+  suggestedReplies: string[];
+}
+
 export interface Project {
   id: string;
   name: string;

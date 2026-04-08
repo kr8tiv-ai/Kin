@@ -46,6 +46,7 @@ export interface MintResult {
 // ---------------------------------------------------------------------------
 
 let _umiPromise: Promise<any> | null = null;
+let _candyMachineUmiPromise: Promise<any> | null = null;
 
 async function getServerUmi() {
   const adminKey = process.env.SOLANA_ADMIN_KEYPAIR;
@@ -57,14 +58,11 @@ async function getServerUmi() {
         const { createUmi } = await import(
           '@metaplex-foundation/umi-bundle-defaults'
         );
-        const { mplCandyMachine } = await import(
-          '@metaplex-foundation/mpl-candy-machine'
-        );
         const { keypairIdentity, createSignerFromKeypair } = await import(
           '@metaplex-foundation/umi'
         );
 
-        const umi = createUmi(SOLANA_RPC_URL).use(mplCandyMachine());
+        const umi = createUmi(SOLANA_RPC_URL);
 
         // Decode admin keypair from base58
         const bs58 = await import('bs58');
@@ -83,6 +81,29 @@ async function getServerUmi() {
   }
 
   return _umiPromise;
+}
+
+async function getCandyMachineUmi() {
+  if (!_candyMachineUmiPromise) {
+    _candyMachineUmiPromise = (async () => {
+      const umi = await getServerUmi();
+      if (!umi) return null;
+
+      try {
+        const { mplCandyMachine } = await import(
+          '@metaplex-foundation/mpl-candy-machine'
+        );
+
+        return umi.use(mplCandyMachine());
+      } catch (err) {
+        console.warn('[SolanaMint] Candy Machine support is unavailable:', err);
+        _candyMachineUmiPromise = null;
+        return null;
+      }
+    })();
+  }
+
+  return _candyMachineUmiPromise;
 }
 
 // ---------------------------------------------------------------------------
@@ -105,7 +126,7 @@ export async function mintCompanionNFT(
   // ── Attempt real on-chain mint ──
   if (cmAddress) {
     try {
-      const umi = await getServerUmi();
+      const umi = await getCandyMachineUmi();
       if (umi) {
         const { publicKey, generateSigner, some, none, transactionBuilder } =
           await import('@metaplex-foundation/umi');

@@ -97,7 +97,7 @@ export class SupermemoryClient {
           'x-sm-user-id': smUserId,
         },
         body: JSON.stringify({
-          query,
+          q: query,
           limit,
         }),
       });

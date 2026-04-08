@@ -146,6 +146,7 @@ export const COMPANION_METADATA: Record<string, Partial<NFTMetadata>> = {
 export class SolanaNFTClient {
   private config: NFTConfig;
   private _umiPromise: Promise<any> | null = null;
+  private _candyMachineUmiPromise: Promise<any> | null = null;
 
   constructor(config: NFTConfig = {}) {
     this.config = {
@@ -163,12 +164,10 @@ export class SolanaNFTClient {
       this._umiPromise = (async () => {
         try {
           const { createUmi } = await import('@metaplex-foundation/umi-bundle-defaults');
-          const { mplCandyMachine } = await import('@metaplex-foundation/mpl-candy-machine');
           const { mplTokenMetadata } = await import('@metaplex-foundation/mpl-token-metadata');
           const { keypairIdentity, createSignerFromKeypair } = await import('@metaplex-foundation/umi');
 
           const umi = createUmi(this.config.rpcUrl!)
-            .use(mplCandyMachine())
             .use(mplTokenMetadata());
 
           // Load admin keypair if available
@@ -192,6 +191,26 @@ export class SolanaNFTClient {
       })();
     }
     return this._umiPromise;
+  }
+
+  private async getCandyMachineUmi(): Promise<any> {
+    if (!this._candyMachineUmiPromise) {
+      this._candyMachineUmiPromise = (async () => {
+        const umi = await this.getUmi();
+        if (!umi) return null;
+
+        try {
+          const { mplCandyMachine } = await import('@metaplex-foundation/mpl-candy-machine');
+          return umi.use(mplCandyMachine());
+        } catch (err) {
+          console.warn('[SolanaNFT] Candy Machine support is unavailable:', err);
+          this._candyMachineUmiPromise = null;
+          return null;
+        }
+      })();
+    }
+
+    return this._candyMachineUmiPromise;
   }
 
   // ==========================================================================
@@ -388,7 +407,7 @@ export class SolanaNFTClient {
     candyMachineId: string,
     wallet: string
   ): Promise<MintResult> {
-    const umi = await this.getUmi();
+    const umi = await this.getCandyMachineUmi();
 
     if (umi) {
       try {

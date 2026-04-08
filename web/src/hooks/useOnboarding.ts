@@ -7,7 +7,11 @@
 import { useCallback, useMemo, useState } from 'react';
 import { kinApi } from '@/lib/api';
 import { track } from '@/lib/analytics';
-import type { UserPreferences, SoulConfig } from '@/lib/types';
+import type {
+  UserPreferences,
+  SoulConfig,
+  StarterConversation,
+} from '@/lib/types';
 import { DEFAULT_SOUL_CONFIG } from '@/lib/types';
 import type { ExtractedProfile } from '@/hooks/useVoiceIntro';
 
@@ -154,10 +158,10 @@ export function useOnboarding() {
     });
   }, []);
 
-  const complete = useCallback(async () => {
+  const complete = useCallback(async (): Promise<StarterConversation> => {
     if (!state.selectedCompanionId) {
       setState((prev) => ({ ...prev, error: 'Please select a companion' }));
-      return;
+      throw new Error('Please select a companion');
     }
 
     setState((prev) => ({ ...prev, completing: true, error: null }));
@@ -223,6 +227,13 @@ export function useOnboarding() {
         ),
       );
 
+      const starterConversation = await kinApi.post<StarterConversation>(
+        '/first-message',
+        {
+          companionId: state.selectedCompanionId,
+        },
+      );
+
       track('onboarding_completed', {
         companionId: state.selectedCompanionId,
         experienceLevel: state.preferences.experienceLevel,
@@ -231,6 +242,7 @@ export function useOnboarding() {
       });
 
       setState((prev) => ({ ...prev, completing: false }));
+      return starterConversation;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Something went wrong';
       setState((prev) => ({ ...prev, completing: false, error: message }));
