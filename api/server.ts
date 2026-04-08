@@ -65,6 +65,7 @@ import mediaRoutes from './routes/media.js';
 import missionControlRoutes from './routes/mission-control.js';
 import kinCreditsRoutes from './routes/kin-credits.js';
 import firstMessageRoutes from './routes/first-message.js';
+import canvasRoutes from './routes/canvas.js';
 
 // Mission Control imports
 import { initMissionControlClient, getMissionControlClient } from '../inference/mission-control.js';
@@ -609,6 +610,7 @@ export async function createServer(config: ApiConfig = {}) {
     await protectedFastify.register(missionControlRoutes);
     await protectedFastify.register(kinCreditsRoutes);
     await protectedFastify.register(firstMessageRoutes);
+    await protectedFastify.register(canvasRoutes);
   });
 
   // Webhook ingestion routes (HMAC-authenticated, no JWT)
