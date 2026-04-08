@@ -84,6 +84,20 @@ const DISCORD_MAX_LENGTH = 2000;
 
 const sessions = new Map<string, UserSession>();
 
+/** Sweep interval: every 10 min, evict sessions idle >1 hour. */
+const SESSION_IDLE_MS = 60 * 60 * 1000; // 1 hour
+const SESSION_SWEEP_MS = 10 * 60 * 1000; // 10 minutes
+
+const sessionSweep = setInterval(() => {
+  const cutoff = Date.now() - SESSION_IDLE_MS;
+  for (const [id, session] of sessions) {
+    if (session.lastActivity.getTime() < cutoff) {
+      sessions.delete(id);
+    }
+  }
+}, SESSION_SWEEP_MS);
+sessionSweep.unref();
+
 /**
  * Get or create a user session.
  */

@@ -25,11 +25,22 @@ export interface ZKKeyConfig {
   algorithm: 'aes-256-gcm';
 }
 
+/** Max cached derived keys before eviction. */
+const MAX_KEY_CACHE_SIZE = 500;
+
 class ZKEncryption {
   private keyCache: Map<string, Buffer> = new Map();
 
+  /**
+   * Build a hashed cache key instead of storing raw password in Map keys.
+   * Uses SHA-256 so passwords are never held as plaintext in memory keys.
+   */
+  private hashCacheKey(userId: string, password: string): string {
+    return crypto.createHash('sha256').update(`${userId}:${password}`).digest('hex');
+  }
+
   async deriveKey(userId: string, password: string, salt?: Buffer): Promise<{ key: Buffer; salt: Buffer }> {
-    const cacheKey = `${userId}:${password}`;
+    const cacheKey = this.hashCacheKey(userId, password);
     const cached = this.keyCache.get(cacheKey);
     if (cached) return { key: cached, salt: salt! };
 
@@ -37,6 +48,17 @@ class ZKEncryption {
     const key = await pbkdf2Async(password, saltBuffer, 100000, 32, 'sha512');
     
     if (!salt) {
+      // Evict when cache exceeds max size
+      if (this.keyCache.size >= MAX_KEY_CACHE_SIZE) {
+        // Clear oldest half (Map insertion order)
+        const evictCount = Math.floor(this.keyCache.size / 2);
+        let removed = 0;
+        for (const k of this.keyCache.keys()) {
+          if (removed >= evictCount) break;
+          this.keyCache.delete(k);
+          removed++;
+        }
+      }
       this.keyCache.set(cacheKey, key);
     }
 

@@ -85,12 +85,21 @@ export class MediaManager {
   private client: Replicate | null = null;
   private generations: Map<string, GenerationRecord> = new Map();
   private activeCount = 0;
+  private pruneInterval: ReturnType<typeof setInterval> | null = null;
 
   /**
    * Per-user rate tracking.
    * Key: userId, Value: array of generation timestamps within the rate window.
    */
   private userRates: Map<string, number[]> = new Map();
+
+  constructor() {
+    // Auto-prune stale completed records every 5 minutes
+    this.pruneInterval = setInterval(() => {
+      this.pruneStaleRecords();
+    }, 5 * 60 * 1000);
+    this.pruneInterval.unref();
+  }
 
   // -------------------------------------------------------------------------
   // Client lifecycle

@@ -35,10 +35,28 @@ interface ConversationContext {
   conversationStart: boolean;
 }
 
+/** Max entries before eviction triggers on patterns/predictions Maps. */
+const MAX_PATTERN_ENTRIES = 1000;
+
 class PredictionEngine {
   private patterns: Map<string, UserPattern> = new Map();
   private predictions: Map<string, Prediction[]> = new Map();
   private ollama = getOllamaClient();
+
+  /**
+   * Evict the oldest half of entries from a Map when it exceeds MAX_PATTERN_ENTRIES.
+   * Uses insertion order (Map iteration order in JS) as a proxy for age.
+   */
+  private evictOldestHalf<V>(map: Map<string, V>): void {
+    if (map.size <= MAX_PATTERN_ENTRIES) return;
+    const evictCount = Math.floor(map.size / 2);
+    let removed = 0;
+    for (const key of map.keys()) {
+      if (removed >= evictCount) break;
+      map.delete(key);
+      removed++;
+    }
+  }
 
   analyzePattern(userId: string, message: string, responseCount: number): void {
     let pattern = this.patterns.get(userId);
@@ -69,6 +87,9 @@ class PredictionEngine {
     const existingExpectations = pattern.responseExpectations.get(message) ?? 0;
     pattern.responseExpectations.set(message, existingExpectations + responseCount);
     pattern.lastUpdated = Date.now();
+
+    // Bound: evict oldest half when patterns Map exceeds limit
+    this.evictOldestHalf(this.patterns);
   }
 
   predict(userId: string, currentMessage: string, context: ConversationContext): Prediction[] {
@@ -123,6 +144,9 @@ class PredictionEngine {
 
     const existing = this.predictions.get(userId) ?? [];
     this.predictions.set(userId, [...predictions, ...existing].slice(0, 10));
+
+    // Bound: evict oldest half when predictions Map exceeds limit
+    this.evictOldestHalf(this.predictions);
 
     return predictions.slice(0, 3);
   }

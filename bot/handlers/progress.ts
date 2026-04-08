@@ -254,6 +254,22 @@ function ensureProgressTable(): void {
 
 const progressCache = new Map<string, UserProgress>();
 
+/** Sweep interval: every 10 min, evict cache entries idle >30 min. */
+const PROGRESS_CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
+const PROGRESS_SWEEP_MS = 10 * 60 * 1000; // 10 minutes
+
+const progressSweep = setInterval(() => {
+  // Progress entries have no lastAccessed timestamp — evict once cache grows
+  // beyond a reasonable working set, keeping only the most recently touched.
+  // Since we can't timestamp access without changing the data structure,
+  // we clear the whole cache when it exceeds 500 entries. SQLite is the
+  // durable source of truth; cache misses simply reload from DB.
+  if (progressCache.size > 500) {
+    progressCache.clear();
+  }
+}, PROGRESS_SWEEP_MS);
+progressSweep.unref();
+
 export function getOrCreateProgress(userId: string): UserProgress {
   // Check cache first
   if (progressCache.has(userId)) return progressCache.get(userId)!;

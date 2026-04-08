@@ -50,6 +50,20 @@ interface ReferralRecord {
 
 const referralStore = new Map<string, ReferralRecord>();
 
+/** Sweep interval: every 1 hour, evict referral records older than 24 hours. */
+const REFERRAL_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+const REFERRAL_SWEEP_MS = 60 * 60 * 1000; // 1 hour
+
+const referralSweep = setInterval(() => {
+  const cutoff = Date.now() - REFERRAL_TTL_MS;
+  for (const [id, record] of referralStore) {
+    if (new Date(record.generatedAt).getTime() < cutoff) {
+      referralStore.delete(id);
+    }
+  }
+}, REFERRAL_SWEEP_MS);
+referralSweep.unref();
+
 // ============================================================================
 // Helpers
 // ============================================================================

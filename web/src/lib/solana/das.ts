@@ -45,11 +45,19 @@ export interface DASSearchResult {
 
 const cache = new Map<string, { data: unknown; expires: number }>();
 
+/** Max cache entries before full eviction. */
+const MAX_DAS_CACHE_SIZE = 500;
+
 function cached<T>(key: string, fn: () => Promise<T>, ttlSeconds: number): Promise<T> {
   const now = Date.now();
   const entry = cache.get(key);
   if (entry && entry.expires > now) return Promise.resolve(entry.data as T);
   return fn().then((data) => {
+    // Evict all when cache grows beyond bounds — entries have TTL so
+    // only fresh fetches survive, and the RPC is the source of truth.
+    if (cache.size >= MAX_DAS_CACHE_SIZE) {
+      cache.clear();
+    }
     cache.set(key, { data, expires: now + ttlSeconds * 1000 });
     return data;
   });

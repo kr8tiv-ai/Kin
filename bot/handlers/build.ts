@@ -49,7 +49,21 @@ const buildAwaiters = new Set<string>();
  * Temporary store for the last generation result per user so Iterate / Deploy
  * buttons can reference it without re-generating.
  */
-const lastBuildResult = new Map<string, { result: GenerationResult; projectId: string }>();
+const lastBuildResult = new Map<string, { result: GenerationResult; projectId: string; lastAccessed: number }>();
+
+/** Sweep interval: every 10 min, evict build results older than 30 min. */
+const BUILD_RESULT_TTL_MS = 30 * 60 * 1000; // 30 minutes
+const BUILD_SWEEP_MS = 10 * 60 * 1000; // 10 minutes
+
+const buildSweep = setInterval(() => {
+  const cutoff = Date.now() - BUILD_RESULT_TTL_MS;
+  for (const [id, entry] of lastBuildResult) {
+    if (entry.lastAccessed < cutoff) {
+      lastBuildResult.delete(id);
+    }
+  }
+}, BUILD_SWEEP_MS);
+buildSweep.unref();
 
 /**
  * Users currently in "iterate mode" — their next text message refines the
@@ -66,6 +80,8 @@ export function enterBuildMode(userId: string): void {
   buildAwaiters.add(userId);
   // Clear iterate mode if they're starting fresh
   iterateAwaiters.delete(userId);
+  // Clear stale build result for this user
+  lastBuildResult.delete(userId);
 }
 
 /** Check whether a user is waiting to describe a build. */
@@ -145,7 +161,7 @@ export async function handleBuild(
     const projectId = saveProjectWithFiles(userId, description, result.files);
 
     // Store for later Iterate / Deploy actions
-    lastBuildResult.set(userId, { result, projectId });
+    lastBuildResult.set(userId, { result, projectId, lastAccessed: Date.now() });
 
     // ── Send files as code blocks ─────────────────────────────────────────
     await sendGeneratedFiles(ctx, result);
@@ -259,7 +275,7 @@ export async function handleIterate(
 
     // Update project files
     const projectId = saveProjectWithFiles(userId, feedback, result.files, prev.projectId);
-    lastBuildResult.set(userId, { result, projectId });
+    lastBuildResult.set(userId, { result, projectId, lastAccessed: Date.now() });
 
     // Send updated files
     await sendGeneratedFiles(ctx, result);

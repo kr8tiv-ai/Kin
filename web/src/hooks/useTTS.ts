@@ -27,6 +27,25 @@ interface UseTTSResult {
 // In-memory audio cache: messageId -> audio blob URL
 const audioCache = new Map<string, string>();
 
+/** Max cached audio blobs before eviction. Prevents memory leak from blob URLs. */
+const MAX_AUDIO_CACHE_SIZE = 50;
+
+/**
+ * Evict the oldest half of audio cache entries, revoking blob URLs
+ * to release the underlying memory held by the browser.
+ */
+function evictAudioCache(): void {
+  if (audioCache.size <= MAX_AUDIO_CACHE_SIZE) return;
+  const evictCount = Math.floor(audioCache.size / 2);
+  let removed = 0;
+  for (const [id, url] of audioCache) {
+    if (removed >= evictCount) break;
+    URL.revokeObjectURL(url);
+    audioCache.delete(id);
+    removed++;
+  }
+}
+
 export function useTTS(): UseTTSResult {
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -85,6 +104,9 @@ export function useTTS(): UseTTSResult {
 
           const audioBlob = await response.blob();
           blobUrl = URL.createObjectURL(audioBlob);
+
+          // Evict oldest entries before adding new one to bound memory
+          evictAudioCache();
           audioCache.set(messageId, blobUrl);
 
           track('tts_synthesized', { companionId, textLength: text.length });

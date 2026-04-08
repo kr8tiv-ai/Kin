@@ -116,6 +116,9 @@ class DreamModeEngine {
       clearInterval(interval);
       this.intervals.delete(userId);
     }
+    // Clean up state and config to prevent unbounded growth
+    this.states.delete(userId);
+    this.configs.delete(userId);
   }
 
   private async generateDream(userId: string, intensity: number): Promise<string | null> {
