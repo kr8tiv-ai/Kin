@@ -119,10 +119,15 @@ export async function loadAllCompanionResults(
     const entries = await fs.promises.readdir(base, { withFileTypes: true });
     const dirs = entries.filter((e) => e.isDirectory()).map((e) => e.name);
 
-    for (const companionId of dirs) {
-      const companionResults = await loadEvalResults(companionId, undefined, basePath);
-      if (companionResults.length > 0) {
-        results[companionId] = companionResults;
+    const loaded = await Promise.all(
+      dirs.map(async (companionId) => ({
+        companionId,
+        data: await loadEvalResults(companionId, undefined, basePath),
+      })),
+    );
+    for (const { companionId, data } of loaded) {
+      if (data.length > 0) {
+        results[companionId] = data;
       }
     }
   } catch (err) {

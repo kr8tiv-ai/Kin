@@ -416,31 +416,39 @@ export class GmailManager {
 
     const totalEstimate = res.data.resultSizeEstimate ?? res.data.messages.length;
 
-    // Fetch summaries for each message
-    const summaries: MessageSummary[] = await Promise.all(
-      res.data.messages.map(async (msg) => {
-        const detail = await gmail.users.messages.get({
-          userId: 'me',
-          id: msg.id!,
-          format: 'metadata',
-          metadataHeaders: ['From', 'Subject', 'Date'],
-        });
+    // Fetch summaries with concurrency limit of 10 to avoid Gmail API rate limits
+    const messages = res.data.messages;
+    const summaries: MessageSummary[] = [];
+    const CONCURRENCY = 10;
 
-        const headers = detail.data.payload?.headers ?? [];
-        const getHeader = (name: string) =>
-          headers.find((h) => h.name?.toLowerCase() === name.toLowerCase())
-            ?.value ?? '';
+    for (let i = 0; i < messages.length; i += CONCURRENCY) {
+      const batch = messages.slice(i, i + CONCURRENCY);
+      const batchResults = await Promise.all(
+        batch.map(async (msg) => {
+          const detail = await gmail.users.messages.get({
+            userId: 'me',
+            id: msg.id!,
+            format: 'metadata',
+            metadataHeaders: ['From', 'Subject', 'Date'],
+          });
 
-        return {
-          id: msg.id!,
-          threadId: msg.threadId ?? '',
-          subject: getHeader('Subject'),
-          from: getHeader('From'),
-          snippet: detail.data.snippet ?? '',
-          date: getHeader('Date'),
-        };
-      }),
-    );
+          const headers = detail.data.payload?.headers ?? [];
+          const getHeader = (name: string) =>
+            headers.find((h) => h.name?.toLowerCase() === name.toLowerCase())
+              ?.value ?? '';
+
+          return {
+            id: msg.id!,
+            threadId: msg.threadId ?? '',
+            subject: getHeader('Subject'),
+            from: getHeader('From'),
+            snippet: detail.data.snippet ?? '',
+            date: getHeader('Date'),
+          };
+        }),
+      );
+      summaries.push(...batchResults);
+    }
 
     return { unreadCount: totalEstimate, messages: summaries };
   }

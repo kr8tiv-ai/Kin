@@ -105,9 +105,9 @@ export class OllamaPoolManager {
     if (this.healthCheckInterval) return;
 
     this.healthCheckInterval = setInterval(async () => {
-      for (const [id] of this.members) {
-        await this.checkMemberHealth(id);
-      }
+      await Promise.allSettled(
+        Array.from(this.members.keys()).map((id) => this.checkMemberHealth(id)),
+      );
     }, this.config.healthCheckIntervalMs);
   }
 

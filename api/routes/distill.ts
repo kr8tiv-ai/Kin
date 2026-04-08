@@ -64,13 +64,9 @@ const distillRoutes: FastifyPluginAsync = async (fastify) => {
       : VALID_COMPANION_IDS;
 
     const start = Date.now();
-    const results: DistillRunSummary[] = [];
-
-    for (const cid of companionIds) {
-      const summary = await runDistillation(cid, configOverrides);
-      results.push(summary);
-    }
-
+    const results = await Promise.all(
+      companionIds.map((cid) => runDistillation(cid, configOverrides)),
+    );
     const durationMs = Date.now() - start;
     console.log(`[distill-routes] Distillation run complete in ${durationMs}ms — ${results.length} companion(s)`);
 

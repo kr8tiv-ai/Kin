@@ -108,15 +108,17 @@ const evalRoutes: FastifyPluginAsync = async (fastify) => {
       companionGroups.get(companionId)!.push(result);
     }
 
-    for (const [companionId, companionResults] of companionGroups) {
-      await saveEvalResults(companionResults, companionId);
+    await Promise.all(
+      Array.from(companionGroups.entries()).map(async ([companionId, companionResults]) => {
+        await saveEvalResults(companionResults, companionId);
 
-      // Feed comparison data to the AdvantageDetector for quality delta tracking (R026)
-      const companionComparisons = generateComparisonReport(companionResults);
-      if (companionComparisons.length > 0) {
-        getAdvantageDetector().recordEvalComparison(companionComparisons, companionId);
-      }
-    }
+        // Feed comparison data to the AdvantageDetector for quality delta tracking (R026)
+        const companionComparisons = generateComparisonReport(companionResults);
+        if (companionComparisons.length > 0) {
+          getAdvantageDetector().recordEvalComparison(companionComparisons, companionId);
+        }
+      }),
+    );
 
     // Build run summary
     const summary: EvalRunSummary = {

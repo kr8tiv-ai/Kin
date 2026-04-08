@@ -311,13 +311,25 @@ export class ProactiveManager {
     ).all() as Array<{ user_id: string; companion_id: string }>;
 
     let triggered = 0;
-    for (const { user_id, companion_id } of users) {
-      try {
-        const result = await this.evaluateAndSuggest(user_id, companion_id);
-        if (result) triggered++;
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        console.error(`[proactive] Scan error for user=${user_id} companion=${companion_id}: ${msg}`);
+    const BATCH_SIZE = 5;
+
+    for (let i = 0; i < users.length; i += BATCH_SIZE) {
+      const batch = users.slice(i, i + BATCH_SIZE);
+      const results = await Promise.allSettled(
+        batch.map(({ user_id, companion_id }) =>
+          this.evaluateAndSuggest(user_id, companion_id),
+        ),
+      );
+
+      for (let j = 0; j < results.length; j++) {
+        const result = results[j]!;
+        if (result.status === 'fulfilled' && result.value) {
+          triggered++;
+        } else if (result.status === 'rejected') {
+          const { user_id, companion_id } = batch[j]!;
+          const msg = result.reason instanceof Error ? result.reason.message : String(result.reason);
+          console.error(`[proactive] Scan error for user=${user_id} companion=${companion_id}: ${msg}`);
+        }
       }
     }
 

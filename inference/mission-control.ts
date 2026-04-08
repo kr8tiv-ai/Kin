@@ -221,10 +221,8 @@ export class MissionControlClient {
   async connect(companions: CompanionAgent[]): Promise<void> {
     if (!this.enabled) return;
 
-    const registrations: AgentMapping[] = [];
-
-    for (const companion of companions) {
-      try {
+    const results = await Promise.allSettled(
+      companions.map(async (companion) => {
         const response = await this.mcFetch('/api/agents/register', {
           method: 'POST',
           body: JSON.stringify({
@@ -236,16 +234,19 @@ export class MissionControlClient {
 
         if (response.ok) {
           const data = (await response.json()) as { agentId?: string; id?: string };
-          registrations.push({
+          return {
             companionId: companion.id,
             mcAgentId: data.agentId || data.id || companion.id,
-          });
+          };
         }
-      } catch {
-        // Fire-and-forget per K013 — individual registration failure
-        // doesn't block other companions
-      }
-    }
+        return null;
+      }),
+    );
+
+    const registrations: AgentMapping[] = results
+      .filter((r): r is PromiseFulfilledResult<AgentMapping | null> => r.status === 'fulfilled')
+      .map((r) => r.value)
+      .filter((v): v is AgentMapping => v !== null);
 
     this.agents = registrations;
     this._connected = registrations.length > 0;
@@ -319,25 +320,26 @@ export class MissionControlClient {
   }
 
   private async sendHeartbeats(): Promise<void> {
-    for (const agent of this.agents) {
-      try {
-        const response = await this.mcFetch(
-          `/api/agents/${agent.mcAgentId}/heartbeat`,
-          {
-            method: 'POST',
-            body: JSON.stringify({
-              status: 'healthy',
-              timestamp: new Date().toISOString(),
-              queueDepth: this.telemetryQueue.length,
-            }),
-          },
-        );
-        if (response.ok) {
-          this.lastHeartbeatAt = Date.now();
-        }
-      } catch (err) {
-        this.lastError = err instanceof Error ? err.message : String(err);
-        // Fire-and-forget (K013)
+    const results = await Promise.allSettled(
+      this.agents.map((agent) =>
+        this.mcFetch(`/api/agents/${agent.mcAgentId}/heartbeat`, {
+          method: 'POST',
+          body: JSON.stringify({
+            status: 'healthy',
+            timestamp: new Date().toISOString(),
+            queueDepth: this.telemetryQueue.length,
+          }),
+        }),
+      ),
+    );
+
+    for (const result of results) {
+      if (result.status === 'fulfilled' && result.value.ok) {
+        this.lastHeartbeatAt = Date.now();
+      } else if (result.status === 'rejected') {
+        this.lastError = result.reason instanceof Error
+          ? result.reason.message
+          : String(result.reason);
       }
     }
   }
@@ -442,22 +444,22 @@ export class MissionControlClient {
         `SELECT * FROM companion_souls`,
       ).all() as any[];
 
-      for (const soul of localSouls) {
-        const config: SoulConfigBody = {
-          customName: soul.custom_name ?? undefined,
-          traits: JSON.parse(soul.traits || '{}'),
-          values: JSON.parse(soul.soul_values || '[]'),
-          style: JSON.parse(soul.style || '{}'),
-          customInstructions: soul.custom_instructions ?? '',
-          boundaries: JSON.parse(soul.boundaries || '[]'),
-          antiPatterns: JSON.parse(soul.anti_patterns || '[]'),
-        };
+      await Promise.allSettled(
+        localSouls.map((soul) => {
+          const config: SoulConfigBody = {
+            customName: soul.custom_name ?? undefined,
+            traits: JSON.parse(soul.traits || '{}'),
+            values: JSON.parse(soul.soul_values || '[]'),
+            style: JSON.parse(soul.style || '{}'),
+            customInstructions: soul.custom_instructions ?? '',
+            boundaries: JSON.parse(soul.boundaries || '[]'),
+            antiPatterns: JSON.parse(soul.anti_patterns || '[]'),
+          };
 
-        const localHash = computeSoulHash(config as any);
-        const markdown = configToSoulMd(config, soul.companion_id);
+          const localHash = computeSoulHash(config as any);
+          const markdown = configToSoulMd(config, soul.companion_id);
 
-        try {
-          await this.mcFetch('/api/prompt-packs/sync', {
+          return this.mcFetch('/api/prompt-packs/sync', {
             method: 'POST',
             body: JSON.stringify({
               companionId: soul.companion_id,
@@ -467,10 +469,8 @@ export class MissionControlClient {
               config,
             }),
           });
-        } catch {
-          // Individual pack push failure — continue with others
-        }
-      }
+        }),
+      );
 
       // ── Pull MC → local ──────────────────────────────────────────────
       try {
