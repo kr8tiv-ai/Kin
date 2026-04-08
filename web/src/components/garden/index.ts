@@ -1,4 +1,5 @@
 export { SoulGardenScene } from './SoulGardenScene';
+export { useLerped } from './useLerped';
 export {
   mapWarmth,
   mapFormality,

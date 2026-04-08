@@ -21,12 +21,20 @@ export function DriftOverlay({ wiltFactor, vibrancy }: DriftOverlayProps) {
   // Only show overlay when there's meaningful drift degradation
   const showOverlay = wiltFactor > 0.1;
 
-  useFrame((state) => {
+  // Lerped values for smooth transitions
+  const lerpedWilt = useRef(wiltFactor);
+  const lerpedVibrancy = useRef(vibrancy);
+
+  useFrame((state, delta) => {
+    const rate = Math.min(4 * delta, 1);
+    lerpedWilt.current = THREE.MathUtils.lerp(lerpedWilt.current, wiltFactor, rate);
+    lerpedVibrancy.current = THREE.MathUtils.lerp(lerpedVibrancy.current, vibrancy, rate);
+
     if (overlayRef.current) {
       // Pulse the overlay opacity with breathing effect
       const t = state.clock.elapsedTime;
-      const baseFade = wiltFactor * 0.35;
-      const pulse = Math.sin(t * 0.5) * 0.03 * wiltFactor;
+      const baseFade = lerpedWilt.current * 0.35;
+      const pulse = Math.sin(t * 0.5) * 0.03 * lerpedWilt.current;
       const mat = overlayRef.current.material as THREE.MeshBasicMaterial;
       mat.opacity = baseFade + pulse;
     }
@@ -35,7 +43,7 @@ export function DriftOverlay({ wiltFactor, vibrancy }: DriftOverlayProps) {
       const t = state.clock.elapsedTime;
       ashGroupRef.current.children.forEach((ash, i) => {
         // Slow downward drift
-        ash.position.y -= 0.003 * wiltFactor;
+        ash.position.y -= 0.003 * lerpedWilt.current;
         ash.position.x += Math.sin(t * 0.3 + i) * 0.001;
         // Reset when below ground
         if (ash.position.y < -1) {

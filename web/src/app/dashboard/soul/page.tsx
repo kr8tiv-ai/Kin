@@ -1,10 +1,11 @@
 'use client';
 
 // ============================================================================
-// Soul Dashboard — Full soul editor with drift gauge and export.
+// Soul Dashboard — 3D Soul Garden + trait editor + drift gauge + export.
 // ============================================================================
 
 import { useState, useCallback } from 'react';
+import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
 import { SoulEditor } from '@/components/soul/SoulEditor';
 import { SoulPreview } from '@/components/soul/SoulPreview';
@@ -12,8 +13,39 @@ import { GlassCard } from '@/components/ui/GlassCard';
 import { Button } from '@/components/ui/Button';
 import { useSoul } from '@/hooks/useSoul';
 import { useAuth } from '@/providers/AuthProvider';
+import { getCompanionColor, getCompanion } from '@/lib/companions';
 import { DEFAULT_SOUL_CONFIG } from '@/lib/types';
 import type { SoulConfig } from '@/lib/types';
+
+// ---------------------------------------------------------------------------
+// Dynamic import — R3F cannot server-render
+// ---------------------------------------------------------------------------
+
+const SoulGardenScene = dynamic(
+  () => import('@/components/garden/SoulGardenScene').then((m) => m.SoulGardenScene),
+  {
+    ssr: false,
+    loading: () => <GardenLoadingSkeleton />,
+  },
+);
+
+// ---------------------------------------------------------------------------
+// Loading skeleton for the garden canvas
+// ---------------------------------------------------------------------------
+
+function GardenLoadingSkeleton() {
+  return (
+    <div className="flex items-center justify-center rounded-2xl bg-black/60 backdrop-blur-sm"
+         style={{ aspectRatio: '16/9', maxHeight: '500px' }}>
+      <div className="flex flex-col items-center gap-3">
+        <div className="h-8 w-8 animate-pulse rounded-full bg-white/5" />
+        <span className="text-[10px] text-white/20 font-mono uppercase tracking-wider animate-pulse">
+          Growing garden…
+        </span>
+      </div>
+    </div>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Drift Gauge — circular progress indicator
@@ -74,6 +106,10 @@ export default function SoulPage() {
   // Sync local config when soul loads
   const currentConfig = soul?.config ?? localConfig;
 
+  // Companion data for theming
+  const companionData = getCompanion(activeCompanionId);
+  const companionColor = getCompanionColor(activeCompanionId);
+
   const handleChange = useCallback((partial: Partial<SoulConfig>) => {
     setLocalConfig((prev) => ({ ...prev, ...partial }));
   }, []);
@@ -133,14 +169,34 @@ export default function SoulPage() {
         </div>
       )}
 
+      {/* Soul Garden — full-width 3D visualization */}
+      <GlassCard className="overflow-hidden p-0" hover={false}>
+        <div className="relative w-full"
+             style={{ aspectRatio: '16/9', maxHeight: '500px' }}>
+          <SoulGardenScene
+            traits={localConfig.traits}
+            driftScore={soul?.driftScore ?? 1.0}
+            companionColor={companionColor}
+            className="absolute inset-0"
+          />
+          {/* Corner label */}
+          <div className="pointer-events-none absolute bottom-3 left-4 z-10">
+            <span className="text-[10px] font-mono uppercase tracking-widest text-white/20">
+              Soul Garden
+            </span>
+          </div>
+        </div>
+      </GlassCard>
+
+      {/* Editor + Sidebar below the garden */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Editor — takes 2 columns */}
         <div className="lg:col-span-2">
           <SoulEditor
             mode="full"
-            companionColor="#00f0ff"
-            companionName="Cipher"
-            companionEmoji="🐙"
+            companionColor={companionColor}
+            companionName={companionData?.name ?? 'Cipher'}
+            companionEmoji={companionData?.emoji ?? '🐙'}
             config={localConfig}
             onChange={handleChange}
           />
@@ -149,9 +205,9 @@ export default function SoulPage() {
         {/* Sidebar — preview + drift */}
         <div className="space-y-6">
           <SoulPreview
-            companionName="Cipher"
-            companionEmoji="🐙"
-            companionColor="#00f0ff"
+            companionName={companionData?.name ?? 'Cipher'}
+            companionEmoji={companionData?.emoji ?? '🐙'}
+            companionColor={companionColor}
             traits={localConfig.traits}
           />
 

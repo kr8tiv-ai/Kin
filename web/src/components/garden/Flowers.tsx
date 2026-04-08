@@ -69,15 +69,23 @@ export function Flowers({
     return items;
   }, [flowerCount, petalSpread, warmTint, gridStrength, organicNoise]);
 
-  // Gentle sway animation
-  useFrame((state) => {
+  // Lerped values for smooth slider transitions
+  const lerpedVibrancy = useRef(vibrancy);
+  const lerpedWiltFactor = useRef(wiltFactor);
+
+  // Gentle sway animation + smooth lerp
+  useFrame((state, delta) => {
     if (!groupRef.current) return;
+    const rate = Math.min(4 * delta, 1);
+    lerpedVibrancy.current = THREE.MathUtils.lerp(lerpedVibrancy.current, vibrancy, rate);
+    lerpedWiltFactor.current = THREE.MathUtils.lerp(lerpedWiltFactor.current, wiltFactor, rate);
+
     const t = state.clock.elapsedTime;
     groupRef.current.children.forEach((child, i) => {
-      const swayAmount = 0.03 * (1 - wiltFactor);
+      const swayAmount = 0.03 * (1 - lerpedWiltFactor.current);
       child.rotation.z = Math.sin(t * 1.2 + i * 0.5) * swayAmount;
       // Wilt: scale down Y
-      const wiltScale = 1 - wiltFactor * 0.5;
+      const wiltScale = 1 - lerpedWiltFactor.current * 0.5;
       child.scale.y = wiltScale;
     });
   });

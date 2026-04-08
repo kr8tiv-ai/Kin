@@ -71,16 +71,23 @@ export function GardenTrees({
     return base;
   }, [companionColor, vibrancy]);
 
-  // Gentle canopy sway
-  useFrame((state) => {
+  // Lerped vibrancy for smooth transitions
+  const lerpedVibrancy = useRef(vibrancy);
+
+  // Gentle canopy sway with smooth lerp
+  useFrame((state, delta) => {
     if (!groupRef.current) return;
+    const rate = Math.min(4 * delta, 1);
+    lerpedVibrancy.current = THREE.MathUtils.lerp(lerpedVibrancy.current, vibrancy, rate);
+
     const t = state.clock.elapsedTime;
+    const swayStrength = lerpedVibrancy.current; // reduce sway when drift degrades
     groupRef.current.children.forEach((treeGroup, i) => {
       // Sway the canopy child (second child in each tree group)
       const canopy = treeGroup.children[1];
       if (canopy) {
-        canopy.rotation.z = Math.sin(t * 0.5 + i * 0.9) * 0.03;
-        canopy.rotation.x = Math.cos(t * 0.4 + i * 1.1) * 0.02;
+        canopy.rotation.z = Math.sin(t * 0.5 + i * 0.9) * 0.03 * swayStrength;
+        canopy.rotation.x = Math.cos(t * 0.4 + i * 1.1) * 0.02 * swayStrength;
       }
     });
   });

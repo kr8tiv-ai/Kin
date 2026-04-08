@@ -61,9 +61,17 @@ export function Crystals({
     return base;
   }, [companionColor, vibrancy]);
 
-  // Slow rotation and pulse
-  useFrame((state) => {
+  // Lerped values for smooth slider transitions
+  const lerpedSharpness = useRef(sharpness);
+  const lerpedVibrancy = useRef(vibrancy);
+
+  // Slow rotation and pulse with smooth lerp
+  useFrame((state, delta) => {
     if (!groupRef.current) return;
+    const rate = Math.min(4 * delta, 1);
+    lerpedSharpness.current = THREE.MathUtils.lerp(lerpedSharpness.current, sharpness, rate);
+    lerpedVibrancy.current = THREE.MathUtils.lerp(lerpedVibrancy.current, vibrancy, rate);
+
     const t = state.clock.elapsedTime;
     groupRef.current.children.forEach((child, i) => {
       child.rotation.y = t * 0.3 + i * 0.7;
@@ -73,6 +81,13 @@ export function Crystals({
         (child.userData as { baseY: number }).baseY = child.position.y;
       }
       child.position.y = baseY + Math.sin(t * 0.8 + i * 1.2) * 0.05;
+
+      // Smoothly update emissive intensity on child material
+      const mesh = child as THREE.Mesh;
+      if (mesh.material && (mesh.material as THREE.MeshStandardMaterial).emissiveIntensity !== undefined) {
+        (mesh.material as THREE.MeshStandardMaterial).emissiveIntensity =
+          lerpedSharpness.current * 2 * lerpedVibrancy.current;
+      }
     });
   });
 
