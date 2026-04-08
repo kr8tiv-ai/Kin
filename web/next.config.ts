@@ -2,6 +2,7 @@ import type { NextConfig } from 'next';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import withSerwistInit from '@serwist/next';
+import createNextIntlPlugin from 'next-intl/plugin';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -54,4 +55,5 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withSerwist(nextConfig);
+const withNextIntl = createNextIntlPlugin('./i18n/request.ts');
+export default withNextIntl(withSerwist(nextConfig));

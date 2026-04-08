@@ -6,6 +6,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '@/providers/AuthProvider';
 import { cn } from '@/lib/utils';
 
@@ -53,23 +54,23 @@ function NavIcon({ name, className }: { name: string; className?: string }) {
 }
 
 const NAV_ITEMS = [
-  { href: '/dashboard', label: 'Overview', iconKey: 'overview' },
-  { href: '/dashboard/chat', label: 'Chat', iconKey: 'chat' },
-  { href: '/dashboard/companion', label: 'My Companion', iconKey: 'companion' },
-  { href: '/dashboard/soul', label: 'Soul', iconKey: 'soul' },
-  { href: '/dashboard/collection', label: 'Collection', iconKey: 'collection' },
-  { href: '/dashboard/projects', label: 'Projects', iconKey: 'projects' },
-  { href: '/dashboard/canvas', label: 'Canvas', iconKey: 'canvas' },
-  { href: '/dashboard/progress', label: 'Progress', iconKey: 'progress' },
-  { href: '/dashboard/skills', label: 'Skills', iconKey: 'skills' },
-  { href: '/dashboard/memories', label: 'Memories', iconKey: 'collection' },
-  { href: '/dashboard/family', label: 'Family', iconKey: 'family' },
-  { href: '/dashboard/setup', label: 'Setup', iconKey: 'setup' },
-  { href: '/dashboard/health', label: 'Health', iconKey: 'health' },
-  { href: '/dashboard/billing', label: 'Billing', iconKey: 'billing' },
-  { href: '/dashboard/refer', label: 'Refer', iconKey: 'refer' },
-  { href: '/dashboard/help', label: 'Help', iconKey: 'help' },
-  { href: '/dashboard/settings', label: 'Settings', iconKey: 'settings' },
+  { href: '/dashboard', labelKey: 'overview', iconKey: 'overview' },
+  { href: '/dashboard/chat', labelKey: 'chat', iconKey: 'chat' },
+  { href: '/dashboard/companion', labelKey: 'myCompanion', iconKey: 'companion' },
+  { href: '/dashboard/soul', labelKey: 'soul', iconKey: 'soul' },
+  { href: '/dashboard/collection', labelKey: 'collection', iconKey: 'collection' },
+  { href: '/dashboard/projects', labelKey: 'projects', iconKey: 'projects' },
+  { href: '/dashboard/canvas', labelKey: 'canvas', iconKey: 'canvas' },
+  { href: '/dashboard/progress', labelKey: 'progress', iconKey: 'progress' },
+  { href: '/dashboard/skills', labelKey: 'skills', iconKey: 'skills' },
+  { href: '/dashboard/memories', labelKey: 'memories', iconKey: 'collection' },
+  { href: '/dashboard/family', labelKey: 'family', iconKey: 'family' },
+  { href: '/dashboard/setup', labelKey: 'setup', iconKey: 'setup' },
+  { href: '/dashboard/health', labelKey: 'health', iconKey: 'health' },
+  { href: '/dashboard/billing', labelKey: 'billing', iconKey: 'billing' },
+  { href: '/dashboard/refer', labelKey: 'refer', iconKey: 'refer' },
+  { href: '/dashboard/help', labelKey: 'help', iconKey: 'help' },
+  { href: '/dashboard/settings', labelKey: 'settings', iconKey: 'settings' },
 ];
 
 interface DashboardSidebarProps {
@@ -80,6 +81,8 @@ interface DashboardSidebarProps {
 export function DashboardSidebar({ className, onNavigate }: DashboardSidebarProps) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const t = useTranslations('dashboard.sidebar');
+  const tc = useTranslations('common');
 
   const firstName = user?.firstName ?? 'User';
   const initial = firstName.charAt(0).toUpperCase();
@@ -173,7 +176,7 @@ export function DashboardSidebar({ className, onNavigate }: DashboardSidebarProp
                   )}
                 >
                   <NavIcon name={item.iconKey} />
-                  {item.label}
+                  {t(item.labelKey)}
                 </Link>
               </li>
             );
@@ -193,7 +196,7 @@ export function DashboardSidebar({ className, onNavigate }: DashboardSidebarProp
                 )}
               >
                 <NavIcon name="fleet" />
-                Fleet
+                {t('fleet')}
               </Link>
             </li>
           )}
@@ -212,7 +215,7 @@ export function DashboardSidebar({ className, onNavigate }: DashboardSidebarProp
                 )}
               >
                 <NavIcon name="training" />
-                Training
+                {t('training')}
               </Link>
             </li>
           )}
@@ -231,7 +234,7 @@ export function DashboardSidebar({ className, onNavigate }: DashboardSidebarProp
                 )}
               >
                 <NavIcon name="admin" />
-                Admin
+                {t('admin')}
               </Link>
             </li>
           )}
@@ -246,7 +249,7 @@ export function DashboardSidebar({ className, onNavigate }: DashboardSidebarProp
           className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-white/50 transition-colors duration-200 hover:bg-white/5 hover:text-magenta"
         >
           <NavIcon name="logout" />
-          Log Out
+          {tc('logOut')}
         </button>
       </div>
     </aside>

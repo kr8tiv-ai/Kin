@@ -8,6 +8,7 @@
 
 import { useRef, useEffect, useState, useCallback, type FormEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslations } from 'next-intl';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { ChatMarkdown } from '@/components/dashboard/ChatMarkdown';
 import { MediaPlayer } from '@/components/dashboard/MediaPlayer';
@@ -88,6 +89,7 @@ export function ChatWindow({ companionId, className }: ChatWindowProps) {
     companionId,
   });
   const tts = useTTS();
+  const t = useTranslations('chat');
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -231,7 +233,7 @@ export function ChatWindow({ companionId, className }: ChatWindowProps) {
                 <path d="M12 6v6l4 2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
               <span className="text-[10px] font-mono text-white/30">
-                {Math.ceil(messages.length / 2)} exchanges
+                {t('exchanges', { count: Math.ceil(messages.length / 2) })}
               </span>
             </motion.div>
           )}
@@ -241,7 +243,7 @@ export function ChatWindow({ companionId, className }: ChatWindowProps) {
             onClick={clearMessages}
             className="rounded-lg px-3 py-1.5 text-xs text-white/40 transition-colors hover:bg-white/5 hover:text-white/70"
           >
-            New chat
+            {t('newChat')}
           </button>
         </div>
       </div>
@@ -255,7 +257,7 @@ export function ChatWindow({ companionId, className }: ChatWindowProps) {
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="animate-spin">
                 <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
               </svg>
-              Loading conversation...
+              {t('loadingConversation')}
             </div>
           </div>
         )}
@@ -271,8 +273,7 @@ export function ChatWindow({ companionId, className }: ChatWindowProps) {
               {companion.emoji}
             </motion.span>
             <p className="text-white/60 text-sm max-w-sm mb-6">
-              Start chatting with {companion.name}. Ask anything about{' '}
-              {companion.tagline.toLowerCase()}.
+              {t('emptyState', { name: companion.name, tagline: companion.tagline.toLowerCase() })}
             </p>
 
             {/* Quick-reply chips */}
@@ -306,6 +307,7 @@ export function ChatWindow({ companionId, className }: ChatWindowProps) {
               companion={companion}
               isNewest={msg.id === newestAssistantId}
               tts={tts}
+              t={t}
             />
           ))}
         </AnimatePresence>
@@ -380,13 +382,13 @@ export function ChatWindow({ companionId, className }: ChatWindowProps) {
         {/* Voice status bar — shown when voice session is active */}
         {voiceSession.isActive && (
           <div className="flex items-center gap-2 mb-2 px-1">
-            <VoiceStateIndicator state={voiceSession.state} companionName={companion.name} />
+            <VoiceStateIndicator state={voiceSession.state} companionName={companion.name} t={t} />
             <button
               type="button"
               onClick={() => voiceSession.stopSession()}
               className="ml-auto rounded-md border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] text-white/40 hover:bg-white/10 hover:text-white/60 transition-colors"
             >
-              End voice
+              {t('voice.endVoice')}
             </button>
           </div>
         )}
@@ -397,8 +399,8 @@ export function ChatWindow({ companionId, className }: ChatWindowProps) {
             type="button"
             onClick={handleVoiceToggle}
             disabled={isLoading || voiceSession.state === 'processing'}
-            aria-label={voiceButtonAriaLabel(voiceSession.state)}
-            title={voiceButtonTooltip(voiceSession.state, wakeWordEnabled)}
+            aria-label={voiceButtonAriaLabelI18n(voiceSession.state, t)}
+            title={voiceButtonTooltipI18n(voiceSession.state, wakeWordEnabled, t)}
             className={cn(
               'rounded-lg border p-2.5 text-sm transition-all duration-200 min-w-[44px] min-h-[44px] flex items-center justify-center',
               voiceButtonStyles(voiceSession.state),
@@ -414,8 +416,8 @@ export function ChatWindow({ companionId, className }: ChatWindowProps) {
               type="button"
               onClick={handleWakeWordToggle}
               disabled={voiceSession.state === 'recording' || voiceSession.state === 'processing'}
-              aria-label={wakeWordEnabled ? 'Disable wake word' : 'Enable wake word'}
-              title={wakeWordEnabled ? 'Wake word active — listening hands-free' : 'Enable wake word for hands-free'}
+              aria-label={wakeWordEnabled ? t('voice.disableWakeWord') : t('voice.enableWakeWord')}
+              title={wakeWordEnabled ? t('voice.wakeWordActiveTitle') : t('voice.enableWakeWordTitle')}
               className={cn(
                 'rounded-lg border p-2 text-xs transition-all duration-200 min-w-[36px] min-h-[44px] flex items-center justify-center',
                 wakeWordEnabled
@@ -435,7 +437,7 @@ export function ChatWindow({ companionId, className }: ChatWindowProps) {
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={voiceInputPlaceholder(voiceSession.state, companion.name)}
+            placeholder={voiceInputPlaceholderI18n(voiceSession.state, companion.name, t)}
             disabled={isLoading || voiceSession.state === 'recording' || voiceSession.state === 'processing'}
             maxLength={4000}
             className="flex-1 rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-cyan/50 focus:outline-none focus:ring-1 focus:ring-cyan/50 disabled:opacity-50 transition-colors"
@@ -443,7 +445,7 @@ export function ChatWindow({ companionId, className }: ChatWindowProps) {
           <button
             type="submit"
             disabled={isLoading || !input.trim()}
-            aria-label="Send message"
+            aria-label={t('sendMessage')}
             className="rounded-lg bg-cyan/10 border border-cyan/20 p-2.5 text-sm font-medium text-cyan transition-all duration-200 hover:bg-cyan/20 hover:shadow-[0_0_20px_rgba(0,240,255,0.15)] disabled:opacity-30 disabled:cursor-not-allowed min-w-[44px] min-h-[44px] flex items-center justify-center"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -460,6 +462,39 @@ export function ChatWindow({ companionId, className }: ChatWindowProps) {
 // ============================================================================
 // Voice UI helpers — pure functions for voice session state → UI mapping
 // ============================================================================
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type TranslationFn = (key: string, values?: Record<string, string | number>) => any;
+
+function voiceButtonAriaLabelI18n(state: VoiceSessionState, t: TranslationFn): string {
+  switch (state) {
+    case 'recording': return t('voice.stopRecording');
+    case 'listening': return t('voice.wakeWordActive');
+    case 'processing': return t('voice.processingVoice');
+    case 'playing': return t('voice.playingResponse');
+    default: return t('voice.voiceMessage');
+  }
+}
+
+function voiceButtonTooltipI18n(state: VoiceSessionState, wakeWordEnabled: boolean, t: TranslationFn): string {
+  switch (state) {
+    case 'recording': return t('voice.clickToStop');
+    case 'listening': return t('voice.listeningForWakeWord');
+    case 'processing': return t('voice.processingYourVoice');
+    case 'playing': return t('voice.playingCompanionResponse');
+    default: return wakeWordEnabled ? t('voice.startVoiceSession') : t('voice.pushToTalk');
+  }
+}
+
+function voiceInputPlaceholderI18n(state: VoiceSessionState, companionName: string, t: TranslationFn): string {
+  switch (state) {
+    case 'recording': return t('voice.listening');
+    case 'listening': return t('voice.waitingForWakeWord');
+    case 'processing': return t('voice.processing');
+    case 'playing': return t('voice.speaking', { name: companionName });
+    default: return t('placeholder', { name: companionName });
+  }
+}
 
 function voiceButtonAriaLabel(state: VoiceSessionState): string {
   switch (state) {
@@ -555,13 +590,13 @@ function VoiceButtonIcon({ state }: { state: VoiceSessionState }) {
 }
 
 /** Status bar showing the active voice session state. */
-function VoiceStateIndicator({ state, companionName }: { state: VoiceSessionState; companionName: string }) {
+function VoiceStateIndicator({ state, companionName, t }: { state: VoiceSessionState; companionName: string; t: TranslationFn }) {
   const labels: Record<VoiceSessionState, string> = {
     idle: '',
-    listening: '🎙️ Listening for wake word...',
-    recording: '🔴 Recording — speak now',
-    processing: '⏳ Processing your voice...',
-    playing: `🔊 ${companionName} is responding...`,
+    listening: t('voice.listeningIndicator'),
+    recording: t('voice.recordingIndicator'),
+    processing: t('voice.processingIndicator'),
+    playing: t('voice.respondingIndicator', { name: companionName }),
   };
 
   return (
@@ -584,11 +619,13 @@ function ChatBubble({
   companion,
   isNewest,
   tts,
+  t,
 }: {
   message: ChatMessage;
   companion: CompanionData;
   isNewest: boolean;
   tts?: { speak: (id: string, text: string, companionId: string) => Promise<void>; stop: () => void; playingId: string | null; loading: boolean };
+  t: TranslationFn;
 }) {
   const isUser = message.role === 'user';
   const isAssistant = message.role === 'assistant';
@@ -690,7 +727,7 @@ function ChatBubble({
                     : 'text-white/0 group-hover:text-white/30 hover:!text-white/60 hover:bg-white/5',
                   tts.loading && 'opacity-50 cursor-wait',
                 )}
-                title={tts.playingId === message.id ? 'Stop playback' : 'Listen'}
+                title={tts.playingId === message.id ? t('stopPlayback') : t('listen')}
               >
                 {tts.playingId === message.id ? (
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -710,7 +747,7 @@ function ChatBubble({
               type="button"
               onClick={handleCopy}
               className="rounded-md p-1 text-white/0 transition-all duration-200 group-hover:text-white/30 hover:!text-white/60 hover:bg-white/5"
-              title="Copy message"
+              title={t('copyMessage')}
             >
               {copied ? (
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

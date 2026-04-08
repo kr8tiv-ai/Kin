@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import { Outfit, Plus_Jakarta_Sans, JetBrains_Mono } from 'next/font/google';
+import { NextIntlClientProvider } from 'next-intl';
+import { getLocale, getMessages } from 'next-intl/server';
 import { AuthProvider } from '@/providers/AuthProvider';
 import { ToastProvider } from '@/providers/ToastProvider';
 import { SupportWidget } from '@/components/ui/SupportWidget';
@@ -53,14 +55,17 @@ export const metadata: Metadata = {
   keywords: ['AI companion', 'AI friend', 'chatbot', 'Telegram bot', 'Bags.fm', 'NFT companions', 'KIN', 'KR8TIV'],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const locale = await getLocale();
+  const messages = await getMessages();
+
   return (
     <html
-      lang="en"
+      lang={locale}
       className={`dark ${outfit.variable} ${plusJakarta.variable} ${jetbrainsMono.variable}`}
     >
       <head>
@@ -76,11 +81,13 @@ export default function RootLayout({
         <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[9999] focus:rounded-lg focus:bg-cyan focus:px-4 focus:py-2 focus:text-black focus:text-sm focus:font-semibold">
           Skip to content
         </a>
-        <AuthProvider>
-          <ToastProvider>
-            {children}
-          </ToastProvider>
-        </AuthProvider>
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          <AuthProvider>
+            <ToastProvider>
+              {children}
+            </ToastProvider>
+          </AuthProvider>
+        </NextIntlClientProvider>
         <SupportWidget />
         <AnalyticsInit />
         <Analytics />

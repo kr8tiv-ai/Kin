@@ -6,6 +6,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '@/providers/AuthProvider';
 import { useMemories } from '@/hooks/useMemories';
 import { kinApi } from '@/lib/api';
@@ -69,6 +70,8 @@ const TIER_BORDER_CLASSES: Record<string, string> = {
 
 export default function SettingsPage() {
   const { user } = useAuth();
+  const t = useTranslations('settings');
+  const tc = useTranslations('common');
   const { memories, loading, error, refresh, deleteMemory, deleting } =
     useMemories();
 
@@ -158,22 +161,22 @@ export default function SettingsPage() {
       {/* Header */}
       <div>
         <h1 className="font-display text-3xl font-bold tracking-tight text-white">
-          Settings
+          {t('title')}
         </h1>
         <p className="mt-1 text-white/50">
-          Manage your profile, preferences, and account.
+          {t('subtitle')}
         </p>
       </div>
 
       {/* User Info Section */}
       <GlassCard className="p-6" hover={false}>
         <h2 className="mb-4 font-display text-lg font-semibold text-white">
-          Profile
+          {t('profile.title')}
         </h2>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-white/50">Name</p>
+              <p className="text-sm text-white/50">{t('profile.name')}</p>
               <p className="text-white">
                 {user?.firstName ?? '--'}
                 {user?.lastName ? ` ${user.lastName}` : ''}
@@ -186,19 +189,19 @@ export default function SettingsPage() {
             </div>
           </div>
           <div className="border-t border-white/5 pt-4">
-            <p className="text-sm text-white/50">Telegram Username</p>
+            <p className="text-sm text-white/50">{t('profile.telegramUsername')}</p>
             <p className="text-white">
-              {user?.username ? `@${user.username}` : 'Not set'}
+              {user?.username ? `@${user.username}` : t('profile.notSet')}
             </p>
           </div>
           <div className="border-t border-white/5 pt-4">
-            <p className="text-sm text-white/50">User ID</p>
+            <p className="text-sm text-white/50">{t('profile.userId')}</p>
             <p className="font-mono text-sm text-white/70">
               {user?.id ?? '--'}
             </p>
           </div>
           <div className="border-t border-white/5 pt-4">
-            <p className="text-sm text-white/50">Member Since</p>
+            <p className="text-sm text-white/50">{t('profile.memberSince')}</p>
             <p className="text-white">
               {user?.createdAt ? formatDate(user.createdAt) : '--'}
             </p>
@@ -209,7 +212,7 @@ export default function SettingsPage() {
       {/* Preferences Section */}
       <GlassCard className="p-6" hover={false}>
         <h2 className="mb-4 font-display text-lg font-semibold text-white">
-          Preferences
+          {t('preferences.title')}
         </h2>
         <div className="space-y-6">
           {/* Display Name */}
@@ -218,7 +221,7 @@ export default function SettingsPage() {
               htmlFor="display-name"
               className="mb-1.5 block text-sm font-medium text-white/70"
             >
-              Display Name
+              {t('preferences.displayName')}
             </label>
             <input
               id="display-name"
@@ -228,7 +231,7 @@ export default function SettingsPage() {
               className="w-full max-w-xs rounded-lg border border-white/10 bg-surface px-4 py-2.5 text-sm text-white/70 cursor-default focus:outline-none"
             />
             <p className="mt-1 text-xs text-white/30">
-              Display name is synced from your Telegram profile.
+              {t('preferences.displayNameHint')}
             </p>
           </div>
 
@@ -238,7 +241,7 @@ export default function SettingsPage() {
               htmlFor="tone-select"
               className="mb-1.5 block text-sm font-medium text-white/70"
             >
-              Tone
+              {t('preferences.tone')}
             </label>
             <select
               id="tone-select"
@@ -253,7 +256,7 @@ export default function SettingsPage() {
               ))}
             </select>
             <p className="mt-1 text-xs text-white/30">
-              How your KIN speaks to you.
+              {t('preferences.toneHint')}
             </p>
           </div>
 
@@ -263,7 +266,7 @@ export default function SettingsPage() {
               htmlFor="language-select"
               className="mb-1.5 block text-sm font-medium text-white/70"
             >
-              Language
+              {t('preferences.language')}
             </label>
             <select
               id="language-select"
@@ -282,14 +285,14 @@ export default function SettingsPage() {
           {/* Timezone */}
           <div>
             <p className="mb-1.5 text-sm font-medium text-white/70">
-              Timezone
+              {t('preferences.timezone')}
             </p>
             <div className="flex items-center gap-3">
               <div className="rounded-lg border border-white/10 bg-surface px-4 py-2.5 text-sm text-white/70">
-                {timezone || 'Detecting...'}
+                {timezone || t('preferences.detecting')}
               </div>
               <span className="text-xs text-white/30">
-                Detected from your browser
+                {t('preferences.timezoneHint')}
               </span>
             </div>
           </div>
@@ -298,10 +301,10 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-white/70">
-                Notifications
+                {t('preferences.notifications')}
               </p>
               <p className="text-xs text-white/40">
-                Receive updates about new features and companion activity.
+                {t('preferences.notificationsHint')}
               </p>
             </div>
             <button
@@ -326,10 +329,10 @@ export default function SettingsPage() {
       {/* Proactive Companion Section */}
       <GlassCard className="p-6" hover={false}>
         <h2 className="mb-4 font-display text-lg font-semibold text-white">
-          Proactive Companion
+          {t('proactive.title')}
         </h2>
         <p className="mb-4 text-sm text-white/50">
-          Let your companion anticipate your needs — meeting prep, follow-ups, and timely nudges.
+          {t('proactive.description')}
         </p>
         {proactiveSettings.loading ? (
           <div className="space-y-4">
@@ -346,7 +349,7 @@ export default function SettingsPage() {
             />
             <div className="mt-6 border-t border-white/5 pt-4">
               <h3 className="mb-3 text-sm font-semibold text-white/70">
-                Suggestion History
+                {t('proactive.suggestionHistory')}
               </h3>
               <SuggestionHistory
                 suggestions={proactiveSuggestions.suggestions}
@@ -365,16 +368,15 @@ export default function SettingsPage() {
         <div className="mb-4 flex items-center justify-between">
           <div>
             <h2 className="font-display text-lg font-semibold text-white">
-              Memory Management
+              {t('memory.title')}
             </h2>
             <p className="mt-1 text-sm text-white/50">
-              {memories.length} memor{memories.length === 1 ? 'y' : 'ies'}{' '}
-              stored
+              {t('memory.count', { count: memories.length })}
             </p>
           </div>
           {memories.length > 0 && (
             <Button variant="ghost" size="sm" onClick={refresh}>
-              Refresh
+              {tc('refresh')}
             </Button>
           )}
         </div>
@@ -382,7 +384,7 @@ export default function SettingsPage() {
           <div className="py-6 text-center">
             <p className="text-sm text-white/60">{error}</p>
             <Button variant="outline" size="sm" onClick={refresh} className="mt-3">
-              Retry
+              {tc('retry')}
             </Button>
           </div>
         ) : (
@@ -397,7 +399,7 @@ export default function SettingsPage() {
       {/* Wallets */}
       <div className="space-y-4">
         <h2 className="font-display text-lg font-semibold text-white">
-          Wallets
+          {t('wallets.title')}
         </h2>
         <WalletCard />
         <PhantomConnect />
@@ -406,21 +408,21 @@ export default function SettingsPage() {
       {/* Install App */}
       <GlassCard className="p-6" hover={false}>
         <h2 className="mb-2 font-display text-lg font-semibold text-white">
-          Install App
+          {t('installApp.title')}
         </h2>
         <p className="mb-4 text-sm text-white/50">
-          Add KIN to your device for instant access and offline support.
+          {t('installApp.description')}
         </p>
         {pwa.isInstalled ? (
           <div className="flex items-center gap-2 rounded-lg border border-cyan/20 bg-cyan/[0.04] px-4 py-3">
             <span className="text-cyan">✓</span>
-            <p className="text-sm text-cyan">KIN is installed on this device</p>
+            <p className="text-sm text-cyan">{t('installApp.installed')}</p>
           </div>
         ) : pwa.canInstall ? (
           <Button
             onClick={() => pwa.promptInstall()}
           >
-            Install KIN App
+            {t('installApp.install')}
           </Button>
         ) : pwa.isIOS ? (
           <>
@@ -428,13 +430,13 @@ export default function SettingsPage() {
               variant="outline"
               onClick={() => setShowIOSModal(true)}
             >
-              How to Install on iOS
+              {t('installApp.iosHow')}
             </Button>
             <IOSInstallModal open={showIOSModal} onClose={() => setShowIOSModal(false)} />
           </>
         ) : (
           <p className="text-sm text-white/40">
-            Open this page in a supported browser (Chrome, Edge, Safari) to install KIN.
+            {t('installApp.browserHint')}
           </p>
         )}
       </GlassCard>
@@ -442,18 +444,17 @@ export default function SettingsPage() {
       {/* Data & Privacy — Privacy Toggle + Export */}
       <GlassCard className="p-6" hover={false}>
         <h2 className="mb-2 font-display text-lg font-semibold text-white">
-          Data &amp; Privacy
+          {t('dataPrivacy.title')}
         </h2>
         <p className="mb-4 text-sm text-white/50">
-          When private, your companion uses only local AI. When shared, frontier
-          AI handles complex requests and helps your companion learn.
+          {t('dataPrivacy.description')}
         </p>
 
         {/* Privacy Mode Toggle — hidden for child accounts (COPPA: locked to private) */}
         {user?.authProvider === 'family' ? (
           <div className="mb-6 rounded-lg border border-cyan/20 bg-cyan/5 px-4 py-3">
             <p className="text-sm text-cyan">
-              🔒 Privacy is set to <strong>private</strong> for child accounts. Only local AI is used.
+              {t('dataPrivacy.childLocked')}
             </p>
           </div>
         ) : (
@@ -470,9 +471,9 @@ export default function SettingsPage() {
                 privacySaving && 'pointer-events-none opacity-60',
               )}
             >
-              <p className="text-sm font-semibold">Keep conversations private</p>
+              <p className="text-sm font-semibold">{t('dataPrivacy.keepPrivate')}</p>
               <p className="mt-1 text-xs opacity-60">
-                Your companion uses only the local model. Nothing leaves your device.
+                {t('dataPrivacy.keepPrivateHint')}
               </p>
             </button>
             <button
@@ -487,9 +488,9 @@ export default function SettingsPage() {
                 privacySaving && 'pointer-events-none opacity-60',
               )}
             >
-              <p className="text-sm font-semibold">Help your companion learn</p>
+              <p className="text-sm font-semibold">{t('dataPrivacy.helpLearn')}</p>
               <p className="mt-1 text-xs opacity-60">
-                Complex questions use frontier AI. Responses improve your companion over time.
+                {t('dataPrivacy.helpLearnHint')}
               </p>
             </button>
           </div>
@@ -498,11 +499,10 @@ export default function SettingsPage() {
         {/* Move Your KIN */}
         <div className="border-t border-white/5 pt-4">
           <p className="mb-1 text-sm font-semibold text-white">
-            Move Your KIN
+            {t('dataPrivacy.moveYourKin')}
           </p>
           <p className="mb-3 text-sm text-white/50">
-            Transfer your companion, conversations, and training data between
-            devices or hosting modes.
+            {t('dataPrivacy.moveDescription')}
           </p>
           <div className="flex gap-3">
             <Button
@@ -510,13 +510,13 @@ export default function SettingsPage() {
               onClick={() => setWizardMode('export')}
               className="border-cyan/30 text-cyan hover:bg-cyan/10"
             >
-              Export Archive
+              {t('dataPrivacy.exportArchive')}
             </Button>
             <Button
               variant="outline"
               onClick={() => setWizardMode('import')}
             >
-              Import Archive
+              {t('dataPrivacy.importArchive')}
             </Button>
           </div>
         </div>

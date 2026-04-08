@@ -1,0 +1,131 @@
+{
+  "common": {
+    "retry": "Retry",
+    "refresh": "Refresh",
+    "save": "Save",
+    "cancel": "Cancel",
+    "close": "Close",
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "logOut": "Log Out"
+  },
+  "dashboard": {
+    "sidebar": {
+      "overview": "Overview",
+      "chat": "Chat",
+      "myCompanion": "My Companion",
+      "soul": "Soul",
+      "collection": "Collection",
+      "projects": "Projects",
+      "canvas": "Canvas",
+      "progress": "Progress",
+      "skills": "Skills",
+      "memories": "Memories",
+      "family": "Family",
+      "setup": "Setup",
+      "health": "Health",
+      "billing": "Billing",
+      "refer": "Refer",
+      "help": "Help",
+      "settings": "Settings",
+      "fleet": "Fleet",
+      "training": "Training",
+      "admin": "Admin"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Manage your profile, preferences, and account.",
+    "profile": {
+      "title": "Profile",
+      "name": "Name",
+      "telegramUsername": "Telegram Username",
+      "notSet": "Not set",
+      "userId": "User ID",
+      "memberSince": "Member Since"
+    },
+    "preferences": {
+      "title": "Preferences",
+      "displayName": "Display Name",
+      "displayNameHint": "Display name is synced from your Telegram profile.",
+      "tone": "Tone",
+      "toneHint": "How your KIN speaks to you.",
+      "language": "Language",
+      "timezone": "Timezone",
+      "detecting": "Detecting...",
+      "timezoneHint": "Detected from your browser",
+      "notifications": "Notifications",
+      "notificationsHint": "Receive updates about new features and companion activity."
+    },
+    "proactive": {
+      "title": "Proactive Companion",
+      "description": "Let your companion anticipate your needs — meeting prep, follow-ups, and timely nudges.",
+      "suggestionHistory": "Suggestion History"
+    },
+    "memory": {
+      "title": "Memory Management",
+      "count": "{count, plural, one {# memory} other {# memories}} stored"
+    },
+    "wallets": {
+      "title": "Wallets"
+    },
+    "installApp": {
+      "title": "Install App",
+      "description": "Add KIN to your device for instant access and offline support.",
+      "installed": "KIN is installed on this device",
+      "install": "Install KIN App",
+      "iosHow": "How to Install on iOS",
+      "browserHint": "Open this page in a supported browser (Chrome, Edge, Safari) to install KIN."
+    },
+    "dataPrivacy": {
+      "title": "Data & Privacy",
+      "description": "When private, your companion uses only local AI. When shared, frontier AI handles complex requests and helps your companion learn.",
+      "childLocked": "🔒 Privacy is set to private for child accounts. Only local AI is used.",
+      "keepPrivate": "Keep conversations private",
+      "keepPrivateHint": "Your companion uses only the local model. Nothing leaves your device.",
+      "helpLearn": "Help your companion learn",
+      "helpLearnHint": "Complex questions use frontier AI. Responses improve your companion over time.",
+      "moveYourKin": "Move Your KIN",
+      "moveDescription": "Transfer your companion, conversations, and training data between devices or hosting modes.",
+      "exportArchive": "Export Archive",
+      "importArchive": "Import Archive"
+    }
+  },
+  "chat": {
+    "newChat": "New chat",
+    "exchanges": "{count} exchanges",
+    "loadingConversation": "Loading conversation...",
+    "emptyState": "Start chatting with {name}. Ask anything about {tagline}.",
+    "placeholder": "Message {name}...",
+    "sendMessage": "Send message",
+    "copyMessage": "Copy message",
+    "stopPlayback": "Stop playback",
+    "listen": "Listen",
+    "voice": {
+      "voiceMessage": "Voice message",
+      "stopRecording": "Stop recording",
+      "wakeWordActive": "Recording — wake word active",
+      "processingVoice": "Processing voice...",
+      "playingResponse": "Playing response",
+      "clickToStop": "Click to stop recording",
+      "listeningForWakeWord": "Listening for wake word...",
+      "processingYourVoice": "Processing your voice...",
+      "playingCompanionResponse": "Playing companion response",
+      "startVoiceSession": "Start voice session",
+      "pushToTalk": "Push to talk",
+      "disableWakeWord": "Disable wake word",
+      "enableWakeWord": "Enable wake word",
+      "wakeWordActiveTitle": "Wake word active — listening hands-free",
+      "enableWakeWordTitle": "Enable wake word for hands-free",
+      "endVoice": "End voice",
+      "listening": "Listening...",
+      "waitingForWakeWord": "Waiting for wake word...",
+      "processing": "Processing...",
+      "speaking": "{name} is speaking...",
+      "listeningIndicator": "🎙️ Listening for wake word...",
+      "recordingIndicator": "🔴 Recording — speak now",
+      "processingIndicator": "⏳ Processing your voice...",
+      "respondingIndicator": "🔊 {name} is responding..."
+    }
+  }
+}
