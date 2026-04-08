@@ -41,9 +41,9 @@ const trainingRoutes: FastifyPluginAsync = async (fastify) => {
     console.log('[training-curation] Listing companions with curation stats');
 
     const companionIds = getCompanionIds();
-    const companions = companionIds.map((id) => {
+    const companions = await Promise.all(companionIds.map(async (id) => {
       const config = getCompanionConfig(id);
-      const entries = readTrainingEntries(id);
+      const entries = await readTrainingEntries(id);
       const totalEntries = entries.length;
 
       // Query verdict counts from DB
@@ -65,7 +65,7 @@ const trainingRoutes: FastifyPluginAsync = async (fastify) => {
         rejectedCount: row?.rejected_count ?? 0,
         pendingCount: row?.pending_count ?? 0,
       };
-    });
+    }));
 
     return { companions };
   });
@@ -80,7 +80,7 @@ const trainingRoutes: FastifyPluginAsync = async (fastify) => {
       const page = Math.max(1, parseInt(request.query.page ?? '1', 10) || 1);
       const pageSize = Math.min(100, Math.max(1, parseInt(request.query.pageSize ?? '20', 10) || 20));
 
-      const entries = readTrainingEntries(companionId);
+      const entries = await readTrainingEntries(companionId);
       const total = entries.length;
 
       // Paginate
@@ -155,7 +155,7 @@ const trainingRoutes: FastifyPluginAsync = async (fastify) => {
         // New entry — we need companion_id. Search all companions for this hash.
         let companionId: string | null = null;
         for (const cid of getCompanionIds()) {
-          const entries = readTrainingEntries(cid);
+          const entries = await readTrainingEntries(cid);
           if (entries.some((e) => e.hash === entryHash)) {
             companionId = cid;
             break;
@@ -197,7 +197,7 @@ const trainingRoutes: FastifyPluginAsync = async (fastify) => {
 
       console.log(`[training-curation] Exporting approved entries for companion '${companionId}'`);
 
-      const entries = readTrainingEntries(companionId);
+      const entries = await readTrainingEntries(companionId);
 
       // Load approved verdicts from DB
       const rows = fastify.context.db.prepare(

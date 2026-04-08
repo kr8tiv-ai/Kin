@@ -13,7 +13,7 @@ interface RateBucket {
 const buckets = new Map<string, RateBucket>();
 
 // Cleanup stale entries every 5 minutes
-setInterval(() => {
+const rateLimitCleanupInterval = setInterval(() => {
   const now = Date.now();
   for (const [key, bucket] of buckets) {
     if (now - bucket.windowStart > 3600_000) {
@@ -21,6 +21,7 @@ setInterval(() => {
     }
   }
 }, 300_000);
+rateLimitCleanupInterval.unref();
 
 /**
  * Check if a user has exceeded their rate limit for a given operation.

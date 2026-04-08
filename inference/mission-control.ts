@@ -314,6 +314,7 @@ export class MissionControlClient {
     this.heartbeatTimer = setInterval(() => {
       this.sendHeartbeats().catch(() => {});
     }, this.heartbeatIntervalMs);
+    this.heartbeatTimer.unref();
 
     // Send an initial heartbeat immediately
     this.sendHeartbeats().catch(() => {});
@@ -373,6 +374,7 @@ export class MissionControlClient {
         this.flushTelemetry().catch(() => {});
       }
     }, this.telemetryFlushIntervalMs);
+    this.telemetryTimer.unref();
   }
 
   private async flushTelemetry(): Promise<void> {

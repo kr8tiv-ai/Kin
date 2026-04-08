@@ -109,6 +109,7 @@ export class OllamaPoolManager {
         Array.from(this.members.keys()).map((id) => this.checkMemberHealth(id)),
       );
     }, this.config.healthCheckIntervalMs);
+    this.healthCheckInterval.unref();
   }
 
   private getLeastLoadedMember(): PoolMember | null {

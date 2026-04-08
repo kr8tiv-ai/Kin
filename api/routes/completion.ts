@@ -4,7 +4,7 @@ import { getCompletionStatus } from '../lib/completion-status.js';
 const completionRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get('/completion/status', async (request) => {
     const userId = (request.user as { userId: string }).userId;
-    const status = getCompletionStatus(userId, fastify.context.db);
+    const status = await getCompletionStatus(userId, fastify.context.db);
     return status;
   });
 
@@ -22,7 +22,7 @@ const completionRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     // Check gate readiness using the corrected formula
-    const status = getCompletionStatus(userId, fastify.context.db);
+    const status = await getCompletionStatus(userId, fastify.context.db);
     const blockingGate = status.gates.find(g => !g.ready);
     if (blockingGate) {
       reply.status(400);

@@ -168,8 +168,8 @@ const importRoutes: FastifyPluginAsync = async (fastify) => {
           const targetPath = resolveArtifactDiskPath(artifact);
           const targetDir = path.dirname(targetPath);
 
-          fs.mkdirSync(targetDir, { recursive: true });
-          fs.writeFileSync(targetPath, entry.getData());
+          await fs.promises.mkdir(targetDir, { recursive: true });
+          await fs.promises.writeFile(targetPath, entry.getData());
           fileArtifacts.restored++;
         } catch (err: any) {
           fileArtifacts.failed++;

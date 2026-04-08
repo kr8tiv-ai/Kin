@@ -80,12 +80,12 @@ describe('readTrainingEntries', () => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  it('reads valid JSONL and returns entries with hashes', () => {
+  it('reads valid JSONL and returns entries with hashes', async () => {
     const line1 = makeSFTLine({ userMessage: 'First' });
     const line2 = makeSFTLine({ userMessage: 'Second' });
     writeJSONL(tmpDir, 'cipher', [line1, line2]);
 
-    const entries = readTrainingEntries('cipher', tmpDir);
+    const entries = await readTrainingEntries('cipher', tmpDir);
     expect(entries).toHaveLength(2);
     expect(entries[0]!.hash).toMatch(/^[a-f0-9]{64}$/);
     expect(entries[0]!.line.messages[1]!.content).toBe('First');
@@ -93,49 +93,49 @@ describe('readTrainingEntries', () => {
     expect(entries[1]!.line.messages[1]!.content).toBe('Second');
   });
 
-  it('returns empty array for missing file', () => {
-    const entries = readTrainingEntries('nonexistent', tmpDir);
+  it('returns empty array for missing file', async () => {
+    const entries = await readTrainingEntries('nonexistent', tmpDir);
     expect(entries).toEqual([]);
   });
 
-  it('returns empty array for missing directory', () => {
-    const entries = readTrainingEntries('cipher', path.join(tmpDir, 'nope'));
+  it('returns empty array for missing directory', async () => {
+    const entries = await readTrainingEntries('cipher', path.join(tmpDir, 'nope'));
     expect(entries).toEqual([]);
   });
 
-  it('returns empty array for empty file', () => {
+  it('returns empty array for empty file', async () => {
     const companionDir = path.join(tmpDir, 'cipher');
     fs.mkdirSync(companionDir, { recursive: true });
     fs.writeFileSync(path.join(companionDir, 'training.jsonl'), '', 'utf-8');
 
-    const entries = readTrainingEntries('cipher', tmpDir);
+    const entries = await readTrainingEntries('cipher', tmpDir);
     expect(entries).toEqual([]);
   });
 
-  it('skips malformed JSON lines without crashing', () => {
+  it('skips malformed JSON lines without crashing', async () => {
     const validLine = makeSFTLine({ userMessage: 'Valid' });
     writeJSONL(tmpDir, 'cipher', [validLine, 'not valid json', validLine]);
 
-    const entries = readTrainingEntries('cipher', tmpDir);
+    const entries = await readTrainingEntries('cipher', tmpDir);
     expect(entries).toHaveLength(2);
     expect(entries[0]!.line.messages[1]!.content).toBe('Valid');
   });
 
-  it('skips lines with missing messages array', () => {
+  it('skips lines with missing messages array', async () => {
     const badLine = JSON.stringify({ metadata: { companionId: 'cipher' } });
     const goodLine = makeSFTLine();
     writeJSONL(tmpDir, 'cipher', [badLine, goodLine]);
 
-    const entries = readTrainingEntries('cipher', tmpDir);
+    const entries = await readTrainingEntries('cipher', tmpDir);
     expect(entries).toHaveLength(1);
   });
 
-  it('handles file with only blank lines', () => {
+  it('handles file with only blank lines', async () => {
     const companionDir = path.join(tmpDir, 'cipher');
     fs.mkdirSync(companionDir, { recursive: true });
     fs.writeFileSync(path.join(companionDir, 'training.jsonl'), '\n\n\n', 'utf-8');
 
-    const entries = readTrainingEntries('cipher', tmpDir);
+    const entries = await readTrainingEntries('cipher', tmpDir);
     expect(entries).toEqual([]);
   });
 });
@@ -204,7 +204,7 @@ describe('end-to-end: write → read → hash → filter', () => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  it('round-trips through the full pipeline', () => {
+  it('round-trips through the full pipeline', async () => {
     const lines = [
       makeSFTLine({ userMessage: 'Approve me' }),
       makeSFTLine({ userMessage: 'Reject me' }),
@@ -213,7 +213,7 @@ describe('end-to-end: write → read → hash → filter', () => {
     writeJSONL(tmpDir, 'forge', lines);
 
     // Read
-    const entries = readTrainingEntries('forge', tmpDir);
+    const entries = await readTrainingEntries('forge', tmpDir);
     expect(entries).toHaveLength(3);
 
     // All hashes are unique

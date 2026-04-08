@@ -106,6 +106,7 @@ class DreamModeEngine {
 
       state!.activeDream = false;
     }, config.checkIntervalMs);
+    interval.unref();
 
     this.intervals.set(userId, interval);
   }

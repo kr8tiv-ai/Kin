@@ -168,9 +168,7 @@ export async function createServer(config: ApiConfig = {}) {
 
   // Ensure data directory exists
   const dbDir = path.dirname(resolvedConfig.databasePath);
-  if (!fs.existsSync(dbDir)) {
-    fs.mkdirSync(dbDir, { recursive: true });
-  }
+  await fs.promises.mkdir(dbDir, { recursive: true });
 
   const fastify = Fastify({
     bodyLimit: 26 * 1024 * 1024, // 26MB — accommodates audio uploads up to 25MB (Whisper limit)
@@ -197,9 +195,12 @@ export async function createServer(config: ApiConfig = {}) {
   
   // Load schema
   const schemaPath = path.join(process.cwd(), 'db', 'schema.sql');
-  if (fs.existsSync(schemaPath)) {
-    const schema = fs.readFileSync(schemaPath, 'utf-8');
+  try {
+    const schema = await fs.promises.readFile(schemaPath, 'utf-8');
     db.exec(schema);
+  } catch (err: any) {
+    if (err?.code !== 'ENOENT') throw err;
+    // No schema file — skip (acceptable for test/in-memory DBs)
   }
 
   // Safe migrations — add columns that may not exist in older databases.
@@ -675,11 +676,18 @@ export async function createServer(config: ApiConfig = {}) {
   // Admin Dashboard (static HTML)
   // ==========================================================================
 
+  // Cache dashboard HTML once at registration time — no per-request sync I/O
+  const dashboardPath = path.join(process.cwd(), 'admin', 'dashboard.html');
+  let cachedDashboardHtml: string | null = null;
+  try {
+    cachedDashboardHtml = await fs.promises.readFile(dashboardPath, 'utf-8');
+  } catch {
+    // File doesn't exist — that's fine, /admin will 404
+  }
+
   fastify.get('/admin', async (_request, reply) => {
-    const dashboardPath = path.join(process.cwd(), 'admin', 'dashboard.html');
-    if (fs.existsSync(dashboardPath)) {
-      const html = fs.readFileSync(dashboardPath, 'utf-8');
-      reply.type('text/html').send(html);
+    if (cachedDashboardHtml !== null) {
+      reply.type('text/html').send(cachedDashboardHtml);
     } else {
       reply.status(404).send({ error: 'Admin dashboard not found' });
     }
@@ -778,9 +786,8 @@ export async function createServer(config: ApiConfig = {}) {
 
   if (usesEphemeralFleetDb) {
     closeHandlers.push(async () => {
-      if (fs.existsSync(fleetDbPath)) {
-        await fs.promises.rm(fleetDbPath, { force: true });
-      }
+      // fs.promises.rm with force:true already ignores ENOENT
+      await fs.promises.rm(fleetDbPath, { force: true });
     });
   }
 

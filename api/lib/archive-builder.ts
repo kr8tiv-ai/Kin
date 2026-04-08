@@ -102,7 +102,7 @@ function safeExtract<T>(
  * Returns the archiver stream (pipe it to your response), a finalized promise,
  * and the manifest. The archive is streaming — no full ZIP held in memory.
  */
-export function buildExportArchive(options: BuildArchiveOptions): BuildArchiveResult {
+export async function buildExportArchive(options: BuildArchiveOptions): Promise<BuildArchiveResult> {
   const { db, userId, fileDiscovery, logger } = options;
   const startTime = Date.now();
   const errors: ManifestError[] = [];
@@ -267,21 +267,12 @@ export function buildExportArchive(options: BuildArchiveOptions): BuildArchiveRe
   // --- Copy file artifacts into archive ---
   for (const artifact of fileArtifacts) {
     try {
-      // Verify file still exists (it was checked during discovery, but could
-      // have been deleted between discovery and archiving)
-      if (fs.existsSync(artifact.sourcePath)) {
-        archive.file(artifact.sourcePath, { name: artifact.archivePath });
-      } else {
-        logger?.warn('File artifact disappeared since discovery', {
-          userId,
-          path: artifact.sourcePath,
-        });
-        // Add a warning to manifest errors (manifest was already generated,
-        // but this is a race-condition edge case — acceptable for v1)
-      }
+      // Verify file still exists with async access (avoid sync I/O in request handler)
+      await fs.promises.access(artifact.sourcePath, fs.constants.R_OK);
+      archive.file(artifact.sourcePath, { name: artifact.archivePath });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      logger?.warn('Failed to add file artifact to archive', {
+      logger?.warn('File artifact unavailable for archive', {
         userId,
         path: artifact.sourcePath,
         error: message,

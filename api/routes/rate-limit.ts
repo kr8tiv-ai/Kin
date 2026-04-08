@@ -192,6 +192,7 @@ class RateLimiter {
 
   start(): void {
     this.cleanupInterval = setInterval(() => this.cleanup(), 60000);
+    this.cleanupInterval.unref();
   }
 
   stop(): void {

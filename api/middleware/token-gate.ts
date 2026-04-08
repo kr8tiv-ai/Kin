@@ -24,12 +24,13 @@ const balanceCache = new Map<string, { balance: number; expiresAt: number }>();
 const CACHE_TTL_MS = 60_000; // 1 minute
 
 // Cleanup expired cache entries every 5 minutes
-setInterval(() => {
+const tokenCacheCleanupInterval = setInterval(() => {
   const now = Date.now();
   for (const [key, entry] of balanceCache) {
     if (entry.expiresAt < now) balanceCache.delete(key);
   }
 }, 5 * 60_000);
+tokenCacheCleanupInterval.unref();
 
 /**
  * Fetch $KR8TIV token balance for a wallet via Solana RPC.

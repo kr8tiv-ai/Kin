@@ -1,3 +1,4 @@
+import fs from 'fs/promises';
 import { getWizardStatus } from './setup-wizard-status.js';
 
 // --- Structured gate types ---
@@ -36,11 +37,11 @@ export interface CompletionStatus {
 
 // --- Internal gate evaluators ---
 
-function checkInstallerStatus(_userId: string, _db: any): {
+async function checkInstallerStatus(_userId: string, _db: any): Promise<{
   ready: boolean;
   status: string;
   phase: string;
-} {
+}> {
   try {
     const stateFilePath = process.env.INSTALLER_STATE_DIR
       ? `${process.env.INSTALLER_STATE_DIR}/${_userId}.json`
@@ -50,12 +51,17 @@ function checkInstallerStatus(_userId: string, _db: any): {
       return { ready: true, status: 'not-required', phase: 'local-only' };
     }
 
-    const fs = require('fs');
-    if (!fs.existsSync(stateFilePath)) {
-      return { ready: true, status: 'not-started', phase: 'preflight' };
+    let raw: string;
+    try {
+      raw = await fs.readFile(stateFilePath, 'utf8');
+    } catch (err: any) {
+      if (err?.code === 'ENOENT') {
+        return { ready: true, status: 'not-started', phase: 'preflight' };
+      }
+      throw err;
     }
 
-    const state = JSON.parse(fs.readFileSync(stateFilePath, 'utf8'));
+    const state = JSON.parse(raw);
     return {
       ready: state.status === 'complete',
       status: state.status ?? 'unknown',
@@ -172,8 +178,8 @@ function buildCloudGate(cloud: { ready: boolean; provider: string | null; applic
 
 // --- Main evaluator ---
 
-export function getCompletionStatus(userId: string, db: any): CompletionStatus {
-  const installer = checkInstallerStatus(userId, db);
+export async function getCompletionStatus(userId: string, db: any): Promise<CompletionStatus> {
+  const installer = await checkInstallerStatus(userId, db);
   const wizardStatus = getWizardStatus(userId, db);
   const cloud = checkCloudStatus(userId, db);
 
@@ -243,11 +249,11 @@ export function getCompletionStatus(userId: string, db: any): CompletionStatus {
   };
 }
 
-export function getCompletionEligibility(userId: string, db: any): {
+export async function getCompletionEligibility(userId: string, db: any): Promise<{
   eligible: boolean;
   reason: string | null;
-} {
-  const status = getCompletionStatus(userId, db);
+}> {
+  const status = await getCompletionStatus(userId, db);
 
   if (status.overallComplete) {
     return { eligible: false, reason: 'Already complete' };

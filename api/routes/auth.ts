@@ -49,12 +49,13 @@ async function verifyGoogleIdToken(idToken: string, clientId: string): Promise<G
 const nonceStore = new Map<string, { walletAddress: string; message: string; expiresAt: number }>();
 
 // Clean expired nonces every 60 seconds
-setInterval(() => {
+const nonceCleanupInterval = setInterval(() => {
   const now = Date.now();
   for (const [nonce, data] of nonceStore) {
     if (data.expiresAt < now) nonceStore.delete(nonce);
   }
 }, 60_000);
+nonceCleanupInterval.unref();
 
 async function verifyEd25519Signature(
   message: Uint8Array,
@@ -628,12 +629,13 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
   const xPkceStore = new Map<string, { codeVerifier: string; expiresAt: number }>();
 
   // Clean expired PKCE entries every 60 seconds
-  setInterval(() => {
+  const pkceCleanupInterval = setInterval(() => {
     const now = Date.now();
     for (const [state, data] of xPkceStore) {
       if (data.expiresAt < now) xPkceStore.delete(state);
     }
   }, 60_000);
+  pkceCleanupInterval.unref();
 
   // Step 1: Generate PKCE challenge and return authorize URL
   fastify.post(

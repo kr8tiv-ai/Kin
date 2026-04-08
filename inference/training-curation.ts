@@ -60,23 +60,22 @@ export function computeEntryHash(jsonLine: string): string {
  * Skips malformed lines with a console.warn (includes file path and line number).
  * Returns empty array for missing files/directories — never throws.
  */
-export function readTrainingEntries(
+export async function readTrainingEntries(
   companionId: string,
   basePath?: string,
-): TrainingEntry[] {
+): Promise<TrainingEntry[]> {
   const base = basePath ?? path.join('data', 'training');
   const filePath = path.join(base, companionId, 'training.jsonl');
 
-  if (!fs.existsSync(filePath)) {
-    console.log(`[training-curation] No training file for companion '${companionId}' at ${filePath}`);
-    return [];
-  }
-
   let content: string;
   try {
-    content = fs.readFileSync(filePath, 'utf-8');
-  } catch (err) {
-    console.warn(`[training-curation] Failed to read ${filePath}:`, err);
+    content = await fs.promises.readFile(filePath, 'utf-8');
+  } catch (err: any) {
+    if (err?.code === 'ENOENT') {
+      console.log(`[training-curation] No training file for companion '${companionId}' at ${filePath}`);
+    } else {
+      console.warn(`[training-curation] Failed to read ${filePath}:`, err);
+    }
     return [];
   }
 

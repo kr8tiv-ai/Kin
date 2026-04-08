@@ -55,7 +55,14 @@ export async function handleVoice(
   try {
     // Get voice pipeline
     const voicePipeline = getVoicePipeline();
-    
+
+    // Reject oversized voice notes before downloading (10 MB limit)
+    const MAX_VOICE_SIZE = 10 * 1024 * 1024; // 10 MB
+    if (voice.file_size && voice.file_size > MAX_VOICE_SIZE) {
+      await ctx.reply("That voice note is too large for me to process. Could you keep it under a minute or two? 🐙");
+      return;
+    }
+
     // Download voice file
     const fileLink = await ctx.api.getFile(voice.file_id);
     const fileUrl = `https://api.telegram.org/file/bot${ctx.api.token}/${fileLink.file_path}`;

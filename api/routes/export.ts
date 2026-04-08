@@ -85,7 +85,7 @@ const exportRoutes: FastifyPluginAsync = async (fastify) => {
 
     request.log.info({ userId }, 'Export archive requested');
 
-    const { archive, finalized } = buildExportArchive({
+    const { archive, finalized } = await buildExportArchive({
       db,
       userId,
       logger: {
