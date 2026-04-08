@@ -38,7 +38,7 @@ const trainingRoutes: FastifyPluginAsync = async (fastify) => {
   // GET /training/companions — list all companions with curation stats
   // --------------------------------------------------------------------------
   fastify.get('/training/companions', async (request) => {
-    console.log('[training-curation] Listing companions with curation stats');
+    request.log.info('listing companions with curation stats');
 
     const companionIds = getCompanionIds();
     const companions = await Promise.all(companionIds.map(async (id) => {
@@ -148,7 +148,7 @@ const trainingRoutes: FastifyPluginAsync = async (fastify) => {
         return { error: `Invalid verdict. Must be one of: ${VALID_VERDICTS.join(', ')}` };
       }
 
-      console.log(`[training-curation] Setting verdict for ${entryHash.slice(0, 12)}… → ${verdict}`);
+      request.log.info({ entryHash: entryHash.slice(0, 12), verdict }, 'setting curation verdict');
 
       // Upsert — works for new and existing entries
       // We need a companion_id. If the entry already exists, keep it.
@@ -201,7 +201,7 @@ const trainingRoutes: FastifyPluginAsync = async (fastify) => {
     async (request, reply) => {
       const { companionId } = request.params;
 
-      console.log(`[training-curation] Exporting approved entries for companion '${companionId}'`);
+      request.log.info({ companionId }, 'exporting approved training entries');
 
       const entries = await readTrainingEntries(companionId);
 

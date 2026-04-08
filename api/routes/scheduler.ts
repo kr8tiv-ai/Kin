@@ -242,7 +242,7 @@ export const webhookRoutes: FastifyPluginAsync<WebhookRouteOpts> = async (fastif
       db.prepare(
         'UPDATE webhook_triggers SET last_triggered_at = ?, trigger_count = trigger_count + 1 WHERE id = ?',
       ).run(Date.now(), hookId);
-      console.error(`[webhook] Skill "${row.skill_name}" not found for hook ${hookId}`);
+      request.log.error({ hookId, skillName: row.skill_name }, 'webhook skill not found');
       return { accepted: true, error: `Skill "${row.skill_name}" not found` };
     }
 
@@ -273,11 +273,11 @@ export const webhookRoutes: FastifyPluginAsync<WebhookRouteOpts> = async (fastif
         );
       } catch (deliveryErr) {
         const msg = deliveryErr instanceof Error ? deliveryErr.message : String(deliveryErr);
-        console.error(`[webhook] Delivery error for hook ${hookId}: ${msg}`);
+        request.log.error({ hookId, err: msg }, 'webhook delivery error');
       }
     } catch (execErr) {
       const msg = execErr instanceof Error ? execErr.message : String(execErr);
-      console.error(`[webhook] Skill execution error for hook ${hookId}: ${msg}`);
+      request.log.error({ hookId, err: msg }, 'webhook skill execution error');
     }
 
     // Update trigger stats

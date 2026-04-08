@@ -68,13 +68,13 @@ const distillRoutes: FastifyPluginAsync = async (fastify) => {
       companionIds.map((cid) => runDistillation(cid, configOverrides)),
     );
     const durationMs = Date.now() - start;
-    console.log(`[distill-routes] Distillation run complete in ${durationMs}ms — ${results.length} companion(s)`);
+    request.log.info({ durationMs, companionCount: results.length }, 'distillation run complete');
 
     return results;
   });
 
   // ── GET /distill/datasets — list per-companion datasets ───────────────
-  fastify.get('/distill/datasets', async () => {
+  fastify.get('/distill/datasets', async (request) => {
     const basePath = path.join('data', 'distill');
     const datasets: Array<{ companionId: string; entryCount: number; filePath: string }> = [];
 
@@ -98,7 +98,7 @@ const distillRoutes: FastifyPluginAsync = async (fastify) => {
       }
     } catch (err) {
       if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
-        console.error('[distill-routes] Failed to scan distill directory:', err);
+        request.log.error({ err }, 'failed to scan distill directory');
       }
       // No data/distill directory yet — return empty
     }

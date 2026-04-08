@@ -159,7 +159,7 @@ const pipelineRoutes: FastifyPluginAsync<PipelineRouteOpts> = async (fastify, op
     // Fire-and-forget execution — return 202 immediately
     pipelineManager.executePipeline(id).catch((err) => {
       const msg = err instanceof Error ? err.message : String(err);
-      console.error(`[pipeline-routes] Manual run error for pipeline ${id}: ${msg}`);
+      fastify.log.error({ pipelineId: id, err: msg }, 'manual pipeline run error');
     });
 
     reply.status(202);

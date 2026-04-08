@@ -263,7 +263,7 @@ const companionSkillsRoutes: FastifyPluginAsync = async (fastify) => {
     // Fire-and-forget: pin to IPFS then anchor hash on-chain (K013 pattern)
     (async () => {
       try {
-        const pinResult = await pinJSON(payload, snapshotId);
+        const pinResult = await pinJSON(payload, snapshotId, request.log);
         if (pinResult) {
           fastify.context.db.prepare(
             `UPDATE companion_snapshots SET ipfs_cid = ? WHERE id = ?`,

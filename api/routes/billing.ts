@@ -279,7 +279,7 @@ const billingRoutes: FastifyPluginAsync = async (fastify) => {
       } catch (couponErr) {
         // Non-blocking: proceed without discount if coupon creation fails
         const msg = couponErr instanceof Error ? couponErr.message : String(couponErr);
-        console.warn(`[billing] Failed to create Genesis coupon for user ${userId}: ${msg}`);
+        request.log.warn({ userId, err: msg }, 'failed to create Genesis coupon');
       }
     }
 
@@ -510,7 +510,7 @@ const billingRoutes: FastifyPluginAsync = async (fastify) => {
     } catch (err: any) {
       const msg = err instanceof Error ? err.message : String(err);
       const status = err?.statusCode ?? 502;
-      console.error(`[Rebind] Stripe checkout failed for mint ${mintAddress}: ${msg}`);
+      request.log.error({ mintAddress, err: msg }, 'rebind Stripe checkout failed');
       reply.status(status >= 500 ? 502 : status);
       return { error: `Payment service error: ${msg}` };
     }
@@ -527,7 +527,7 @@ const billingRoutes: FastifyPluginAsync = async (fastify) => {
       VALUES (?, ?, ?, ?, ?, 'pending_payment', ?)
     `).run(rebindingId, mintAddress, nft.companion_id, nft.user_id, userId, session.id);
 
-    console.log(`[Rebind] Checkout initiated for mint ${mintAddress} by user ${userId} (rebindingId: ${rebindingId})`);
+    request.log.info({ mintAddress, rebindingId }, 'rebind checkout initiated');
 
     return { url: session.url as string, rebindingId };
   });

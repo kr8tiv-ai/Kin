@@ -60,9 +60,7 @@ const retrainRoutes: FastifyPluginAsync = async (fastify) => {
       const jobIds = await scheduler.triggerRetrain(body.companionId);
       const durationMs = Date.now() - start;
 
-      console.log(
-        `[retrain-routes] Retrain triggered in ${durationMs}ms — ${jobIds.length} job(s): ${jobIds.join(', ')}`,
-      );
+      request.log.info({ durationMs, jobCount: jobIds.length }, 'retrain triggered');
 
       // Collect job details
       const jobs = jobIds.map((id) => {
@@ -81,7 +79,7 @@ const retrainRoutes: FastifyPluginAsync = async (fastify) => {
       };
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);
-      console.error(`[retrain-routes] Retrain failed: ${errorMsg}`);
+      request.log.error({ err: errorMsg }, 'retrain failed');
       reply.status(500);
       return { error: `Retrain failed: ${errorMsg}` };
     }
@@ -114,7 +112,7 @@ const retrainRoutes: FastifyPluginAsync = async (fastify) => {
         };
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : String(err);
-        console.error(`[retrain-routes] Status check failed for ${companionId}: ${errorMsg}`);
+        request.log.error({ companionId, err: errorMsg }, 'status check failed');
         reply.status(500);
         return { error: `Status check failed: ${errorMsg}` };
       }
@@ -147,7 +145,7 @@ const retrainRoutes: FastifyPluginAsync = async (fastify) => {
         return { history: trimmed };
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : String(err);
-        console.error(`[retrain-routes] History fetch failed for ${companionId}: ${errorMsg}`);
+        request.log.error({ companionId, err: errorMsg }, 'history fetch failed');
         reply.status(500);
         return { error: `History fetch failed: ${errorMsg}` };
       }

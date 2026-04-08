@@ -8,7 +8,7 @@
  *          customer.subscription.deleted
  */
 
-import { FastifyPluginAsync } from 'fastify';
+import { FastifyPluginAsync, FastifyBaseLogger } from 'fastify';
 import crypto from 'crypto';
 import { mintCompanionNFT } from '../lib/solana-mint.js';
 import { fetchWithTimeout } from '../../inference/retry.js';
@@ -87,6 +87,7 @@ export function verifyStripeSignature(
 async function resolvePlan(
   session: any,
   subscriptionId: string,
+  log: FastifyBaseLogger,
 ): Promise<string> {
   // Primary: plan passed through checkout session metadata (set by T01 fix)
   const metaPlan = session.metadata?.plan;
@@ -105,7 +106,7 @@ async function resolvePlan(
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.warn(`[billing-webhook] Failed to fetch subscription ${subscriptionId}: ${msg}`);
+      log.warn({ subscriptionId, err: msg }, 'failed to fetch subscription');
     }
   }
 
@@ -118,6 +119,7 @@ async function resolvePlan(
 // ---------------------------------------------------------------------------
 async function resolveSubscriptionPeriod(
   subscriptionId: string,
+  log: FastifyBaseLogger,
 ): Promise<{ periodStart: number | null; periodEnd: number | null }> {
   const apiKey = stripeKey();
   if (!apiKey || !subscriptionId) {
@@ -132,7 +134,7 @@ async function resolveSubscriptionPeriod(
     };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.warn(`[billing-webhook] Failed to fetch subscription period for ${subscriptionId}: ${msg}`);
+    log.warn({ subscriptionId, err: msg }, 'failed to fetch subscription period');
     return { periodStart: null, periodEnd: null };
   }
 }
@@ -234,9 +236,9 @@ const billingWebhookRoutes: FastifyPluginAsync = async (fastify) => {
                   `).run(mintWallet, kinUserId);
                 } catch { /* wallet_address column may not exist yet */ }
 
-                console.log(`[Mint] Companion ${mintCompanionId} minted (${mintResult.source}) for user ${kinUserId} → ${mintResult.mintAddress.slice(0, 12)}...`);
+                request.log.info({ companionId: mintCompanionId, source: mintResult.source, mintPrefix: mintResult.mintAddress.slice(0, 12) }, 'companion minted');
               } catch (mintErr) {
-                console.error('[Mint] Failed to mint companion:', mintErr);
+                request.log.error({ err: mintErr }, 'failed to mint companion');
               }
             }
             break;
@@ -251,7 +253,7 @@ const billingWebhookRoutes: FastifyPluginAsync = async (fastify) => {
                 SET status = 'paid', updated_at = strftime('%s', 'now') * 1000
                 WHERE id = ? AND user_id = ? AND status = 'payment_required'
               `).run(skillRequestId, kinUserId);
-              console.log(`[Skills] Request ${skillRequestId} paid by user ${kinUserId}`);
+              request.log.info({ skillRequestId }, 'skill request paid');
             }
             break;
           }
@@ -273,10 +275,10 @@ const billingWebhookRoutes: FastifyPluginAsync = async (fastify) => {
               `).run(kinUserId, mintAddress, session.id);
 
               if (updated.changes > 0) {
-                console.log(`[Rebind] Payment confirmed for mint ${mintAddress}, companion ${companionId}, new owner ${kinUserId}`);
+                request.log.info({ mintAddress, companionId }, 'rebind payment confirmed');
               } else {
                 // Already processed or no matching row — idempotent, log and continue
-                console.log(`[Rebind] Duplicate/stale webhook for mint ${mintAddress} session ${session.id} — no-op`);
+                request.log.info({ mintAddress, sessionId: session.id }, 'duplicate/stale rebind webhook — no-op');
               }
             }
             break;
@@ -285,8 +287,8 @@ const billingWebhookRoutes: FastifyPluginAsync = async (fastify) => {
           if (!kinUserId || !subscriptionId) break;
 
           // Resolve plan from session metadata → Stripe API → default
-          const plan = await resolvePlan(session, subscriptionId);
-          const { periodStart, periodEnd } = await resolveSubscriptionPeriod(subscriptionId);
+          const plan = await resolvePlan(session, subscriptionId, request.log);
+          const { periodStart, periodEnd } = await resolveSubscriptionPeriod(subscriptionId, request.log);
 
           const subId = `sub-${crypto.randomUUID()}`;
           db.prepare(`
@@ -372,7 +374,7 @@ const billingWebhookRoutes: FastifyPluginAsync = async (fastify) => {
               WHERE stripe_subscription_id = ?
             `).run(failedSubId);
 
-            console.warn(`[billing-webhook] Payment failed for subscription ${failedSubId}, marked past_due`);
+            request.log.warn({ stripeSubscriptionId: failedSubId }, 'payment failed, marked past_due');
           }
           break;
         }

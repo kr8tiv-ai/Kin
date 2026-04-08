@@ -10,9 +10,19 @@
  */
 
 import { fetchWithTimeout } from '../../inference/retry.js';
+import type { FastifyBaseLogger } from 'fastify';
 
 const PINATA_PIN_URL = 'https://api.pinata.cloud/pinning/pinJSONToIPFS';
 const PINATA_GATEWAY = 'https://gateway.pinata.cloud/ipfs';
+
+/** Minimal logger interface — accepts Fastify's pino logger or a console fallback */
+type Logger = Pick<FastifyBaseLogger, 'info' | 'warn' | 'error'>;
+
+const defaultLogger: Logger = {
+  info: (obj: unknown, msg?: string) => console.log(msg ?? obj),
+  warn: (obj: unknown, msg?: string) => console.warn(msg ?? obj),
+  error: (obj: unknown, msg?: string) => console.error(msg ?? obj),
+};
 
 export interface PinResult {
   /** IPFS content identifier (CIDv0 or CIDv1) */
@@ -31,10 +41,11 @@ export interface PinResult {
 export async function pinJSON(
   data: unknown,
   name?: string,
+  log: Logger = defaultLogger,
 ): Promise<PinResult | null> {
   const jwt = process.env.PINATA_JWT;
   if (!jwt) {
-    console.warn('[TraitAnchor] PINATA_JWT not set — skipping IPFS pin');
+    log.warn({}, 'PINATA_JWT not set — skipping IPFS pin');
     return null;
   }
 
@@ -57,21 +68,19 @@ export async function pinJSON(
         cid: IpfsHash,
         gatewayUrl: `${PINATA_GATEWAY}/${IpfsHash}`,
       };
-      console.log(`[TraitAnchor] Pinned to IPFS: ${result.gatewayUrl}`);
+      log.info({ cid: IpfsHash }, 'pinned to IPFS');
       return result;
     }
 
     if (res.status === 429) {
-      console.warn('[TraitAnchor] Pinata rate limit hit (429) — skipping pin');
+      log.warn({ status: 429 }, 'Pinata rate limit hit — skipping pin');
       return null;
     }
 
-    console.warn(
-      `[TraitAnchor] Pinata pin failed: ${res.status} ${await res.text()}`,
-    );
+    log.warn({ status: res.status }, 'Pinata pin failed');
     return null;
   } catch (err) {
-    console.warn('[TraitAnchor] Pinata network error:', err);
+    log.warn({ err }, 'Pinata network error');
     return null;
   }
 }

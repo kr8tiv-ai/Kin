@@ -437,7 +437,7 @@ const nftRoutes: FastifyPluginAsync = async (fastify) => {
           ).get(snapshotId!) as { encrypted_payload: string; content_hash: string } | undefined;
 
           if (snapshot) {
-            const pinResult = await pinJSON(JSON.parse(snapshot.encrypted_payload), snapshotId!);
+            const pinResult = await pinJSON(JSON.parse(snapshot.encrypted_payload), snapshotId!, request.log);
             if (pinResult) {
               fastify.context.db.prepare(
                 `UPDATE companion_snapshots SET ipfs_cid = ? WHERE id = ?`,
