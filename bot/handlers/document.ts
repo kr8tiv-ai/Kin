@@ -10,6 +10,7 @@ import type { FallbackHandler } from '../../inference/fallback-handler.js';
 import { conversationStore } from '../memory/conversation-store.js';
 import { buildCompanionPrompt } from '../../inference/companion-prompts.js';
 import { supervisedChat } from '../../inference/supervisor.js';
+import { fetchWithTimeout } from '../../inference/retry.js';
 
 interface SessionData {
   userId: string;
@@ -85,7 +86,7 @@ export async function handleDocument(
     const file = await ctx.api.getFile(doc.file_id);
     const fileUrl = `https://api.telegram.org/file/bot${ctx.api.token}/${file.file_path}`;
 
-    const response = await fetch(fileUrl);
+    const response = await fetchWithTimeout(fileUrl, undefined, 15_000);
     const buffer = Buffer.from(await response.arrayBuffer());
     let textContent = buffer.toString('utf-8');
 

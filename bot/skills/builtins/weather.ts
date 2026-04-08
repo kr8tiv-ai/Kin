@@ -7,6 +7,7 @@
  */
 
 import type { KinSkill, SkillContext, SkillResult } from '../types.js';
+import { fetchWithTimeout } from '../../../inference/retry.js';
 
 // ============================================================================
 // Location Extraction
@@ -119,10 +120,9 @@ export const weatherSkill: KinSkill = {
 
     try {
       const encoded = encodeURIComponent(location);
-      const response = await fetch(`https://wttr.in/${encoded}?format=j1`, {
+      const response = await fetchWithTimeout(`https://wttr.in/${encoded}?format=j1`, {
         headers: { 'User-Agent': 'KIN-Bot/1.0' },
-        signal: AbortSignal.timeout(10_000),
-      });
+      }, 10_000);
 
       if (!response.ok) {
         return {

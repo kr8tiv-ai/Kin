@@ -22,6 +22,8 @@ export interface SupermemoryConfig {
   baseUrl?: string;
 }
 
+import { fetchWithTimeout } from '../retry.js';
+
 export interface MemoryResult {
   content: string;
   score: number;
@@ -53,7 +55,7 @@ export class SupermemoryClient {
   ): Promise<void> {
     const smUserId = `${userId}_${companionId}`;
 
-    const response = await fetch(`${this.baseUrl}/add`, {
+    const response = await fetchWithTimeout(`${this.baseUrl}/add`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -69,7 +71,7 @@ export class SupermemoryClient {
           ...metadata,
         },
       }),
-    });
+    }, 10_000);
 
     if (!response.ok) {
       const error = await response.text();
@@ -89,7 +91,7 @@ export class SupermemoryClient {
     const smUserId = `${userId}_${companionId}`;
 
     try {
-      const response = await fetch(`${this.baseUrl}/search`, {
+      const response = await fetchWithTimeout(`${this.baseUrl}/search`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -100,7 +102,7 @@ export class SupermemoryClient {
           q: query,
           limit,
         }),
-      });
+      }, 10_000);
 
       if (!response.ok) {
         const error = await response.text();

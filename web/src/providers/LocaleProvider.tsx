@@ -9,6 +9,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useMemo,
   useState,
   type ReactNode,
 } from 'react';
@@ -66,8 +67,10 @@ export function LocaleProvider({ children, initialLocale }: LocaleProviderProps)
     [router],
   );
 
+  const value = useMemo(() => ({ locale, setLocale }), [locale, setLocale]);
+
   return (
-    <LocaleContext.Provider value={{ locale, setLocale }}>
+    <LocaleContext.Provider value={value}>
       {children}
     </LocaleContext.Provider>
   );

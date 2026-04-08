@@ -15,7 +15,6 @@
     "@react-three/postprocessing": "^3.0.4",
     "@serwist/next": "^9.5.7",
     "@tailwindcss/postcss": "4.0.15",
-    "@types/three": "^0.183.1",
     "@vercel/analytics": "^1.5.0",
     "clsx": "^2.1.1",
     "framer-motion": "^11.18.0",
@@ -31,6 +30,7 @@
   },
   "devDependencies": {
     "@types/js-cookie": "^3.0.6",
+    "@types/three": "^0.183.1",
     "@types/node": "^22.19.15",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

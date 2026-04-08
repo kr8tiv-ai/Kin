@@ -7,6 +7,7 @@
  */
 
 import type { KinSkill, SkillContext, SkillResult } from '../types.js';
+import { fetchWithTimeout } from '../../../inference/retry.js';
 
 const TAVILY_BASE = 'https://api.tavily.com';
 
@@ -52,7 +53,7 @@ function extractQuery(message: string): string | null {
  * Call Tavily search API.
  */
 async function tavilySearch(query: string, apiKey: string, maxResults = 5): Promise<TavilyResponse> {
-  const response = await fetch(`${TAVILY_BASE}/search`, {
+  const response = await fetchWithTimeout(`${TAVILY_BASE}/search`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -64,8 +65,7 @@ async function tavilySearch(query: string, apiKey: string, maxResults = 5): Prom
       max_results: maxResults,
       include_answer: true,
     }),
-    signal: AbortSignal.timeout(15000),
-  });
+  }, 15_000);
 
   if (!response.ok) {
     const text = await response.text().catch(() => 'Unknown error');

@@ -63,6 +63,8 @@ export class CloudflareApiError extends Error {
 // TunnelManager
 // ---------------------------------------------------------------------------
 
+import { fetchWithTimeout } from '../inference/retry.js';
+
 const CF_API_BASE = 'https://api.cloudflare.com/client/v4';
 
 export class TunnelManager {
@@ -223,7 +225,7 @@ export class TunnelManager {
 
     let response: Response;
     try {
-      response = await fetch(url, init);
+      response = await fetchWithTimeout(url, init, 30_000);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error(`[TunnelManager] Network error url=${url} error=${msg}`);

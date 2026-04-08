@@ -5,6 +5,7 @@
 
 import { FastifyPluginAsync, FastifyReply } from 'fastify';
 import crypto from 'crypto';
+import { fetchWithTimeout } from '../../inference/retry.js';
 
 // ============================================================================
 // Google OAuth — verify ID token via Google's tokeninfo endpoint
@@ -25,7 +26,7 @@ interface GoogleTokenInfo {
 
 async function verifyGoogleIdToken(idToken: string, clientId: string): Promise<GoogleTokenInfo | null> {
   try {
-    const res = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`);
+    const res = await fetchWithTimeout(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`, undefined, 10_000);
     if (!res.ok) return null;
     const info = await res.json() as GoogleTokenInfo;
     // Verify audience matches our client ID
@@ -722,7 +723,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
       const callbackUrl = process.env.X_CALLBACK_URL || 'http://localhost:3001/auth/x/callback';
 
       // Exchange authorization code for access token
-      const tokenRes = await fetch('https://api.x.com/2/oauth2/token', {
+      const tokenRes = await fetchWithTimeout('https://api.x.com/2/oauth2/token', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -734,7 +735,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
           redirect_uri: callbackUrl,
           code_verifier: pkceData.codeVerifier,
         }).toString(),
-      });
+      }, 10_000);
 
       if (!tokenRes.ok) {
         const err = await tokenRes.text();
@@ -746,11 +747,11 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
       const tokenData = await tokenRes.json() as { access_token: string; token_type: string };
 
       // Fetch X user profile
-      const userRes = await fetch('https://api.x.com/2/users/me?user.fields=profile_image_url,name,username', {
+      const userRes = await fetchWithTimeout('https://api.x.com/2/users/me?user.fields=profile_image_url,name,username', {
         headers: {
           'Authorization': `Bearer ${tokenData.access_token}`,
         },
-      });
+      }, 10_000);
 
       if (!userRes.ok) {
         reply.status(401);

@@ -16,6 +16,7 @@ import type {
   ProviderChatResponse,
   ProviderStreamChunk,
 } from './types.js';
+import { fetchWithTimeout, retryWithBackoff, HttpError } from '../retry.js';
 
 // ============================================================================
 // Spec
@@ -68,25 +69,27 @@ class GoogleProvider implements FrontierProvider {
 
     const url = `${SPEC.apiBaseUrl}/models/${SPEC.modelId}:generateContent?key=${this.apiKey}`;
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents,
-        ...(systemMessage ? { systemInstruction: { parts: [{ text: systemMessage }] } } : {}),
-        generationConfig: {
-          maxOutputTokens: request.maxTokens ?? 4096,
-          temperature: request.temperature ?? 0.8,
-        },
-      }),
-    });
+    const data = await retryWithBackoff(async () => {
+      const response = await fetchWithTimeout(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents,
+          ...(systemMessage ? { systemInstruction: { parts: [{ text: systemMessage }] } } : {}),
+          generationConfig: {
+            maxOutputTokens: request.maxTokens ?? 4096,
+            temperature: request.temperature ?? 0.8,
+          },
+        }),
+      }, 15_000);
 
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`[google] API error ${response.status}: ${error}`);
-    }
+      if (!response.ok) {
+        const error = await response.text();
+        throw new HttpError(`[google] API error ${response.status}: ${error}`, response.status);
+      }
 
-    const data = await response.json() as {
+      return response.json();
+    }) as {
       candidates: Array<{ content: { parts: Array<{ text: string }> } }>;
       usageMetadata?: { promptTokenCount: number; candidatesTokenCount: number };
     };
@@ -121,23 +124,27 @@ class GoogleProvider implements FrontierProvider {
 
     const url = `${SPEC.apiBaseUrl}/models/${SPEC.modelId}:streamGenerateContent?alt=sse&key=${this.apiKey}`;
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents,
-        ...(systemMessage ? { systemInstruction: { parts: [{ text: systemMessage }] } } : {}),
-        generationConfig: {
-          maxOutputTokens: request.maxTokens ?? 4096,
-          temperature: request.temperature ?? 0.8,
-        },
-      }),
-    });
+    const response = await retryWithBackoff(async () => {
+      const res = await fetchWithTimeout(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents,
+          ...(systemMessage ? { systemInstruction: { parts: [{ text: systemMessage }] } } : {}),
+          generationConfig: {
+            maxOutputTokens: request.maxTokens ?? 4096,
+            temperature: request.temperature ?? 0.8,
+          },
+        }),
+      }, 15_000);
 
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`[google] API error ${response.status}: ${error}`);
-    }
+      if (!res.ok) {
+        const error = await res.text();
+        throw new HttpError(`[google] API error ${res.status}: ${error}`, res.status);
+      }
+
+      return res;
+    });
 
     if (!response.body) {
       throw new Error('[google] Response body is null — streaming not supported');

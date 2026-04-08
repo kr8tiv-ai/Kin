@@ -1,1 +1,0 @@
-const fs=require(" fs\);const p=process.argv[2];fs.writeFileSync(p,fs.readFileSync(\tests/installer-routes.test.ts\,\utf8\).replace(\installer routes\,\setup-wizard routes\).replace(\InstallerTest\,\WizardTest\).replace(\setup-wizard-test-secret\,\setup-wizard-test-secret\));console.log(\done\)

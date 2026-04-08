@@ -8,6 +8,7 @@ import { conversationStore } from '../memory/conversation-store.js';
 import { buildCompanionPrompt } from '../../inference/companion-prompts.js';
 import { supervisedChat } from '../../inference/supervisor.js';
 import { getVoicePipeline, VoicePipelineError } from '../../voice/index.js';
+import { fetchWithTimeout } from '../../inference/retry.js';
 
 interface SessionData {
   userId: string;
@@ -60,7 +61,7 @@ export async function handleVoice(
     const fileUrl = `https://api.telegram.org/file/bot${ctx.api.token}/${fileLink.file_path}`;
     
     // Fetch audio buffer
-    const audioResponse = await fetch(fileUrl);
+    const audioResponse = await fetchWithTimeout(fileUrl, undefined, 15_000);
     const audioBuffer = Buffer.from(await audioResponse.arrayBuffer());
 
     // Transcribe with Whisper

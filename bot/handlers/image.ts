@@ -10,6 +10,7 @@ import { Context, SessionFlavor } from 'grammy';
 import type { FallbackHandler } from '../../inference/fallback-handler.js';
 import { conversationStore } from '../memory/conversation-store.js';
 import { buildCompanionPrompt } from '../../inference/companion-prompts.js';
+import { fetchWithTimeout } from '../../inference/retry.js';
 
 interface SessionData {
   userId: string;
@@ -49,7 +50,7 @@ async function downloadImageAsBase64(
   const file = await ctx.api.getFile(fileId);
   const fileUrl = `https://api.telegram.org/file/bot${ctx.api.token}/${file.file_path}`;
 
-  const response = await fetch(fileUrl);
+  const response = await fetchWithTimeout(fileUrl, undefined, 15_000);
   const buffer = Buffer.from(await response.arrayBuffer());
 
   // Detect mime type from file path
@@ -87,7 +88,7 @@ async function callVisionLLM(
   for (const provider of providers) {
     try {
       const model = VISION_MODELS[provider.name]!;
-      const response = await fetch(`${provider.baseUrl}/chat/completions`, {
+      const response = await fetchWithTimeout(`${provider.baseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -113,7 +114,7 @@ async function callVisionLLM(
           max_tokens: 1024,
           temperature: 0.7,
         }),
-      });
+      }, 30_000);
 
       if (!response.ok) {
         console.error(`Vision API error (${provider.name}):`, response.status, await response.text());
@@ -137,7 +138,7 @@ async function callVisionLLM(
   // Anthropic as final fallback (different API format)
   if (process.env.ANTHROPIC_API_KEY) {
     try {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+      const response = await fetchWithTimeout('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -165,7 +166,7 @@ async function callVisionLLM(
             },
           ],
         }),
-      });
+      }, 30_000);
 
       if (response.ok) {
         const data = (await response.json()) as {

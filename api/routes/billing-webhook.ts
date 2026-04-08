@@ -11,6 +11,7 @@
 import { FastifyPluginAsync } from 'fastify';
 import crypto from 'crypto';
 import { mintCompanionNFT } from '../lib/solana-mint.js';
+import { fetchWithTimeout } from '../../inference/retry.js';
 
 // ---------------------------------------------------------------------------
 // Lightweight Stripe HTTP helpers (mirrors billing.ts — no SDK dependency)
@@ -23,9 +24,9 @@ function stripeKey(): string | null {
 }
 
 async function stripeGet(path: string, key: string): Promise<any> {
-  const res = await fetch(`${STRIPE_API}${path}`, {
+  const res = await fetchWithTimeout(`${STRIPE_API}${path}`, {
     headers: { Authorization: `Bearer ${key}` },
-  });
+  }, 15_000);
 
   const json = await res.json() as any;
   if (!res.ok) {

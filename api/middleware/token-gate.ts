@@ -11,6 +11,7 @@
  */
 
 import { FastifyRequest, FastifyReply } from 'fastify';
+import { fetchWithTimeout } from '../../inference/retry.js';
 
 // $KR8TIV token mint address on Solana
 const KR8TIV_TOKEN_MINT = '7r9RJw6gWbj6s1N9pGKrdzzd5H7oK1sauuwkUDVKBAGS';
@@ -40,7 +41,7 @@ async function getTokenBalance(walletAddress: string): Promise<number> {
   }
 
   try {
-    const response = await fetch(SOLANA_RPC_URL, {
+    const response = await fetchWithTimeout(SOLANA_RPC_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -53,7 +54,7 @@ async function getTokenBalance(walletAddress: string): Promise<number> {
           { encoding: 'jsonParsed' },
         ],
       }),
-    });
+    }, 10_000);
 
     const data = await response.json() as any;
     const accounts = data?.result?.value ?? [];

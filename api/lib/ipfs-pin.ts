@@ -9,6 +9,8 @@
  *   PINATA_JWT — Pinata API JWT for pinning
  */
 
+import { fetchWithTimeout } from '../../inference/retry.js';
+
 const PINATA_PIN_URL = 'https://api.pinata.cloud/pinning/pinJSONToIPFS';
 const PINATA_GATEWAY = 'https://gateway.pinata.cloud/ipfs';
 
@@ -37,7 +39,7 @@ export async function pinJSON(
   }
 
   try {
-    const res = await fetch(PINATA_PIN_URL, {
+    const res = await fetchWithTimeout(PINATA_PIN_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -47,7 +49,7 @@ export async function pinJSON(
         pinataContent: data,
         pinataMetadata: { name: name ?? 'kin-trait-snapshot' },
       }),
-    });
+    }, 15_000);
 
     if (res.ok) {
       const { IpfsHash } = (await res.json()) as { IpfsHash: string };

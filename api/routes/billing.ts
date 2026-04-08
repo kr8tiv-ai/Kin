@@ -12,6 +12,7 @@
 import { FastifyPluginAsync } from 'fastify';
 import crypto from 'crypto';
 import { mintRateLimit } from '../middleware/rate-limit.js';
+import { fetchWithTimeout } from '../../inference/retry.js';
 
 // ---------------------------------------------------------------------------
 // Lightweight Stripe HTTP helpers (no SDK dependency)
@@ -33,14 +34,14 @@ async function stripePost(
     if (v !== undefined) params.append(k, String(v));
   }
 
-  const res = await fetch(`${STRIPE_API}${path}`, {
+  const res = await fetchWithTimeout(`${STRIPE_API}${path}`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${key}`,
       'Content-Type': 'application/x-www-form-urlencoded',
     },
     body: params.toString(),
-  });
+  }, 15_000);
 
   const json = await res.json() as any;
   if (!res.ok) {

@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
 interface ButtonProps {
@@ -43,6 +42,7 @@ export function Button({
   const classes = cn(
     'inline-flex items-center justify-center font-body font-medium transition-all duration-200',
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/50 focus-visible:ring-offset-2 focus-visible:ring-offset-black',
+    'transition-transform hover:scale-[1.03] active:scale-[0.97]',
     variantStyles[variant],
     sizeStyles[size],
     disabled && 'pointer-events-none opacity-40',
@@ -51,24 +51,20 @@ export function Button({
 
   if (href && !disabled) {
     return (
-      <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
-        <Link href={href} className={classes} onClick={onClick}>
-          {children}
-        </Link>
-      </motion.div>
+      <Link href={href} className={classes} onClick={onClick}>
+        {children}
+      </Link>
     );
   }
 
   return (
-    <motion.button
+    <button
       type={type}
       className={classes}
       onClick={onClick}
       disabled={disabled}
-      whileHover={disabled ? undefined : { scale: 1.03 }}
-      whileTap={disabled ? undefined : { scale: 0.97 }}
     >
       {children}
-    </motion.button>
+    </button>
   );
 }
