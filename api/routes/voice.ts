@@ -298,6 +298,7 @@ const voiceRoutes: FastifyPluginAsync = async (fastify) => {
     // ── Parse multipart upload ────────────────────────────────────────────
     let audioBuffer: Buffer;
     let companionId = 'cipher';
+    let voiceLanguage = 'en';
 
     try {
       const data = await request.file();
@@ -311,13 +312,19 @@ const voiceRoutes: FastifyPluginAsync = async (fastify) => {
 
       audioBuffer = await data.toBuffer();
 
-      // Read companionId from multipart fields (comes before or after file)
+      // Read companionId and language from multipart fields (comes before or after file)
       const fields = data.fields as Record<string, any>;
       if (fields.companionId) {
         const field = fields.companionId;
         companionId = (typeof field === 'object' && field.value)
           ? String(field.value)
           : String(field);
+      }
+      if (fields.language) {
+        const langField = fields.language;
+        voiceLanguage = (typeof langField === 'object' && langField.value)
+          ? String(langField.value)
+          : String(langField);
       }
     } catch (err) {
       request.log.error(err, 'voice/conversation multipart parse error');
@@ -388,7 +395,7 @@ const voiceRoutes: FastifyPluginAsync = async (fastify) => {
     try {
       const systemPrompt = buildCompanionPrompt(companionId, {
         taskContext: { type: 'voice' },
-      });
+      }, { language: voiceLanguage });
 
       const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
         { role: 'system', content: systemPrompt },

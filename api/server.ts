@@ -894,14 +894,21 @@ async function handleWsChat(
     ORDER BY timestamp DESC LIMIT 20
   `).all(conversationId) as Array<{ role: string; content: string }>;
 
-  // Build prompt
+  // Build prompt with language preference
   const config = getCompanionConfig(companionId);
+  let wsLanguage = 'en';
+  try {
+    const langRow = fastify.context.db.prepare(
+      `SELECT language FROM user_preferences WHERE user_id = ?`
+    ).get(userId) as { language: string } | undefined;
+    wsLanguage = langRow?.language ?? 'en';
+  } catch { /* default to en */ }
   const systemPrompt = buildCompanionPrompt(companionId, {
     userName: userId,
     timeContext: new Date().toLocaleString('en-US', {
       weekday: 'long', hour: 'numeric', minute: '2-digit',
     }),
-  });
+  }, { language: wsLanguage });
 
   const messages: ChatMessage[] = [
     { role: 'system', content: systemPrompt },

@@ -145,6 +145,21 @@ function loadPrivacyMode(db: any, userId: string): 'private' | 'shared' {
   }
 }
 
+/**
+ * Read the user's language preference from user_preferences.
+ * Defaults to 'en' if no row exists or on any error.
+ */
+function loadLanguagePreference(db: any, userId: string): string {
+  try {
+    const row = db.prepare(
+      `SELECT language FROM user_preferences WHERE user_id = ?`
+    ).get(userId) as { language: string } | undefined;
+    return row?.language ?? 'en';
+  } catch {
+    return 'en';
+  }
+}
+
 // ── Media metadata extraction ─────────────────────────────────────────────
 
 /** Known Replicate CDN URL pattern and common media extensions. */
@@ -255,6 +270,7 @@ const chatRoutes: FastifyPluginAsync = async (fastify) => {
 
     // Build message array: system prompt + history + new message
     // Memory injection + Supermemory storage handled centrally by supervisor
+    const language = loadLanguagePreference(fastify.context.db, userId);
     const basePrompt = buildCompanionPrompt(companionId, {
       userName: userId,
       timeContext: new Date().toLocaleString('en-US', {
@@ -262,7 +278,7 @@ const chatRoutes: FastifyPluginAsync = async (fastify) => {
         hour: 'numeric',
         minute: '2-digit',
       }),
-    });
+    }, { language });
 
     // Inject soul config if user has customized companion personality
     const soul = loadSoulConfig(fastify.context.db, userId, companionId);
@@ -412,6 +428,7 @@ const chatRoutes: FastifyPluginAsync = async (fastify) => {
     `).all(conversationId) as Array<{ role: string; content: string }>;
 
     // Build message array: system prompt + history + new message
+    const streamLanguage = loadLanguagePreference(fastify.context.db, userId);
     const basePrompt = buildCompanionPrompt(companionId, {
       userName: userId,
       timeContext: new Date().toLocaleString('en-US', {
@@ -419,7 +436,7 @@ const chatRoutes: FastifyPluginAsync = async (fastify) => {
         hour: 'numeric',
         minute: '2-digit',
       }),
-    });
+    }, { language: streamLanguage });
 
     // Inject soul config if user has customized companion personality
     const soul = loadSoulConfig(fastify.context.db, userId, companionId);

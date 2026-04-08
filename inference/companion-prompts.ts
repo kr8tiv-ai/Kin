@@ -256,16 +256,45 @@ export const COMPANION_SHORT_PROMPTS: Record<string, string> = {
 };
 
 // ============================================================================
+// Language Names — ISO 639-1 → full name for prompt instructions
+// ============================================================================
+
+export const LANGUAGE_NAMES: Record<string, string> = {
+  en: 'English',
+  es: 'Spanish',
+  fr: 'French',
+  de: 'German',
+  pt: 'Portuguese',
+  ja: 'Japanese',
+  ko: 'Korean',
+  zh: 'Chinese',
+  it: 'Italian',
+  ru: 'Russian',
+  hi: 'Hindi',
+  tr: 'Turkish',
+  ar: 'Arabic',
+  nl: 'Dutch',
+  pl: 'Polish',
+  sv: 'Swedish',
+  th: 'Thai',
+  vi: 'Vietnamese',
+  id: 'Indonesian',
+  uk: 'Ukrainian',
+};
+
+// ============================================================================
 // Prompt Builder
 // ============================================================================
 
 /**
  * Build a complete system prompt for any companion with optional context.
+ * When language is provided and ≠ 'en', appends an instruction to respond
+ * in that language while preserving personality.
  */
 export function buildCompanionPrompt(
   companionId: string,
   context?: PromptContext,
-  options?: { short?: boolean },
+  options?: { short?: boolean; language?: string },
 ): string {
   const prompts = options?.short ? COMPANION_SHORT_PROMPTS : COMPANION_SYSTEM_PROMPTS;
   const systemPrompt = prompts[companionId] ?? prompts['cipher']!;
@@ -277,6 +306,15 @@ export function buildCompanionPrompt(
     if (contextSection) {
       parts.push(contextSection);
     }
+  }
+
+  // Append language instruction when not English
+  const lang = options?.language;
+  if (lang && lang !== 'en') {
+    const languageName = LANGUAGE_NAMES[lang] ?? lang;
+    parts.push(
+      `IMPORTANT: Respond in ${languageName}. Keep your personality, tone, and character exactly the same regardless of language.`,
+    );
   }
 
   return parts.join('\n\n');
