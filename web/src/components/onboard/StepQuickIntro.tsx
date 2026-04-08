@@ -26,6 +26,8 @@ interface StepQuickIntroProps {
   onSelect: (id: string) => void;
   onVoiceComplete: (profile: ExtractedProfile) => void;
   onBack: () => void;
+  /** When true, skip the voice intro phase (used for child accounts). */
+  skipVoice?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -47,12 +49,18 @@ export function StepQuickIntro({
   onSelect,
   onVoiceComplete,
   onBack,
+  skipVoice = false,
 }: StepQuickIntroProps) {
-  // Two phases: pick companion → voice intro
-  const [phase, setPhase] = useState<'pick' | 'voice'>(selectedId ? 'voice' : 'pick');
+  // Two phases: pick companion → voice intro (voice skipped for child accounts)
+  const [phase, setPhase] = useState<'pick' | 'voice'>(selectedId && !skipVoice ? 'voice' : 'pick');
 
   function handleCompanionSelect(id: string) {
     onSelect(id);
+    if (skipVoice) {
+      // Child accounts skip voice intro — advance with default profile
+      onVoiceComplete({ displayName: '', interests: [], goals: [], experienceLevel: 'beginner', tone: 'friendly' });
+      return;
+    }
     setPhase('voice');
   }
 

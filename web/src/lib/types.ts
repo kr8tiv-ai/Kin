@@ -634,3 +634,84 @@ export interface RevenueDistribution {
   amount: number;        // cents
   createdAt: number;     // epoch ms
 }
+
+// ============================================================================
+// Family Mode
+// ============================================================================
+
+export interface FamilyMember {
+  memberId: string;
+  userId: string;
+  firstName: string;
+  lastName: string | null;
+  role: 'parent' | 'child' | 'member';
+  joinedAt: number;
+  messageCount: number;
+  lastActive: number | null;
+  ageBracket?: 'under_13' | 'teen' | null;
+}
+
+export interface FamilyGroup {
+  familyGroupId: string;
+  familyName: string;
+  createdBy: string;
+  createdAt: number;
+  myRole: 'parent' | 'child' | 'member';
+  members: FamilyMember[];
+}
+
+export interface FamilyCreateResponse {
+  familyGroupId: string;
+  name: string;
+  role: string;
+  createdAt: number;
+}
+
+export interface FamilyInviteResponse {
+  code: string;
+  expiresAt: number;
+}
+
+export interface ChildAccountResponse {
+  childUserId: string;
+  firstName: string;
+  ageBracket: string;
+  role: string;
+  familyGroupId: string;
+  contentFilterLevel: string;
+  token: string;
+  createdAt: number;
+}
+
+export interface SharedMemory {
+  id: string;
+  userId: string;
+  companionId: string;
+  memoryType: string;
+  content: string;
+  importance: number;
+  createdAt: number;
+  lastAccessedAt: number;
+  accessCount: number;
+  authorFirstName: string;
+}
+
+export interface SharedMemoriesResponse {
+  familyGroupId: string;
+  memories: SharedMemory[];
+}
+
+export interface FamilyActivityMember {
+  userId: string;
+  firstName: string;
+  role: string;
+  ageBracket: string | null;
+  messageCount: number;
+  lastActive: number | null;
+  topicKeywords: string[];
+}
+
+export interface FamilyActivityResponse {
+  familyGroupId: string;
+  members: FamilyActivityMember[];
+}

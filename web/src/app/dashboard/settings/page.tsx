@@ -449,43 +449,51 @@ export default function SettingsPage() {
           AI handles complex requests and helps your companion learn.
         </p>
 
-        {/* Privacy Mode Toggle */}
-        <div className="mb-6 grid grid-cols-1 gap-2 sm:grid-cols-2">
-          <button
-            type="button"
-            disabled={privacySaving}
-            onClick={() => handlePrivacyChange('private')}
-            className={cn(
-              'rounded-lg border px-4 py-3 text-left transition-all duration-200',
-              privacyMode === 'private'
-                ? 'border-cyan bg-cyan/10 text-cyan'
-                : 'border-white/10 bg-white/[0.02] text-white/50 hover:border-white/20 hover:text-white/70',
-              privacySaving && 'pointer-events-none opacity-60',
-            )}
-          >
-            <p className="text-sm font-semibold">Keep conversations private</p>
-            <p className="mt-1 text-xs opacity-60">
-              Your companion uses only the local model. Nothing leaves your device.
+        {/* Privacy Mode Toggle — hidden for child accounts (COPPA: locked to private) */}
+        {user?.authProvider === 'family' ? (
+          <div className="mb-6 rounded-lg border border-cyan/20 bg-cyan/5 px-4 py-3">
+            <p className="text-sm text-cyan">
+              🔒 Privacy is set to <strong>private</strong> for child accounts. Only local AI is used.
             </p>
-          </button>
-          <button
-            type="button"
-            disabled={privacySaving}
-            onClick={() => handlePrivacyChange('shared')}
-            className={cn(
-              'rounded-lg border px-4 py-3 text-left transition-all duration-200',
-              privacyMode === 'shared'
-                ? 'border-magenta bg-magenta/10 text-magenta'
-                : 'border-white/10 bg-white/[0.02] text-white/50 hover:border-white/20 hover:text-white/70',
-              privacySaving && 'pointer-events-none opacity-60',
-            )}
-          >
-            <p className="text-sm font-semibold">Help your companion learn</p>
-            <p className="mt-1 text-xs opacity-60">
-              Complex questions use frontier AI. Responses improve your companion over time.
-            </p>
-          </button>
-        </div>
+          </div>
+        ) : (
+          <div className="mb-6 grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <button
+              type="button"
+              disabled={privacySaving}
+              onClick={() => handlePrivacyChange('private')}
+              className={cn(
+                'rounded-lg border px-4 py-3 text-left transition-all duration-200',
+                privacyMode === 'private'
+                  ? 'border-cyan bg-cyan/10 text-cyan'
+                  : 'border-white/10 bg-white/[0.02] text-white/50 hover:border-white/20 hover:text-white/70',
+                privacySaving && 'pointer-events-none opacity-60',
+              )}
+            >
+              <p className="text-sm font-semibold">Keep conversations private</p>
+              <p className="mt-1 text-xs opacity-60">
+                Your companion uses only the local model. Nothing leaves your device.
+              </p>
+            </button>
+            <button
+              type="button"
+              disabled={privacySaving}
+              onClick={() => handlePrivacyChange('shared')}
+              className={cn(
+                'rounded-lg border px-4 py-3 text-left transition-all duration-200',
+                privacyMode === 'shared'
+                  ? 'border-magenta bg-magenta/10 text-magenta'
+                  : 'border-white/10 bg-white/[0.02] text-white/50 hover:border-white/20 hover:text-white/70',
+                privacySaving && 'pointer-events-none opacity-60',
+              )}
+            >
+              <p className="text-sm font-semibold">Help your companion learn</p>
+              <p className="mt-1 text-xs opacity-60">
+                Complex questions use frontier AI. Responses improve your companion over time.
+              </p>
+            </button>
+          </div>
+        )}
 
         {/* Move Your KIN */}
         <div className="border-t border-white/5 pt-4">

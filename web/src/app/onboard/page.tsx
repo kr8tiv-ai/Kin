@@ -11,6 +11,7 @@ import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence } from 'framer-motion';
 import { useOnboarding } from '@/hooks/useOnboarding';
+import { useAuth } from '@/providers/AuthProvider';
 import { COMPANIONS } from '@/lib/companions';
 import type { StarterConversation } from '@/lib/types';
 import { OnboardProgress } from '@/components/onboard/OnboardProgress';
@@ -33,6 +34,7 @@ const COLOR_HEX: Record<string, string> = {
 
 export default function OnboardPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const onboarding = useOnboarding();
   const [sparkleTrigger, setSparkleTrigger] = useState(0);
 
@@ -110,6 +112,7 @@ export default function OnboardPage() {
             onSelect={onboarding.setCompanion}
             onVoiceComplete={handleVoiceComplete}
             onBack={onboarding.prevStep}
+            skipVoice={user?.authProvider === 'family'}
           />
         )}
 

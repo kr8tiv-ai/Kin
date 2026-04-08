@@ -75,9 +75,16 @@ export function DashboardTopbar() {
           </a>
         </div>
 
-        {/* User Avatar */}
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-cyan/20 text-cyan font-display font-bold text-sm">
-          {initial}
+        {/* User Avatar + Child indicator */}
+        <div className="flex items-center gap-2">
+          {user?.authProvider === 'family' && (
+            <span className="rounded-full bg-cyan/10 border border-cyan/20 px-2 py-0.5 text-[10px] font-medium text-cyan">
+              🛡️ Safe
+            </span>
+          )}
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-cyan/20 text-cyan font-display font-bold text-sm">
+            {initial}
+          </div>
         </div>
       </header>
 
