@@ -10,6 +10,8 @@ import { getCompanion, getCompanionColor } from '@/lib/companions';
 import { track } from '@/lib/analytics';
 import { CompanionViewer } from '@/components/3d/CompanionViewer';
 import { Button } from '@/components/ui/Button';
+import { usePWAInstall } from '@/hooks/usePWAInstall';
+import { IOSInstallModal } from '@/components/pwa/IOSInstallModal';
 
 interface StepReadyProps {
   selectedCompanionId: string | null;
@@ -209,6 +211,16 @@ export function StepReady({
   const companionColor = selectedCompanionId
     ? getCompanionColor(selectedCompanionId)
     : '#00f0ff';
+  const { canInstall, isIOS, isInstalled, promptInstall } = usePWAInstall();
+  const [showIOSModal, setShowIOSModal] = useState(false);
+
+  function handleInstallCTA() {
+    if (isIOS) {
+      setShowIOSModal(true);
+    } else {
+      promptInstall();
+    }
+  }
 
   function handleComplete() {
     track('onboarding_completed', { companionId: selectedCompanionId ?? 'unknown' });
@@ -323,6 +335,26 @@ export function StepReady({
           Explore Dashboard
         </Button>
       </div>
+
+      {/* PWA Install CTA — only shown when install is available */}
+      {!isInstalled && (canInstall || isIOS) && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.9 }}
+          className="mt-4"
+        >
+          <button
+            type="button"
+            onClick={handleInstallCTA}
+            className="text-sm text-cyan/60 hover:text-cyan transition-colors underline underline-offset-2"
+          >
+            📲 Add KIN to Home Screen
+          </button>
+        </motion.div>
+      )}
+
+      <IOSInstallModal open={showIOSModal} onClose={() => setShowIOSModal(false)} />
 
       <p className="mt-6 text-center text-[11px] text-white/20">
         Chat with your companion on Telegram anytime at{' '}

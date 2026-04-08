@@ -19,6 +19,8 @@ import { DangerZone } from '@/components/dashboard/DangerZone';
 import { WalletCard } from '@/components/dashboard/WalletCard';
 import { PhantomConnect } from '@/components/dashboard/PhantomConnect';
 import { MigrationWizard } from '@/components/dashboard/MigrationWizard';
+import { usePWAInstall } from '@/hooks/usePWAInstall';
+import { IOSInstallModal } from '@/components/pwa/IOSInstallModal';
 import type { UserPreferences } from '@/lib/types';
 
 // ---------------------------------------------------------------------------
@@ -74,6 +76,8 @@ export default function SettingsPage() {
   const [privacySaving, setPrivacySaving] = useState(false);
   const [wizardMode, setWizardMode] = useState<'export' | 'import' | null>(null);
   const [timezone, setTimezone] = useState('');
+  const [showIOSModal, setShowIOSModal] = useState(false);
+  const pwa = usePWAInstall();
 
   // Detect timezone on mount
   useEffect(() => {
@@ -355,6 +359,42 @@ export default function SettingsPage() {
         <WalletCard />
         <PhantomConnect />
       </div>
+
+      {/* Install App */}
+      <GlassCard className="p-6" hover={false}>
+        <h2 className="mb-2 font-display text-lg font-semibold text-white">
+          Install App
+        </h2>
+        <p className="mb-4 text-sm text-white/50">
+          Add KIN to your device for instant access and offline support.
+        </p>
+        {pwa.isInstalled ? (
+          <div className="flex items-center gap-2 rounded-lg border border-cyan/20 bg-cyan/[0.04] px-4 py-3">
+            <span className="text-cyan">✓</span>
+            <p className="text-sm text-cyan">KIN is installed on this device</p>
+          </div>
+        ) : pwa.canInstall ? (
+          <Button
+            onClick={() => pwa.promptInstall()}
+          >
+            Install KIN App
+          </Button>
+        ) : pwa.isIOS ? (
+          <>
+            <Button
+              variant="outline"
+              onClick={() => setShowIOSModal(true)}
+            >
+              How to Install on iOS
+            </Button>
+            <IOSInstallModal open={showIOSModal} onClose={() => setShowIOSModal(false)} />
+          </>
+        ) : (
+          <p className="text-sm text-white/40">
+            Open this page in a supported browser (Chrome, Edge, Safari) to install KIN.
+          </p>
+        )}
+      </GlassCard>
 
       {/* Data & Privacy — Privacy Toggle + Export */}
       <GlassCard className="p-6" hover={false}>
