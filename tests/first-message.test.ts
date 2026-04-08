@@ -5,16 +5,6 @@ let server: FastifyInstance | null = null;
 let token = '';
 let userId = '';
 
-async function getAuthToken(app: FastifyInstance): Promise<string> {
-  const res = await app.inject({
-    method: 'POST',
-    url: '/auth/dev-login',
-    payload: { telegramId: 999999, firstName: 'TestUser' },
-  });
-  const body = JSON.parse(res.body);
-  return body.token;
-}
-
 beforeAll(async () => {
   const { createServer } = await import('../api/server.js');
 

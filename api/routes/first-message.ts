@@ -177,113 +177,112 @@ const firstMessageRoutes: FastifyPluginAsync = async (fastify) => {
     },
   };
 
-  const handler = async (
-    request: { body: FirstMessageBody; user: { userId: string } },
-    reply: { status: (statusCode: number) => void },
-  ) => {
-    const userId = request.user.userId;
-    const { companionId } = request.body;
+  const registerPath = async (path: string) => {
+    await fastify.post<{ Body: FirstMessageBody }>(path, { schema }, async (request, reply) => {
+      const userId = (request.user as { userId: string }).userId;
+      const { companionId } = request.body;
 
-    const claimed = fastify.context.db.prepare(`
-      SELECT 1
-      FROM user_companions
-      WHERE user_id = ? AND companion_id = ?
-    `).get(userId, companionId);
+      const claimed = fastify.context.db.prepare(`
+        SELECT 1
+        FROM user_companions
+        WHERE user_id = ? AND companion_id = ?
+      `).get(userId, companionId);
 
-    if (!claimed) {
-      reply.status(404);
-      return { error: 'Companion not found for user' };
-    }
+      if (!claimed) {
+        reply.status(404);
+        return { error: 'Companion not found for user' };
+      }
 
-    const preferences = fastify.context.db.prepare(`
-      SELECT display_name, experience_level, goals, language, tone, privacy_mode
-      FROM user_preferences
-      WHERE user_id = ?
-    `).get(userId) as PreferencesRow | undefined;
+      const preferences = fastify.context.db.prepare(`
+        SELECT display_name, experience_level, goals, language, tone, privacy_mode
+        FROM user_preferences
+        WHERE user_id = ?
+      `).get(userId) as PreferencesRow | undefined;
 
-    const memories = fastify.context.db.prepare(`
-      SELECT memory_type, content
-      FROM memories
-      WHERE user_id = ? AND companion_id = ?
-      ORDER BY created_at ASC
-      LIMIT 20
-    `).all(userId, companionId) as MemoryRow[];
+      const memories = fastify.context.db.prepare(`
+        SELECT memory_type, content
+        FROM memories
+        WHERE user_id = ? AND companion_id = ?
+        ORDER BY created_at ASC
+        LIMIT 20
+      `).all(userId, companionId) as MemoryRow[];
 
-    const soul = fastify.context.db.prepare(`
-      SELECT custom_name
-      FROM companion_souls
-      WHERE user_id = ? AND companion_id = ?
-    `).get(userId, companionId) as SoulRow | undefined;
+      const soul = fastify.context.db.prepare(`
+        SELECT custom_name
+        FROM companion_souls
+        WHERE user_id = ? AND companion_id = ?
+      `).get(userId, companionId) as SoulRow | undefined;
 
-    const companion = getCompanionConfig(companionId);
-    const companionName = soul?.custom_name?.trim() || companion.name;
-    const goals = parseGoals(preferences?.goals ?? null);
-    const currentProject = extractMemoryValue(memories, 'Currently working on: ');
-    const occupation = extractMemoryValue(memories, 'Occupation/Industry: ');
-    const interests = extractMemoryValue(memories, 'Interests: ');
+      const companion = getCompanionConfig(companionId);
+      const companionName = soul?.custom_name?.trim() || companion.name;
+      const goals = parseGoals(preferences?.goals ?? null);
+      const currentProject = extractMemoryValue(memories, 'Currently working on: ');
+      const occupation = extractMemoryValue(memories, 'Occupation/Industry: ');
+      const interests = extractMemoryValue(memories, 'Interests: ');
 
-    const welcomeMessage = buildWelcomeMessage({
-      companionName,
-      userDisplayName: preferences?.display_name ?? null,
-      tagline: companion.tagline,
-      goals,
-      currentProject,
-      occupation,
-      interests,
-      tone: preferences?.tone ?? 'friendly',
-      experienceLevel: preferences?.experience_level ?? 'beginner',
-      privacyMode: preferences?.privacy_mode ?? 'private',
-    });
+      const welcomeMessage = buildWelcomeMessage({
+        companionName,
+        userDisplayName: preferences?.display_name ?? null,
+        tagline: companion.tagline,
+        goals,
+        currentProject,
+        occupation,
+        interests,
+        tone: preferences?.tone ?? 'friendly',
+        experienceLevel: preferences?.experience_level ?? 'beginner',
+        privacyMode: preferences?.privacy_mode ?? 'private',
+      });
 
-    const suggestedReplies = buildSuggestedReplies({
-      companionId,
-      currentProject,
-      goals,
-    });
+      const suggestedReplies = buildSuggestedReplies({
+        companionId,
+        currentProject,
+        goals,
+      });
 
-    const conversationId = `conv-${crypto.randomUUID()}`;
-    const messageId = crypto.randomUUID();
+      const conversationId = `conv-${crypto.randomUUID()}`;
+      const messageId = crypto.randomUUID();
 
-    fastify.context.db.prepare(`
-      INSERT INTO conversations (id, user_id, companion_id, title, metadata)
-      VALUES (?, ?, ?, ?, ?)
-    `).run(
-      conversationId,
-      userId,
-      companionId,
-      `Meet ${companionName}`,
-      JSON.stringify({
-        source: 'onboarding',
+      fastify.context.db.prepare(`
+        INSERT INTO conversations (id, user_id, companion_id, title, metadata)
+        VALUES (?, ?, ?, ?, ?)
+      `).run(
+        conversationId,
+        userId,
+        companionId,
+        `Meet ${companionName}`,
+        JSON.stringify({
+          source: 'onboarding',
+          suggestedReplies,
+        }),
+      );
+
+      fastify.context.db.prepare(`
+        INSERT INTO messages (id, conversation_id, role, content, provider, model, metadata)
+        VALUES (?, ?, 'assistant', ?, ?, ?, ?)
+      `).run(
+        messageId,
+        conversationId,
+        welcomeMessage,
+        'local',
+        'starter-seed',
+        JSON.stringify({
+          source: 'onboarding',
+          suggestedReplies,
+        }),
+      );
+
+      return {
+        conversationId,
+        companionId,
+        companionName,
+        welcomeMessage,
         suggestedReplies,
-      }),
-    );
-
-    fastify.context.db.prepare(`
-      INSERT INTO messages (id, conversation_id, role, content, provider, model, metadata)
-      VALUES (?, ?, 'assistant', ?, ?, ?, ?)
-    `).run(
-      messageId,
-      conversationId,
-      welcomeMessage,
-      'local',
-      'starter-seed',
-      JSON.stringify({
-        source: 'onboarding',
-        suggestedReplies,
-      }),
-    );
-
-    return {
-      conversationId,
-      companionId,
-      companionName,
-      welcomeMessage,
-      suggestedReplies,
-    };
+      };
+    });
   };
 
-  await fastify.post<{ Body: FirstMessageBody }>('/first-message', { schema }, handler);
-  await fastify.post<{ Body: FirstMessageBody }>('/kin/first-message', { schema }, handler);
+  await registerPath('/first-message');
+  await registerPath('/kin/first-message');
 };
 
 export default firstMessageRoutes;

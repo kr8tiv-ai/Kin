@@ -1,7 +1,7 @@
 'use client';
 
 // ============================================================================
-// StepMemory — Onboarding Step 4: Teach your companion about yourself.
+// StepMemory - Onboarding Step 4: Teach your companion about yourself.
 // ============================================================================
 
 import { motion } from 'framer-motion';
@@ -49,11 +49,15 @@ const TIMEZONES = [
 ];
 
 function formatTimezone(tz: string): string {
-  // Turn "America/New_York" into "America / New York"
   return tz.replace(/_/g, ' ').replace(/\//g, ' / ');
 }
 
-export function StepMemory({ memories, onChange, onNext, onBack }: StepMemoryProps) {
+export function StepMemory({
+  memories,
+  onChange,
+  onNext,
+  onBack,
+}: StepMemoryProps) {
   return (
     <motion.div
       initial={{ opacity: 0, x: 40 }}
@@ -63,63 +67,58 @@ export function StepMemory({ memories, onChange, onNext, onBack }: StepMemoryPro
       className="flex flex-col items-center"
     >
       <h1 className="mb-2 text-center font-display text-2xl font-bold text-white sm:text-3xl">
-        Teach Your Companion
+        What Should Your KIN Know?
       </h1>
       <p className="mb-8 max-w-md text-center text-sm text-white/40 leading-relaxed">
-        Your companion remembers what matters to you. Share a few things to get
-        started &mdash; you can always add more later.
+        Give your KIN a little context before you meet. A few details here make
+        the first conversation feel much more personal.
       </p>
 
       <div className="mb-8 w-full space-y-5">
-        {/* Occupation */}
         <GlassCard className="p-5" hover={false}>
           <Input
-            label="What do you do?"
-            placeholder="e.g. Software engineer, Designer, Student..."
+            label="What do you spend your days doing?"
+            placeholder="Founder, creative lead, coach, student..."
             value={memories.occupation}
             onChange={(e) => onChange({ occupation: e.target.value })}
           />
         </GlassCard>
 
-        {/* Interests */}
         <GlassCard className="p-5" hover={false}>
           <Input
-            label="What are you interested in?"
-            placeholder="e.g. AI, fitness, photography, cooking..."
+            label="What should your KIN care about with you?"
+            placeholder="Your interests, obsessions, or what you keep coming back to"
             value={memories.interests}
             onChange={(e) => onChange({ interests: e.target.value })}
           />
         </GlassCard>
 
-        {/* Current project */}
         <GlassCard className="p-5" hover={false}>
           <Input
-            label="What are you working on?"
-            placeholder="e.g. Building a mobile app, Learning Spanish..."
+            label="What matters most right now?"
+            placeholder="Launching something new, rebuilding your site, getting organized..."
             value={memories.currentProject}
             onChange={(e) => onChange({ currentProject: e.target.value })}
           />
         </GlassCard>
 
-        {/* Timezone */}
         <GlassCard className="p-5" hover={false}>
           <label className="mb-1.5 block text-sm font-medium text-white/70">
-            Your timezone
+            Where in the world are you?
           </label>
           <select
             value={memories.timezone}
             onChange={(e) => onChange({ timezone: e.target.value })}
             className="w-full rounded-sm border border-white/10 bg-surface px-4 py-2.5 text-sm text-white transition-colors focus:border-cyan focus:outline-none focus:ring-1 focus:ring-cyan/30"
           >
-            {TIMEZONES.map((tz) => (
-              <option key={tz} value={tz}>
-                {formatTimezone(tz)}
+            {TIMEZONES.map((timezone) => (
+              <option key={timezone} value={timezone}>
+                {formatTimezone(timezone)}
               </option>
             ))}
           </select>
         </GlassCard>
 
-        {/* Auto-learn toggle */}
         <GlassCard className="p-5" hover={false}>
           <button
             type="button"
@@ -128,10 +127,10 @@ export function StepMemory({ memories, onChange, onNext, onBack }: StepMemoryPro
           >
             <div className="text-left">
               <p className="text-sm font-medium text-white/80">
-                Let my companion learn about me over time
+                Let my KIN learn as we go
               </p>
               <p className="mt-0.5 text-xs text-white/30">
-                Your companion gets smarter the more you chat
+                It will quietly pick up patterns and context from our conversations
               </p>
             </div>
             <div
@@ -151,12 +150,10 @@ export function StepMemory({ memories, onChange, onNext, onBack }: StepMemoryPro
         </GlassCard>
       </div>
 
-      {/* Info note */}
       <p className="mb-6 text-center text-[11px] text-white/20">
-        Powered by intelligent memory &mdash; your companion gets smarter the more you chat.
+        You do not need to get this perfect. Your KIN will keep learning with you.
       </p>
 
-      {/* Navigation */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" onClick={onBack}>
           Back

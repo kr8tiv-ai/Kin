@@ -1,17 +1,12 @@
 'use client';
 
 // ============================================================================
-// StepReady — Onboarding final step: Complete + first companion message.
-//
-// After onboarding.complete() succeeds, fetches a real personalized first
-// message from the companion via POST /kin/first-message. Shows a typing
-// animation then the actual response in a chat bubble.
+// StepReady - Onboarding Step 5: Completion + launch.
 // ============================================================================
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useEffect, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
 import { getCompanion, getCompanionColor } from '@/lib/companions';
-import { kinApi } from '@/lib/api';
 import { track } from '@/lib/analytics';
 import { CompanionViewer } from '@/components/3d/CompanionViewer';
 import { Button } from '@/components/ui/Button';
@@ -21,17 +16,8 @@ interface StepReadyProps {
   completing: boolean;
   error: string | null;
   onComplete: () => void;
-  /** User profile data from onboarding for the first-message endpoint */
-  userProfile?: {
-    displayName?: string;
-    interests?: string[];
-    goals?: string[];
-  };
-  /** Current onboarding flow mode for analytics */
-  flowMode?: 'quick' | 'detailed';
 }
 
-// Decorative dots with companion-accent coloring
 function ConfettiDots({ color }: { color: string }) {
   const dots = [
     { size: 6, x: '10%', y: '20%', delay: 0 },
@@ -46,9 +32,9 @@ function ConfettiDots({ color }: { color: string }) {
 
   return (
     <>
-      {dots.map((dot, i) => (
+      {dots.map((dot, index) => (
         <motion.div
-          key={i}
+          key={index}
           className="absolute rounded-full pointer-events-none"
           style={{
             width: dot.size,
@@ -74,139 +60,160 @@ function ConfettiDots({ color }: { color: string }) {
   );
 }
 
-// ============================================================================
-// TypingIndicator — Animated dots shown while generating the first message
-// ============================================================================
+interface ChatPreviewProps {
+  companionName: string;
+  companionEmoji: string;
+  companionTagline: string;
+  companionDescription: string;
+}
 
-function TypingIndicator() {
+type ChatPreviewMessage =
+  | { id: string; role: 'user' | 'companion'; text: string }
+  | { id: string; role: 'typing' };
+
+function ChatPreview({
+  companionName,
+  companionEmoji,
+  companionTagline,
+  companionDescription,
+}: ChatPreviewProps) {
+  const [messages, setMessages] = useState<ChatPreviewMessage[]>([]);
+  const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const firstSentence =
+    companionDescription.split(/(?<=[.!?])\s+/)[0] ?? companionDescription;
+
+  useEffect(() => {
+    function schedule(fn: () => void, delay: number) {
+      const id = setTimeout(fn, delay);
+      timeoutsRef.current.push(id);
+    }
+
+    schedule(() => {
+      setMessages([{ id: 'u1', role: 'user', text: 'Hey, nice to meet you!' }]);
+    }, 0);
+
+    schedule(() => {
+      setMessages((prev) => [...prev, { id: 'typing-1', role: 'typing' }]);
+    }, 800);
+
+    schedule(() => {
+      setMessages((prev) => [
+        ...prev.filter((message) => message.id !== 'typing-1'),
+        {
+          id: 'c1',
+          role: 'companion',
+          text: `Hey! So excited to meet you! I'm ${companionName}, and I'm all about ${companionTagline}.`,
+        },
+      ]);
+    }, 1800);
+
+    schedule(() => {
+      setMessages((prev) => [
+        ...prev,
+        { id: 'u2', role: 'user', text: 'What can you help me with?' },
+      ]);
+    }, 2800);
+
+    schedule(() => {
+      setMessages((prev) => [...prev, { id: 'typing-2', role: 'typing' }]);
+    }, 3600);
+
+    schedule(() => {
+      setMessages((prev) => [
+        ...prev.filter((message) => message.id !== 'typing-2'),
+        { id: 'c2', role: 'companion', text: firstSentence },
+      ]);
+    }, 4600);
+
+    return () => {
+      timeoutsRef.current.forEach(clearTimeout);
+      timeoutsRef.current = [];
+    };
+  }, [companionDescription, companionName, companionTagline]);
+
   return (
-    <div className="flex items-center gap-1 bg-white/[0.04] rounded-2xl rounded-tl-sm px-3 py-2 w-fit">
-      {[0, 0.15, 0.3].map((delay, i) => (
+    <div className="w-full max-w-sm mx-auto rounded-2xl border border-white/10 bg-white/[0.02] overflow-hidden">
+      <div className="flex items-center gap-2 px-4 py-2 border-b border-white/10">
+        <span className="text-base">{companionEmoji}</span>
+        <span className="text-sm font-medium text-white">{companionName}</span>
         <span
-          key={i}
-          className="inline-block h-1.5 w-1.5 rounded-full bg-white/30 animate-bounce"
-          style={{ animationDelay: `${delay}s` }}
+          className="ml-auto h-2 w-2 rounded-full"
+          style={{ backgroundColor: '#22c55e' }}
         />
-      ))}
+      </div>
+
+      <div className="px-4 py-3 space-y-3 min-h-[140px]">
+        {messages.map((message) => {
+          if (message.role === 'typing') {
+            return (
+              <motion.div
+                key={message.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-center gap-1 bg-white/[0.04] rounded-2xl rounded-tl-sm px-3 py-2 w-fit"
+              >
+                {[0, 0.15, 0.3].map((delay, index) => (
+                  <span
+                    key={index}
+                    className="inline-block h-1.5 w-1.5 rounded-full bg-white/30 animate-bounce"
+                    style={{ animationDelay: `${delay}s` }}
+                  />
+                ))}
+              </motion.div>
+            );
+          }
+
+          if (message.role === 'user') {
+            return (
+              <motion.div
+                key={message.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex justify-end"
+              >
+                <span
+                  className="max-w-[75%] rounded-2xl rounded-tr-sm px-3 py-2 text-xs text-white"
+                  style={{ backgroundColor: 'rgba(0,240,255,0.10)' }}
+                >
+                  {message.text}
+                </span>
+              </motion.div>
+            );
+          }
+
+          return (
+            <motion.div
+              key={message.id}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex justify-start"
+            >
+              <span className="max-w-[75%] rounded-2xl rounded-tl-sm bg-white/[0.04] px-3 py-2 text-xs text-white/80">
+                {message.text}
+              </span>
+            </motion.div>
+          );
+        })}
+      </div>
     </div>
   );
 }
-
-// ============================================================================
-// CompanionMessage — The companion's real first message in a chat bubble
-// ============================================================================
-
-function CompanionMessage({
-  emoji,
-  name,
-  message,
-}: {
-  emoji: string;
-  name: string;
-  message: string;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      className="flex items-start gap-2"
-    >
-      <span className="mt-1 text-base flex-shrink-0">{emoji}</span>
-      <div>
-        <span className="text-[10px] text-white/30 mb-1 block">{name}</span>
-        <div className="max-w-sm rounded-2xl rounded-tl-sm bg-white/[0.04] border border-white/5 px-4 py-3 text-sm text-white/80 leading-relaxed">
-          {message}
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-// ============================================================================
-// StepReady — Main component
-// ============================================================================
-
-type ReadyPhase = 'initial' | 'completing' | 'generating' | 'done' | 'error';
 
 export function StepReady({
   selectedCompanionId,
   completing,
   error,
   onComplete,
-  userProfile,
-  flowMode = 'detailed',
 }: StepReadyProps) {
   const companion = selectedCompanionId ? getCompanion(selectedCompanionId) : null;
   const companionColor = selectedCompanionId
     ? getCompanionColor(selectedCompanionId)
     : '#00f0ff';
 
-  const [phase, setPhase] = useState<ReadyPhase>('initial');
-  const [firstMessage, setFirstMessage] = useState<string | null>(null);
-  const [firstMessageError, setFirstMessageError] = useState<string | null>(null);
-  const fetchedRef = useRef(false);
-
-  // Fetch first companion message after onboarding completes
-  const fetchFirstMessage = useCallback(async () => {
-    if (!selectedCompanionId || fetchedRef.current) return;
-    fetchedRef.current = true;
-    setPhase('generating');
-
-    try {
-      const result = await kinApi.post<{
-        message: string;
-        companionId: string;
-        route: string;
-        latencyMs: number;
-      }>('/kin/first-message', {
-        companionId: selectedCompanionId,
-        userProfile: userProfile ?? {},
-      });
-
-      setFirstMessage(result.message);
-      setPhase('done');
-
-      track('onboarding_first_message', {
-        companionId: selectedCompanionId,
-        flowMode,
-        route: result.route,
-        latencyMs: result.latencyMs,
-      });
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to get first message';
-      setFirstMessageError(msg);
-      // Still allow the user to proceed — the first message is a nice-to-have
-      setPhase('done');
-    }
-  }, [selectedCompanionId, userProfile, flowMode]);
-
-  async function handleComplete() {
-    setPhase('completing');
+  function handleComplete() {
     track('onboarding_completed', { companionId: selectedCompanionId ?? 'unknown' });
     onComplete();
   }
-
-  // When completing transitions to false (success), trigger first message fetch
-  useEffect(() => {
-    if (phase === 'completing' && !completing && !error) {
-      fetchFirstMessage();
-    }
-    // If parent set completing=true before mount (edge case), stay synced
-    if (completing && phase === 'initial') {
-      setPhase('completing');
-    }
-  }, [completing, error, phase, fetchFirstMessage]);
-
-  // Reset on error
-  useEffect(() => {
-    if (error && phase === 'completing') {
-      setPhase('error');
-    }
-  }, [error, phase]);
-
-  const showFirstMessage = phase === 'done' || phase === 'generating';
-  const isLoading = phase === 'completing' || phase === 'generating';
 
   return (
     <motion.div
@@ -216,10 +223,8 @@ export function StepReady({
       transition={{ duration: 0.35 }}
       className="relative flex flex-col items-center"
     >
-      {/* Confetti decoration */}
       <ConfettiDots color={companionColor} />
 
-      {/* Heading */}
       <motion.h1
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -227,28 +232,27 @@ export function StepReady({
         className="mb-2 text-center font-display text-3xl font-bold sm:text-4xl"
       >
         <span className="bg-gradient-to-r from-cyan via-magenta to-gold bg-clip-text text-transparent">
-          {showFirstMessage ? 'Meet Your Companion' : "You're Almost There!"}
+          Your KIN Is Ready
         </span>
       </motion.h1>
 
-      {showFirstMessage && companion && (
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-          className="mb-6 text-center text-sm text-white/40"
-        >
-          {companion.emoji} {companion.name} has something to say...
-        </motion.p>
-      )}
+      <motion.p
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.18 }}
+        className="max-w-lg text-center text-sm leading-relaxed text-white/45"
+      >
+        We&apos;ve handled the setup behind the curtain. Your first conversation
+        will open with context about your goals, your style, and what matters
+        most right now.
+      </motion.p>
 
-      {/* Companion viewer */}
       {companion && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="my-6"
+          className="my-8"
         >
           <div className="relative mx-auto h-48 w-48 overflow-hidden rounded-2xl border border-white/10">
             <CompanionViewer
@@ -259,93 +263,65 @@ export function StepReady({
             />
           </div>
 
-          {!showFirstMessage && (
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5 }}
-              className="mt-4 text-center text-base font-medium text-white"
-            >
-              {companion.emoji} {companion.name} is ready to meet you!
-            </motion.p>
-          )}
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="mt-4 text-center text-base font-medium text-white"
+          >
+            {companion.emoji} {companion.name} is ready to meet you!
+          </motion.p>
+
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.58 }}
+            className="mt-2 max-w-md text-center text-xs leading-relaxed text-white/35"
+          >
+            We&apos;ll open a real first conversation so {companion.name} can
+            greet you like a companion, not a blank chatbot.
+          </motion.p>
+
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.7 }}
+            className="mt-6 w-full"
+          >
+            <ChatPreview
+              companionName={companion.name}
+              companionEmoji={companion.emoji}
+              companionTagline={companion.tagline}
+              companionDescription={companion.description}
+            />
+          </motion.div>
         </motion.div>
       )}
 
-      {/* First message area — shown after onboarding completes */}
-      <AnimatePresence>
-        {showFirstMessage && companion && (
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="w-full max-w-md mx-auto mb-6"
-          >
-            {phase === 'generating' && !firstMessage && (
-              <div className="flex items-start gap-2">
-                <span className="mt-1 text-base flex-shrink-0">{companion.emoji}</span>
-                <div>
-                  <span className="text-[10px] text-white/30 mb-1 block">{companion.name}</span>
-                  <TypingIndicator />
-                </div>
-              </div>
-            )}
-
-            {firstMessage && (
-              <CompanionMessage
-                emoji={companion.emoji}
-                name={companion.name}
-                message={firstMessage}
-              />
-            )}
-
-            {firstMessageError && !firstMessage && (
-              <p className="text-center text-xs text-white/20">
-                {companion.name} is warming up — they&apos;ll greet you in chat!
-              </p>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Error */}
-      {(error || (phase === 'error' && error)) && (
+      {error && (
         <div className="mb-4 w-full rounded-lg border border-magenta/30 bg-magenta/10 px-4 py-3 text-center text-sm text-magenta">
           {error}
         </div>
       )}
 
-      {/* CTAs */}
       <div className="flex flex-col items-center gap-3 sm:flex-row">
-        {!showFirstMessage ? (
-          /* Before completion — show "Complete Setup" */
-          <Button
-            size="lg"
-            onClick={handleComplete}
-            disabled={isLoading || completing}
-          >
-            {completing || phase === 'completing' ? 'Setting up...' : 'Complete Setup'}
-          </Button>
-        ) : (
-          /* After completion — show "Start Chatting →" */
-          <Button
-            size="lg"
-            href="/dashboard/chat"
-            disabled={phase === 'generating'}
-          >
-            {phase === 'generating' ? 'Almost ready...' : 'Start Chatting →'}
-          </Button>
-        )}
-
-        {showFirstMessage && (
-          <Button
-            variant="outline"
-            size="lg"
-            href="/dashboard"
-          >
-            Explore Dashboard
-          </Button>
-        )}
+        <Button
+          size="lg"
+          onClick={handleComplete}
+          disabled={completing}
+        >
+          {completing
+            ? 'Opening your first conversation...'
+            : `Meet ${companion?.name ?? 'your KIN'}`}
+        </Button>
+        <Button
+          variant="outline"
+          size="lg"
+          href="/dashboard"
+          disabled={completing}
+        >
+          Explore Dashboard
+        </Button>
       </div>
 
       <p className="mt-6 text-center text-[11px] text-white/20">

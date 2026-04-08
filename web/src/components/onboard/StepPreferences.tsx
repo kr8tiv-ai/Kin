@@ -1,7 +1,7 @@
 'use client';
 
 // ============================================================================
-// StepPreferences — Onboarding Step 3: Personalization settings.
+// StepPreferences - Onboarding Step 3: Personalization settings.
 // ============================================================================
 
 import { motion } from 'framer-motion';
@@ -19,9 +19,9 @@ interface StepPreferencesProps {
 }
 
 const EXPERIENCE_LEVELS = [
-  { value: 'beginner' as const, label: 'Beginner', desc: 'New to this' },
-  { value: 'intermediate' as const, label: 'Intermediate', desc: 'Some experience' },
-  { value: 'advanced' as const, label: 'Advanced', desc: 'Expert level' },
+  { value: 'beginner' as const, label: 'Beginner', desc: 'Break it down simply' },
+  { value: 'intermediate' as const, label: 'Intermediate', desc: 'Move with me' },
+  { value: 'advanced' as const, label: 'Advanced', desc: 'Talk shop with me' },
 ];
 
 const TONES = [
@@ -60,7 +60,7 @@ export function StepPreferences({
   const toggleGoal = (goal: string) => {
     const current = preferences.goals;
     const next = current.includes(goal)
-      ? current.filter((g) => g !== goal)
+      ? current.filter((entry) => entry !== goal)
       : [...current, goal];
     onChange({ goals: next });
   };
@@ -74,27 +74,25 @@ export function StepPreferences({
       className="flex flex-col items-center"
     >
       <h1 className="mb-2 text-center font-display text-2xl font-bold text-white sm:text-3xl">
-        Personalize Your Experience
+        Tell Your KIN How To Help
       </h1>
       <p className="mb-8 text-center text-sm text-white/40">
-        Help your companion understand you better.
+        Set the tone, pace, and priorities for your first real conversation.
       </p>
 
       <div className="mb-8 w-full space-y-5">
-        {/* Display name */}
         <GlassCard className="p-5" hover={false}>
           <Input
-            label="What should your companion call you?"
-            placeholder="Enter your name or nickname"
+            label="What should your KIN call you?"
+            placeholder="Your name, nickname, or what feels right"
             value={preferences.displayName}
             onChange={(e) => onChange({ displayName: e.target.value })}
           />
         </GlassCard>
 
-        {/* Experience level */}
         <GlassCard className="p-5" hover={false}>
           <label className="mb-3 block text-sm font-medium text-white/70">
-            Experience level
+            How much guidance do you want?
           </label>
           <div className="grid grid-cols-3 gap-2">
             {EXPERIENCE_LEVELS.map((level) => (
@@ -116,10 +114,9 @@ export function StepPreferences({
           </div>
         </GlassCard>
 
-        {/* Communication tone */}
         <GlassCard className="p-5" hover={false}>
           <label className="mb-3 block text-sm font-medium text-white/70">
-            Communication tone
+            How should your KIN sound?
           </label>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {TONES.map((tone) => (
@@ -140,10 +137,9 @@ export function StepPreferences({
           </div>
         </GlassCard>
 
-        {/* Goals */}
         <GlassCard className="p-5" hover={false}>
           <label className="mb-3 block text-sm font-medium text-white/70">
-            What are your goals?
+            What do you want help with first?
           </label>
           <div className="flex flex-wrap gap-2">
             {GOAL_OPTIONS.map((goal) => {
@@ -167,28 +163,26 @@ export function StepPreferences({
           </div>
         </GlassCard>
 
-        {/* Language */}
         <GlassCard className="p-5" hover={false}>
           <label className="mb-3 block text-sm font-medium text-white/70">
-            Preferred language
+            What language feels most natural?
           </label>
           <select
             value={preferences.language}
             onChange={(e) => onChange({ language: e.target.value })}
             className="w-full rounded-sm border border-white/10 bg-surface px-4 py-2.5 text-sm text-white transition-colors focus:border-cyan focus:outline-none focus:ring-1 focus:ring-cyan/30"
           >
-            {LANGUAGES.map((lang) => (
-              <option key={lang.value} value={lang.value}>
-                {lang.label}
+            {LANGUAGES.map((language) => (
+              <option key={language.value} value={language.value}>
+                {language.label}
               </option>
             ))}
           </select>
         </GlassCard>
 
-        {/* Data & Privacy */}
         <GlassCard className="p-5" hover={false}>
           <label className="mb-3 block text-sm font-medium text-white/70">
-            Data &amp; Privacy
+            How should your KIN handle sensitive context?
           </label>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <button
@@ -201,9 +195,9 @@ export function StepPreferences({
                   : 'border-white/10 bg-white/[0.02] text-white/50 hover:border-white/20 hover:text-white/70',
               )}
             >
-              <p className="text-xs font-semibold">Keep conversations private</p>
+              <p className="text-xs font-semibold">Keep things private</p>
               <p className="mt-1 text-[10px] opacity-60">
-                Your companion uses only the local model. Nothing leaves your device.
+                Stay local-first for personal or sensitive conversations.
               </p>
             </button>
             <button
@@ -216,16 +210,15 @@ export function StepPreferences({
                   : 'border-white/10 bg-white/[0.02] text-white/50 hover:border-white/20 hover:text-white/70',
               )}
             >
-              <p className="text-xs font-semibold">Help your companion learn</p>
+              <p className="text-xs font-semibold">Let your KIN get smarter</p>
               <p className="mt-1 text-[10px] opacity-60">
-                Complex questions use frontier AI. Responses improve your companion over time.
+                Use frontier models when it helps and improve over time.
               </p>
             </button>
           </div>
         </GlassCard>
       </div>
 
-      {/* Navigation */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" onClick={onBack}>
           Back
