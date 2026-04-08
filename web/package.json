@@ -13,6 +13,7 @@
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.5.0",
     "@react-three/postprocessing": "^3.0.4",
+    "@serwist/next": "^9.5.7",
     "@tailwindcss/postcss": "4.0.15",
     "@types/three": "^0.183.1",
     "@vercel/analytics": "^1.5.0",
@@ -23,6 +24,7 @@
     "postprocessing": "^6.39.0",
     "react": "19.0.0",
     "react-dom": "19.0.0",
+    "serwist": "^9.5.7",
     "tailwindcss": "4.0.15",
     "three": "^0.183.2"
   },
@@ -32,6 +34,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "autoprefixer": "^10.4.20",
+    "sharp": "^0.34.5",
     "typescript": "^5.9.3"
   }
 }

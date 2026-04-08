@@ -1,8 +1,15 @@
 import type { NextConfig } from 'next';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import withSerwistInit from '@serwist/next';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+const withSerwist = withSerwistInit({
+  swSrc: 'src/app/sw.ts',
+  swDest: 'public/sw.js',
+  additionalPrecacheEntries: [{ url: '/offline', revision: crypto.randomUUID() }],
+});
 
 const nextConfig: NextConfig = {
   output: 'standalone',
@@ -47,4 +54,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSerwist(nextConfig);
