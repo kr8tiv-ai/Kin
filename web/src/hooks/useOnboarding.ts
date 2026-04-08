@@ -4,11 +4,12 @@
 // useOnboarding — Multi-step onboarding state management hook.
 // ============================================================================
 
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { kinApi } from '@/lib/api';
 import { track } from '@/lib/analytics';
 import type { UserPreferences, SoulConfig } from '@/lib/types';
 import { DEFAULT_SOUL_CONFIG } from '@/lib/types';
+import type { ExtractedProfile } from '@/hooks/useVoiceIntro';
 
 export interface OnboardingPreferences {
   displayName: string;
@@ -27,8 +28,11 @@ export interface OnboardingMemories {
   autoLearn: boolean;
 }
 
+export type FlowMode = 'quick' | 'detailed';
+
 interface OnboardingState {
   step: number;
+  flowMode: FlowMode;
   selectedCompanionId: string | null;
   preferences: OnboardingPreferences;
   soulConfig: SoulConfig;
@@ -37,7 +41,8 @@ interface OnboardingState {
   error: string | null;
 }
 
-const TOTAL_STEPS = 6;
+const DETAILED_STEPS = 6;
+const QUICK_STEPS = 3;
 
 const DEFAULT_PREFERENCES: OnboardingPreferences = {
   displayName: '',
@@ -59,6 +64,7 @@ const DEFAULT_MEMORIES: OnboardingMemories = {
 export function useOnboarding() {
   const [state, setState] = useState<OnboardingState>({
     step: 1,
+    flowMode: 'quick',
     selectedCompanionId: null,
     preferences: DEFAULT_PREFERENCES,
     soulConfig: { ...DEFAULT_SOUL_CONFIG },
@@ -67,10 +73,43 @@ export function useOnboarding() {
     error: null,
   });
 
+  const totalSteps = state.flowMode === 'quick' ? QUICK_STEPS : DETAILED_STEPS;
+
+  const setFlowMode = useCallback((mode: FlowMode) => {
+    track('onboarding_flow_mode', { mode });
+    setState((prev) => ({ ...prev, flowMode: mode, step: 1 }));
+  }, []);
+
+  /** Map extracted voice profile into preferences + memories. */
+  const applyVoiceProfile = useCallback((profile: ExtractedProfile) => {
+    track('onboarding_voice_profile_applied', {
+      hasName: !!profile.displayName,
+      interestCount: profile.interests.length,
+      goalCount: profile.goals.length,
+    });
+    setState((prev) => ({
+      ...prev,
+      preferences: {
+        ...prev.preferences,
+        displayName: profile.displayName || prev.preferences.displayName,
+        experienceLevel: profile.experienceLevel || prev.preferences.experienceLevel,
+        goals: profile.goals.length > 0 ? profile.goals : prev.preferences.goals,
+        tone: profile.tone || prev.preferences.tone,
+      },
+      memories: {
+        ...prev.memories,
+        interests: profile.interests.length > 0
+          ? profile.interests.join(', ')
+          : prev.memories.interests,
+      },
+    }));
+  }, []);
+
   const nextStep = useCallback(() => {
     setState((prev) => {
-      const next = Math.min(prev.step + 1, TOTAL_STEPS);
-      track('onboarding_step', { from: prev.step, to: next });
+      const max = prev.flowMode === 'quick' ? QUICK_STEPS : DETAILED_STEPS;
+      const next = Math.min(prev.step + 1, max);
+      track('onboarding_step', { from: prev.step, to: next, flowMode: prev.flowMode });
       return { ...prev, step: next };
     });
   }, []);
@@ -109,7 +148,10 @@ export function useOnboarding() {
   }, []);
 
   const goToStep = useCallback((step: number) => {
-    setState((prev) => ({ ...prev, step: Math.max(1, Math.min(step, TOTAL_STEPS)) }));
+    setState((prev) => {
+      const max = prev.flowMode === 'quick' ? QUICK_STEPS : DETAILED_STEPS;
+      return { ...prev, step: Math.max(1, Math.min(step, max)) };
+    });
   }, []);
 
   const complete = useCallback(async () => {
@@ -198,7 +240,8 @@ export function useOnboarding() {
 
   return {
     step: state.step,
-    totalSteps: TOTAL_STEPS,
+    totalSteps,
+    flowMode: state.flowMode,
     selectedCompanionId: state.selectedCompanionId,
     preferences: state.preferences,
     soulConfig: state.soulConfig,
@@ -208,10 +251,12 @@ export function useOnboarding() {
     nextStep,
     prevStep,
     goToStep,
+    setFlowMode,
     setCompanion,
     setPreferences,
     setSoulConfig,
     setMemories,
+    applyVoiceProfile,
     complete,
   };
 }

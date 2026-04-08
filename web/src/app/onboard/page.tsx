@@ -1,8 +1,10 @@
 'use client';
 
 // ============================================================================
-// Onboard Page — 6-step onboarding wizard for new KIN users.
-// Steps: Welcome → Companion → Personalize → Soul → Memory → Ready
+// Onboard Page — Dual-mode onboarding wizard for new KIN users.
+//
+// Quick mode (default): Welcome → Pick Companion + Voice Intro → Ready
+// Detailed mode:        Welcome → Companion → Personalize → Soul → Memory → Ready
 // ============================================================================
 
 import { useCallback, useState } from 'react';
@@ -17,8 +19,10 @@ import { StepPreferences } from '@/components/onboard/StepPreferences';
 import { StepSoulAuthor } from '@/components/onboard/StepSoulAuthor';
 import { StepMemory } from '@/components/onboard/StepMemory';
 import { StepReady } from '@/components/onboard/StepReady';
+import { StepQuickIntro } from '@/components/onboard/StepQuickIntro';
 import { Sparkle } from '@/components/onboard/Sparkle';
 import { CompanionOrbs } from '@/components/onboard/CompanionOrbs';
+import type { ExtractedProfile } from '@/hooks/useVoiceIntro';
 
 const COLOR_HEX: Record<string, string> = {
   cyan: '#00f0ff',
@@ -52,16 +56,36 @@ export default function OnboardPage() {
     }
   }, [onboarding, router]);
 
+  // ── Quick-mode handlers ───────────────────────────────────────────────
+
+  /** Voice intro done → apply profile + advance to Ready */
+  const handleVoiceComplete = useCallback((profile: ExtractedProfile) => {
+    onboarding.applyVoiceProfile(profile);
+    onboarding.nextStep();
+    setSparkleTrigger((t) => t + 1);
+  }, [onboarding]);
+
+  /** Switch to detailed flow from quick mode */
+  const handleSwitchToDetailed = useCallback(() => {
+    onboarding.setFlowMode('detailed');
+  }, [onboarding]);
+
+  // ── Detailed-mode handlers ────────────────────────────────────────────
+
   // Quick-start: skip from Welcome directly to Companion selection
   const handleSkipToCompanion = useCallback(() => {
     onboarding.goToStep(2);
   }, [onboarding]);
 
-  // Quick Setup: skip preferences/soul/memory → go straight to Ready
+  // Quick Setup: skip preferences/soul/memory → go straight to Ready (detailed mode)
   const handleQuickSetup = useCallback(() => {
     onboarding.goToStep(6);
     setSparkleTrigger((t) => t + 1);
   }, [onboarding]);
+
+  // ── Rendering ─────────────────────────────────────────────────────────
+
+  const isQuick = onboarding.flowMode === 'quick';
 
   return (
     <div className="relative flex min-h-screen flex-col">
@@ -74,11 +98,45 @@ export default function OnboardPage() {
       <Sparkle trigger={sparkleTrigger} color={COLOR_HEX[companionColor]} />
 
       {/* Progress bar */}
-      <OnboardProgress currentStep={onboarding.step} totalSteps={onboarding.totalSteps} />
+      <OnboardProgress
+        currentStep={onboarding.step}
+        totalSteps={onboarding.totalSteps}
+        flowMode={onboarding.flowMode}
+      />
 
       {/* Step content */}
       <AnimatePresence mode="wait">
-        {onboarding.step === 1 && (
+        {/* ── QUICK MODE ─────────────────────────────────────────────────── */}
+        {isQuick && onboarding.step === 1 && (
+          <StepWelcome
+            key="quick-welcome"
+            onNext={handleNext}
+            onSkip={handleSwitchToDetailed}
+          />
+        )}
+
+        {isQuick && onboarding.step === 2 && (
+          <StepQuickIntro
+            key="quick-intro"
+            selectedId={onboarding.selectedCompanionId}
+            onSelect={onboarding.setCompanion}
+            onVoiceComplete={handleVoiceComplete}
+            onBack={onboarding.prevStep}
+          />
+        )}
+
+        {isQuick && onboarding.step === 3 && (
+          <StepReady
+            key="quick-ready"
+            selectedCompanionId={onboarding.selectedCompanionId}
+            completing={onboarding.completing}
+            error={onboarding.error}
+            onComplete={handleComplete}
+          />
+        )}
+
+        {/* ── DETAILED MODE ──────────────────────────────────────────────── */}
+        {!isQuick && onboarding.step === 1 && (
           <StepWelcome
             key="welcome"
             onNext={handleNext}
@@ -86,7 +144,7 @@ export default function OnboardPage() {
           />
         )}
 
-        {onboarding.step === 2 && (
+        {!isQuick && onboarding.step === 2 && (
           <StepChooseCompanion
             key="companion"
             selectedId={onboarding.selectedCompanionId}
@@ -97,7 +155,7 @@ export default function OnboardPage() {
           />
         )}
 
-        {onboarding.step === 3 && (
+        {!isQuick && onboarding.step === 3 && (
           <StepPreferences
             key="preferences"
             preferences={onboarding.preferences}
@@ -107,7 +165,7 @@ export default function OnboardPage() {
           />
         )}
 
-        {onboarding.step === 4 && (
+        {!isQuick && onboarding.step === 4 && (
           <StepSoulAuthor
             key="soul"
             selectedCompanionId={onboarding.selectedCompanionId}
@@ -118,7 +176,7 @@ export default function OnboardPage() {
           />
         )}
 
-        {onboarding.step === 5 && (
+        {!isQuick && onboarding.step === 5 && (
           <StepMemory
             key="memory"
             memories={onboarding.memories}
@@ -128,7 +186,7 @@ export default function OnboardPage() {
           />
         )}
 
-        {onboarding.step === 6 && (
+        {!isQuick && onboarding.step === 6 && (
           <StepReady
             key="ready"
             selectedCompanionId={onboarding.selectedCompanionId}
@@ -138,6 +196,19 @@ export default function OnboardPage() {
           />
         )}
       </AnimatePresence>
+
+      {/* "Want more control?" link — visible in quick mode steps 1-2 */}
+      {isQuick && onboarding.step < 3 && (
+        <div className="mt-auto pb-6 text-center">
+          <button
+            type="button"
+            onClick={handleSwitchToDetailed}
+            className="text-[11px] text-white/25 hover:text-white/50 transition-colors underline underline-offset-2"
+          >
+            Want more control? Detailed Setup →
+          </button>
+        </div>
+      )}
     </div>
   );
 }

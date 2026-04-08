@@ -6,13 +6,15 @@
 
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import type { FlowMode } from '@/hooks/useOnboarding';
 
 interface OnboardProgressProps {
   currentStep: number;
   totalSteps?: number;
+  flowMode?: FlowMode;
 }
 
-const STEPS = [
+const DETAILED_STEPS = [
   { label: 'Welcome', time: '30s' },
   { label: 'Companion', time: '1 min' },
   { label: 'Personalize', time: '1 min' },
@@ -21,7 +23,14 @@ const STEPS = [
   { label: 'Ready', time: '' },
 ];
 
-export function OnboardProgress({ currentStep, totalSteps = 6 }: OnboardProgressProps) {
+const QUICK_STEPS = [
+  { label: 'Welcome', time: '15s' },
+  { label: 'Meet Your Friend', time: '45s' },
+  { label: 'Ready', time: '' },
+];
+
+export function OnboardProgress({ currentStep, totalSteps = 6, flowMode = 'detailed' }: OnboardProgressProps) {
+  const STEPS = flowMode === 'quick' ? QUICK_STEPS : DETAILED_STEPS;
   return (
     <div className="flex flex-col items-center py-8">
       {/* Step dots and lines */}
