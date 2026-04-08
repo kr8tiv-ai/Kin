@@ -177,6 +177,7 @@ CREATE TABLE IF NOT EXISTS memories (
   last_accessed_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000),
   access_count INTEGER NOT NULL DEFAULT 0,
   embedding BLOB, -- Vector embedding for semantic search
+  family_visible BOOLEAN NOT NULL DEFAULT FALSE,
   metadata TEXT
 );
 
@@ -1070,3 +1071,5 @@ CREATE INDEX IF NOT EXISTS idx_family_invite_codes_group ON family_invite_codes(
 -- ALTER TABLE user_preferences ADD COLUMN content_filter_level TEXT DEFAULT 'standard' CHECK (content_filter_level IN ('standard', 'child_safe', 'teen_safe'));
 -- Migration 6: age_bracket on family_members for child age tracking
 -- ALTER TABLE family_members ADD COLUMN age_bracket TEXT CHECK (age_bracket IN ('under_13', 'teen', 'adult') OR age_bracket IS NULL);
+-- Migration 7: family_visible flag on memories for shared family memory feed
+-- ALTER TABLE memories ADD COLUMN family_visible BOOLEAN NOT NULL DEFAULT FALSE;

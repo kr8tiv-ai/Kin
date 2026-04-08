@@ -400,6 +400,175 @@ const familyRoutes: FastifyPluginAsync = async (fastify) => {
       createdAt: now,
     };
   });
+
+  // --------------------------------------------------------------------------
+  // GET /family/shared-memories — parent-only view of family_visible memories
+  // --------------------------------------------------------------------------
+  fastify.get('/family/shared-memories', async (request, reply) => {
+    const userId = (request.user as { userId: string }).userId;
+
+    // Resolve family group and verify parent role
+    const membership = getUserFamilyMembership(fastify.context.db, userId);
+    if (!membership) {
+      reply.status(404);
+      return { error: 'You are not a member of any family group' };
+    }
+
+    if (!isParent(fastify.context.db, membership.familyGroupId, userId)) {
+      reply.status(403);
+      return { error: 'Only parents can view shared family memories' };
+    }
+
+    // Get all user_ids in this family group
+    const familyMembers = fastify.context.db.prepare(
+      `SELECT user_id FROM family_members WHERE family_group_id = ?`,
+    ).all(membership.familyGroupId) as Array<{ user_id: string }>;
+
+    const memberIds = familyMembers.map((m) => m.user_id);
+
+    if (memberIds.length === 0) {
+      return { memories: [] };
+    }
+
+    // Fetch family_visible memories from all family members
+    const placeholders = memberIds.map(() => '?').join(', ');
+    const memories = fastify.context.db.prepare(`
+      SELECT m.id, m.user_id, m.companion_id, m.memory_type, m.content,
+             m.importance, m.created_at, m.last_accessed_at, m.access_count,
+             u.first_name AS authorFirstName
+      FROM memories m
+      JOIN users u ON u.id = m.user_id
+      WHERE m.user_id IN (${placeholders})
+        AND m.family_visible = 1
+      ORDER BY m.created_at DESC
+    `).all(...memberIds) as Array<{
+      id: string; user_id: string; companion_id: string; memory_type: string;
+      content: string; importance: number; created_at: number;
+      last_accessed_at: number; access_count: number; authorFirstName: string;
+    }>;
+
+    return {
+      familyGroupId: membership.familyGroupId,
+      memories: memories.map((mem) => ({
+        id: mem.id,
+        userId: mem.user_id,
+        companionId: mem.companion_id,
+        memoryType: mem.memory_type,
+        content: mem.content,
+        importance: mem.importance,
+        createdAt: mem.created_at,
+        lastAccessedAt: mem.last_accessed_at,
+        accessCount: mem.access_count,
+        authorFirstName: mem.authorFirstName,
+      })),
+    };
+  });
+
+  // --------------------------------------------------------------------------
+  // GET /family/activity — parent-only per-member activity summary
+  // --------------------------------------------------------------------------
+  fastify.get('/family/activity', async (request, reply) => {
+    const userId = (request.user as { userId: string }).userId;
+
+    // Resolve family group and verify parent role
+    const membership = getUserFamilyMembership(fastify.context.db, userId);
+    if (!membership) {
+      reply.status(404);
+      return { error: 'You are not a member of any family group' };
+    }
+
+    if (!isParent(fastify.context.db, membership.familyGroupId, userId)) {
+      reply.status(403);
+      return { error: 'Only parents can view family activity' };
+    }
+
+    // Get all family members with their details
+    const members = fastify.context.db.prepare(`
+      SELECT fm.user_id, fm.role, fm.age_bracket, u.first_name
+      FROM family_members fm
+      JOIN users u ON u.id = fm.user_id
+      WHERE fm.family_group_id = ?
+      ORDER BY fm.joined_at ASC
+    `).all(membership.familyGroupId) as Array<{
+      user_id: string; role: string; age_bracket: string | null; first_name: string;
+    }>;
+
+    // Build per-member activity summary
+    const activity = members.map((m) => {
+      // Message count and last active
+      const msgStats = fastify.context.db.prepare(`
+        SELECT COUNT(*) AS messageCount, MAX(timestamp) AS lastActive
+        FROM messages
+        WHERE conversation_id IN (
+          SELECT id FROM conversations WHERE user_id = ?
+        )
+      `).get(m.user_id) as { messageCount: number; lastActive: number | null };
+
+      // Extract topic keywords from recent memories (last 20)
+      const recentMemories = fastify.context.db.prepare(`
+        SELECT content FROM memories
+        WHERE user_id = ?
+        ORDER BY created_at DESC
+        LIMIT 20
+      `).all(m.user_id) as Array<{ content: string }>;
+
+      const topicKeywords = extractTopicKeywords(recentMemories.map((r) => r.content));
+
+      return {
+        userId: m.user_id,
+        firstName: m.first_name,
+        role: m.role,
+        ageBracket: m.age_bracket,
+        messageCount: msgStats.messageCount ?? 0,
+        lastActive: msgStats.lastActive ?? null,
+        topicKeywords,
+      };
+    });
+
+    return {
+      familyGroupId: membership.familyGroupId,
+      members: activity,
+    };
+  });
 };
+
+/**
+ * Extract topic keywords from memory content strings.
+ * Simple frequency-based extraction: tokenizes, removes stop words,
+ * and returns the top 5 most frequent meaningful words.
+ */
+function extractTopicKeywords(contents: string[]): string[] {
+  if (contents.length === 0) return [];
+
+  const STOP_WORDS = new Set([
+    'the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
+    'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could',
+    'should', 'may', 'might', 'can', 'shall', 'to', 'of', 'in', 'for',
+    'on', 'with', 'at', 'by', 'from', 'as', 'into', 'about', 'like',
+    'through', 'after', 'over', 'between', 'out', 'up', 'down', 'off',
+    'and', 'but', 'or', 'nor', 'not', 'so', 'yet', 'both', 'either',
+    'neither', 'each', 'every', 'all', 'any', 'few', 'more', 'most',
+    'other', 'some', 'such', 'no', 'only', 'own', 'same', 'than',
+    'too', 'very', 'just', 'because', 'if', 'when', 'where', 'how',
+    'what', 'which', 'who', 'whom', 'this', 'that', 'these', 'those',
+    'i', 'me', 'my', 'we', 'our', 'you', 'your', 'he', 'him', 'his',
+    'she', 'her', 'it', 'its', 'they', 'them', 'their',
+  ]);
+
+  const freq = new Map<string, number>();
+
+  for (const text of contents) {
+    const words = text.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/);
+    for (const word of words) {
+      if (word.length < 3 || STOP_WORDS.has(word)) continue;
+      freq.set(word, (freq.get(word) ?? 0) + 1);
+    }
+  }
+
+  return Array.from(freq.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([word]) => word);
+}
 
 export default familyRoutes;
