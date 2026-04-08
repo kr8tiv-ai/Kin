@@ -226,6 +226,53 @@ Agent-executed commands run in a sandboxed environment with:
 - Working directory restriction
 - Concurrency caps
 
+### Internationalization (i18n)
+
+11 languages supported via `next-intl` with cookie-based locale detection:
+`en` `es` `fr` `de` `pt` `ja` `ko` `zh` `it` `ar` `hi`
+
+Companion prompts are language-aware — the system prompt adapts to the user's locale. Translation files live in `web/src/messages/`.
+
+### Canvas Studio
+
+AI-assisted code generation environment at `/dashboard/canvas/[projectId]`:
+- Split-pane editor with live preview
+- Sandboxed iframe rendering with device toggles (desktop/tablet/mobile)
+- SSE streaming from `POST /canvas/generate`
+- Project persistence and sharing
+
+### Soul Garden
+
+Three.js 3D visualization of companion personality traits at `/dashboard/soul`:
+- 7 trait-to-visual mappings via `@react-three/postprocessing`
+- Dynamic import for performance
+- Real-time trait evolution display
+
+### Family System
+
+Multi-user household support with COPPA-safe child accounts:
+- Family groups with invite codes
+- Child accounts with age-bracket safety prompts
+- Shared memories and activity feeds
+- Parent/guardian controls
+
+### Proactive Companion
+
+Companions can initiate contact based on context:
+- Toggle on/off per companion
+- Quiet hours configuration
+- Max daily message limits
+- Calendar OAuth integration for contextual triggers
+
+### PWA + Desktop
+
+- **PWA**: Service worker with Serwist precaching, offline support, install prompt
+- **Desktop**: Tauri v2 with system tray toggle, frameless window, native feel
+
+### Fetch Resilience
+
+All 22 raw `fetch()` calls wrapped with retry logic, timeout enforcement, and structured error handling across 14 production files.
+
 ---
 
 ## Tech Stack
@@ -244,9 +291,13 @@ Agent-executed commands run in a sandboxed environment with:
 | **Remote Access** | Tailscale API |
 | **Testing** | Vitest |
 | **Runtime** | tsx (dev), tsc (build) |
+| **i18n** | next-intl (11 locales) |
+| **Desktop** | Tauri v2 |
+| **PWA** | Serwist (service worker + precaching) |
 | **Containers** | Docker + Compose |
 | **Scheduling** | Croner |
 | **Browser** | Puppeteer |
+| **Compression** | @fastify/compress |
 
 ---
 
@@ -256,7 +307,9 @@ Agent-executed commands run in a sandboxed environment with:
 kr8tiv-runtime-truth-contracts/
 |
 +-- api/
-|   +-- routes/           6 route modules (kin, conversations, progress, projects, support, webhook)
+|   +-- routes/           25+ route modules (kin, conversations, progress, projects, support, webhook,
+|   |                      first-message, voice, skills, memories, family, canvas, soul, preferences,
+|   |                      billing, referral, export, import, community, eval, distill, retrain, admin)
 |   +-- middleware/        Rate limiting, auth guards
 |   +-- lib/              Solana mint, archive builder
 |   +-- openapi.json      API specification
@@ -290,10 +343,17 @@ kr8tiv-runtime-truth-contracts/
 +-- solana/               NFT minting + ownership
 +-- tailscale/            Secure remote access
 +-- admin/                Operations dashboard
-+-- db/                   SQLite connection singleton
-+-- scripts/              Startup, deployment, health monitoring
++-- desktop/              Tauri v2 desktop app (system tray, frameless window)
++-- training/             QLoRA fine-tuning pipeline
++-- db/                   SQLite connection singleton + 6 composite indexes
++-- scripts/              Startup, deployment, health monitoring, doctor diagnostics
 +-- assets/               Creature images, egg images, companion metadata
-+-- web/                  Dashboard frontend (hooks, sitemap)
++-- web/                  Next.js dashboard frontend
+|   +-- app/              25+ pages (chat, onboard, memories, family, canvas, soul garden)
+|   +-- components/       68+ components (onboarding wizard, chat window, canvas studio)
+|   +-- hooks/            Custom hooks (useOnboarding, useVoiceIntro, usePWAInstall)
+|   +-- lib/              Chat launch, types, i18n utilities
+|   +-- messages/         11 translation files (en, es, fr, de, pt, ja, ko, zh, it, ar, hi)
 +-- tests/                Integration + unit tests (Vitest)
 |
 +-- Dockerfile            Production container
