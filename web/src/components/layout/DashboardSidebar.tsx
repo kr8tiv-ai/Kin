@@ -62,6 +62,7 @@ const NAV_ITEMS = [
   { href: '/dashboard/canvas', label: 'Canvas', iconKey: 'canvas' },
   { href: '/dashboard/progress', label: 'Progress', iconKey: 'progress' },
   { href: '/dashboard/skills', label: 'Skills', iconKey: 'skills' },
+  { href: '/dashboard/memories', label: 'Memories', iconKey: 'collection' },
   { href: '/dashboard/family', label: 'Family', iconKey: 'family' },
   { href: '/dashboard/setup', label: 'Setup', iconKey: 'setup' },
   { href: '/dashboard/health', label: 'Health', iconKey: 'health' },
