@@ -72,13 +72,11 @@ export class TrainingDataCollector {
     try {
       // Privacy gate: only write when explicitly shared
       if (params.privacyMode !== 'shared') {
-        console.log(`[training-data] Skipped — privacy mode is '${params.privacyMode}'`);
         return { written: false };
       }
 
       // Route gate: local responses aren't useful for distillation
       if (params.route === 'local') {
-        console.log('[training-data] Skipped — route is local');
         return { written: false };
       }
 
@@ -108,10 +106,10 @@ export class TrainingDataCollector {
       // Append JSONL line
       await fs.promises.appendFile(filePath, jsonLine + '\n', 'utf-8');
 
-      console.log(`[training-data] Wrote to ${filePath} (${jsonLine.length} bytes)`);
+      console.debug(`[training-data] Wrote to ${filePath} (${jsonLine.length} bytes)`);
       return { written: true, filePath };
     } catch (err) {
-      console.error('[training-data] Failed to write training data:', err);
+      console.error('[training-data] Failed to write training data:', err instanceof Error ? err.message : String(err));
       return { written: false };
     }
   }
@@ -126,7 +124,7 @@ let collector: TrainingDataCollector | null = null;
 export function getTrainingDataCollector(): TrainingDataCollector {
   if (!collector) {
     collector = new TrainingDataCollector();
-    console.log('[training-data] Collector initialized');
+    console.debug('[training-data] Collector initialized');
   }
   return collector;
 }

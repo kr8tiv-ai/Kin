@@ -84,7 +84,7 @@ export class TrajectoryLogger {
       }
     }
 
-    console.log(
+    console.debug(
       `[trajectory] ${entry.provider}/${entry.model} | ` +
       `route=${entry.route} | companion=${entry.companionId} | ` +
       `in=${entry.inputTokens} out=${entry.outputTokens} | ` +
@@ -156,7 +156,7 @@ let logger: TrajectoryLogger | null = null;
 export function getTrajectoryLogger(): TrajectoryLogger {
   if (!logger) {
     logger = new TrajectoryLogger();
-    console.log('[trajectory] Logger initialized');
+    console.debug('[trajectory] Logger initialized');
   }
   return logger;
 }

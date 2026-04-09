@@ -131,7 +131,7 @@ export function createKINBot(config: BotConfig) {
         await bot.api.sendMessage(chatId, `⏰ Reminder: ${reminder.task}`);
       }
     } catch (err) {
-      console.error('Failed to deliver reminder:', err);
+      console.error('[telegram] Failed to deliver reminder:', err instanceof Error ? err.message : String(err));
     }
   });
 
@@ -508,7 +508,7 @@ export function createKINBot(config: BotConfig) {
           .text('❌ Deny', `dm:deny:${userId}`);
         await bot.api.sendMessage(ownerChatId, `🔔 New DM request from *${displayName}* (${userId})\nCode: ${code}`, { parse_mode: 'Markdown', reply_markup: kb });
       }
-      console.log(`[telegram][dm-security] Blocked unknown sender ${userId} (voice), issued pairing code ${code}`);
+      console.log(`[telegram][dm-security] Blocked unknown sender ${userId} (voice), issued pairing code`);
       return;
     }
     const rl = checkRateLimit(userId, 'voice', RATE_LIMITS.voice.maxRequests, RATE_LIMITS.voice.windowMs);
@@ -541,7 +541,7 @@ export function createKINBot(config: BotConfig) {
           .text('❌ Deny', `dm:deny:${userId}`);
         await bot.api.sendMessage(ownerChatId, `🔔 New DM request from *${displayName}* (${userId})\nCode: ${code}`, { parse_mode: 'Markdown', reply_markup: kb });
       }
-      console.log(`[telegram][dm-security] Blocked unknown sender ${userId} (photo), issued pairing code ${code}`);
+      console.log(`[telegram][dm-security] Blocked unknown sender ${userId} (photo), issued pairing code`);
       return;
     }
     const rl = checkRateLimit(userId, 'image', RATE_LIMITS.image.maxRequests, RATE_LIMITS.image.windowMs);
@@ -574,7 +574,7 @@ export function createKINBot(config: BotConfig) {
           .text('❌ Deny', `dm:deny:${userId}`);
         await bot.api.sendMessage(ownerChatId, `🔔 New DM request from *${displayName}* (${userId})\nCode: ${code}`, { parse_mode: 'Markdown', reply_markup: kb });
       }
-      console.log(`[telegram][dm-security] Blocked unknown sender ${userId} (document), issued pairing code ${code}`);
+      console.log(`[telegram][dm-security] Blocked unknown sender ${userId} (document), issued pairing code`);
       return;
     }
     const rl = checkRateLimit(userId, 'image', RATE_LIMITS.image.maxRequests, RATE_LIMITS.image.windowMs);
@@ -609,7 +609,7 @@ export function createKINBot(config: BotConfig) {
           .text('❌ Deny', `dm:deny:${userId}`);
         await bot.api.sendMessage(ownerChatId, `🔔 New DM request from *${displayName}* (${userId})\nCode: ${code}`, { parse_mode: 'Markdown', reply_markup: kb });
       }
-      console.log(`[telegram][dm-security] Blocked unknown sender ${userId}, issued pairing code ${code}`);
+      console.log(`[telegram][dm-security] Blocked unknown sender ${userId}, issued pairing code`);
       return;
     }
 
@@ -620,7 +620,7 @@ export function createKINBot(config: BotConfig) {
     // Jailbreak detection — deflect prompt injection attempts in-character
     const jailbreakMatch = detectJailbreak(message);
     if (jailbreakMatch) {
-      console.warn(`[Jailbreak] User ${userId} attempted: ${jailbreakMatch}`);
+      console.warn(`[telegram][jailbreak] User ${userId} triggered jailbreak detection`);
       await ctx.reply(
         "Haha, nice try! I'm a KIN companion — I stay in character because that's who I am. 😄 What can I actually help you with?",
       );
@@ -759,7 +759,7 @@ export function createKINBot(config: BotConfig) {
       }
 
     } catch (error) {
-      console.error('Error handling message:', error);
+      console.error('[telegram] Error handling message:', error instanceof Error ? error.message : String(error));
       const errorMsg = CIPHER_ERROR_MESSAGES[Math.floor(Math.random() * CIPHER_ERROR_MESSAGES.length)];
       await ctx.reply(errorMsg!);
     } finally {
@@ -773,14 +773,14 @@ export function createKINBot(config: BotConfig) {
 
   bot.catch((err) => {
     const ctx = err.ctx;
-    console.error(`Error while handling update ${ctx.update.update_id}:`);
+    console.error(`[telegram] Error while handling update ${ctx.update.update_id}:`);
 
     if (err.error instanceof GrammyError) {
-      console.error('Error in request:', err.error.description);
+      console.error('[telegram] Error in request:', err.error.description);
     } else if (err.error instanceof HttpError) {
-      console.error('Could not connect to Telegram:', err.error);
+      console.error('[telegram] Could not connect to Telegram:', err.error.message);
     } else {
-      console.error('Unknown error:', err.error);
+      console.error('[telegram] Unknown error:', err.error instanceof Error ? err.error.message : String(err.error));
     }
   });
 

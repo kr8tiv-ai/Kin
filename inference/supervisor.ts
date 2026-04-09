@@ -285,7 +285,7 @@ function trimForSupervisor(
   });
 
   if (totalRedactions > 0) {
-    console.log(`[privacy] Redacted ${totalRedactions} PII patterns before supervisor send`);
+    console.debug(`[privacy] Redacted ${totalRedactions} PII patterns before supervisor send`);
   }
 
   const result: Message[] = [];
@@ -321,7 +321,7 @@ function logSupervisorCall(entry: SupervisorLogEntry): void {
   supervisorLogBuffer[supervisorLogWriteIdx] = entry;
   supervisorLogWriteIdx = (supervisorLogWriteIdx + 1) % MAX_LOG_ENTRIES;
   if (supervisorLogCount < MAX_LOG_ENTRIES) supervisorLogCount++;
-  console.log(
+  console.debug(
     `[supervisor] ${entry.route} | companion=${entry.companionId} | ` +
     `msg=${entry.messageLength}chars | context=${entry.contextMessages}msgs | ` +
     `${entry.latencyMs.toFixed(0)}ms`,
@@ -425,7 +425,7 @@ export async function supervisedChat(
           content: messages[systemIdx]!.content + '\n\n' + safetyPrompt,
         };
       }
-      console.log(`[supervisor] Child safety prompt injected for ageBracket=${ageBracket}`);
+      console.debug(`[supervisor] Child safety prompt injected for ageBracket=${ageBracket}`);
     }
   }
 
@@ -438,7 +438,7 @@ export async function supervisedChat(
     } else {
       options = { forceLocal: true };
     }
-    console.log(`[supervisor] Privacy mode: ${privacyMode}, enforcing local-only`);
+    console.debug(`[supervisor] Privacy mode: ${privacyMode}, enforcing local-only`);
   }
 
   // Decide route
@@ -485,14 +485,14 @@ export async function supervisedChat(
           trackedCostUsd = (result.inputTokens / 1_000_000) * pricing.inputPer1M
                          + (result.outputTokens / 1_000_000) * pricing.outputPer1M;
           recordSuccess(config.frontierProvider);
-          console.log(
+          console.debug(
             `[supervisor] Frontier ${config.frontierModelName} | ` +
             `${result.inputTokens}in/${result.outputTokens}out | ` +
             `$${trackedCostUsd.toFixed(4)} | ${result.latencyMs.toFixed(0)}ms`,
           );
         } catch (err) {
           recordFailure(config.frontierProvider);
-          console.warn(`[supervisor] Frontier ${config.frontierProvider} failed, falling back to waterfall:`, err);
+          console.warn(`[supervisor] Frontier ${config.frontierProvider} failed, falling back to waterfall:`, err instanceof Error ? err.message : String(err));
           // Fall through to legacy fallback below
           frontierModel = undefined;
           usedProvider = undefined;
@@ -527,7 +527,7 @@ export async function supervisedChat(
                          + (result.outputTokens / 1_000_000) * pricing.outputPer1M;
           recordSuccess(targetProviderId);
           const pathLabel = kc.type === 'cli' ? `CLI via ${targetProviderId}` : `API fallback via openrouter`;
-          console.log(
+          console.debug(
             `[supervisor] KIN Credits ${pathLabel} | ` +
             `${result.inputTokens}in/${result.outputTokens}out | ` +
             `$${trackedCostUsd.toFixed(4)} | ${result.latencyMs.toFixed(0)}ms`,
@@ -535,7 +535,7 @@ export async function supervisedChat(
         } catch (err) {
           recordFailure(targetProviderId);
           const pathLabel = kc.type === 'cli' ? 'CLI' : 'API';
-          console.warn(`[supervisor] KIN Credits ${pathLabel} via ${targetProviderId} failed, falling back to waterfall:`, err);
+          console.warn(`[supervisor] KIN Credits ${pathLabel} via ${targetProviderId} failed, falling back to waterfall:`, err instanceof Error ? err.message : String(err));
           // If CLI failed, try API fallback through OpenRouter before hitting free waterfall
           if (kc.type === 'cli') {
             const openrouter = getProvider('openrouter');
@@ -558,14 +558,14 @@ export async function supervisedChat(
                 trackedCostUsd = (result.inputTokens / 1_000_000) * pricing.inputPer1M
                                + (result.outputTokens / 1_000_000) * pricing.outputPer1M;
                 recordSuccess('openrouter');
-                console.log(
+                console.debug(
                   `[supervisor] KIN Credits API fallback via openrouter | ` +
                   `${result.inputTokens}in/${result.outputTokens}out | ` +
                   `$${trackedCostUsd.toFixed(4)} | ${result.latencyMs.toFixed(0)}ms`,
                 );
               } catch (orErr) {
                 recordFailure('openrouter');
-                console.warn('[supervisor] KIN Credits OpenRouter fallback also failed:', orErr);
+                console.warn('[supervisor] KIN Credits OpenRouter fallback also failed:', orErr instanceof Error ? orErr.message : String(orErr));
                 // Fall through to legacy waterfall
               }
             }
@@ -800,7 +800,7 @@ async function executeLocal(
     // If no tool calls, return the content directly
     if (!result.message.tool_calls || result.message.tool_calls.length === 0) {
       if (toolCallCount > 0) {
-        console.log(`[supervisor] Tool-call loop completed after ${toolCallCount} call(s)`);
+        console.debug(`[supervisor] Tool-call loop completed after ${toolCallCount} call(s)`);
       }
       return result.message.content;
     }
@@ -852,7 +852,7 @@ async function handleToolCall(
 
   // If web search is not actually available (API key missing), tell the model
   if (!webSearchEnabled || !apiKey) {
-    console.log(`[web-search] Requested but not available (no API key or private mode)`);
+    console.debug(`[web-search] Requested but not available (no API key or private mode)`);
     return 'Web search is not available. Please answer based on your training data.';
   }
 
@@ -861,7 +861,7 @@ async function handleToolCall(
   try {
     const result = await ollamaWebSearch(query, apiKey);
     const latencyMs = performance.now() - start;
-    console.log(`[web-search] query="${query}" results=${result.results.length} latencyMs=${latencyMs.toFixed(0)}`);
+    console.debug(`[web-search] queryLength=${query.length} results=${result.results.length} latencyMs=${latencyMs.toFixed(0)}`);
 
     if (result.results.length === 0) {
       return 'No search results found for the query.';
@@ -877,7 +877,7 @@ async function handleToolCall(
   } catch (err) {
     const latencyMs = performance.now() - start;
     const errMsg = err instanceof Error ? err.message : String(err);
-    console.error(`[web-search] Failed: query="${query}" error="${errMsg}" latencyMs=${latencyMs.toFixed(0)}`);
+    console.error(`[web-search] Failed: queryLength=${query.length} error="${errMsg}" latencyMs=${latencyMs.toFixed(0)}`);
     return 'Web search failed. Please answer based on your training data.';
   }
 }

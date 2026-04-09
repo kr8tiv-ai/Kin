@@ -57,7 +57,7 @@ export function computeEntryHash(jsonLine: string): string {
  * Read and parse a companion's training JSONL file.
  *
  * Returns an array of TrainingEntry objects with hash, parsed line, and raw text.
- * Skips malformed lines with a console.warn (includes file path and line number).
+ * Skips malformed lines; logs a single batched warning with all bad line numbers.
  * Returns empty array for missing files/directories — never throws.
  */
 export async function readTrainingEntries(
@@ -72,15 +72,16 @@ export async function readTrainingEntries(
     content = await fs.promises.readFile(filePath, 'utf-8');
   } catch (err: any) {
     if (err?.code === 'ENOENT') {
-      console.log(`[training-curation] No training file for companion '${companionId}' at ${filePath}`);
+      console.debug(`[training-curation] No training file for companion '${companionId}' at ${filePath}`);
     } else {
-      console.warn(`[training-curation] Failed to read ${filePath}:`, err);
+      console.warn(`[training-curation] Failed to read ${filePath}:`, err instanceof Error ? err.message : String(err));
     }
     return [];
   }
 
   const lines = content.split('\n');
   const entries: TrainingEntry[] = [];
+  const malformedLines: number[] = [];
 
   for (let i = 0; i < lines.length; i++) {
     const rawLine = lines[i]!.trim();
@@ -90,7 +91,7 @@ export async function readTrainingEntries(
       const parsed = JSON.parse(rawLine) as SFTLine;
       // Basic shape validation
       if (!parsed.messages || !Array.isArray(parsed.messages)) {
-        console.warn(`[training-curation] Malformed line ${i + 1} in ${filePath}: missing messages array`);
+        malformedLines.push(i + 1);
         continue;
       }
       entries.push({
@@ -99,8 +100,12 @@ export async function readTrainingEntries(
         rawLine,
       });
     } catch {
-      console.warn(`[training-curation] Invalid JSON at line ${i + 1} in ${filePath}`);
+      malformedLines.push(i + 1);
     }
+  }
+
+  if (malformedLines.length > 0) {
+    console.warn(`[training-curation] ${malformedLines.length} malformed line(s) in ${filePath} at lines: ${malformedLines.join(', ')}`);
   }
 
   return entries;

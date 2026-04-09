@@ -336,7 +336,7 @@ async function handleChatCommand(
   // Jailbreak detection
   const jailbreakMatch = detectJailbreak(message);
   if (jailbreakMatch) {
-    console.warn(`[Jailbreak] Discord user ${interaction.user.id} attempted: ${jailbreakMatch}`);
+    console.warn(`[discord][jailbreak] User ${interaction.user.id} triggered jailbreak detection`);
     await interaction.reply({
       content: "Haha, nice try! I'm a KIN companion -- I stay in character because that's who I am. What can I actually help you with?",
     });
@@ -362,7 +362,7 @@ async function handleChatCommand(
       await interaction.followUp(chunks[i]!);
     }
   } catch (error) {
-    console.error('[discord] Error handling /chat:', error);
+    console.error('[discord] Error handling /chat:', error instanceof Error ? error.message : String(error));
     await interaction.editReply(randomErrorMessage());
   }
 }
@@ -593,7 +593,7 @@ async function handleMessage(
       await message.reply(
         `Hey! I don't recognize you yet. Your pairing code is: **${code}**\n\nAsk my owner to approve you with:\n\`/approve code:${code}\``,
       );
-      console.log(`[discord][dm-security] Blocked unknown sender ${senderId}, issued pairing code ${code}`);
+      console.log(`[discord][dm-security] Blocked unknown sender ${senderId}, issued pairing code`);
       return;
     }
   }
@@ -610,7 +610,7 @@ async function handleMessage(
   // Jailbreak detection
   const jailbreakMatch = detectJailbreak(content);
   if (jailbreakMatch) {
-    console.warn(`[Jailbreak] Discord user ${message.author.id} attempted: ${jailbreakMatch}`);
+    console.warn(`[discord][jailbreak] User ${message.author.id} triggered jailbreak detection`);
     await message.reply(
       "Haha, nice try! I'm a KIN companion -- I stay in character because that's who I am. What can I actually help you with?",
     );
@@ -668,7 +668,7 @@ async function handleMessage(
       await message.reply(chunk);
     }
   } catch (error) {
-    console.error('[discord] Error handling message:', error);
+    console.error('[discord] Error handling message:', error instanceof Error ? error.message : String(error));
     await message.reply(randomErrorMessage());
   } finally {
     typing.stop();
@@ -782,7 +782,7 @@ export function createDiscordBot(config: DiscordBotConfig) {
           await interaction.reply({ content: 'Unknown command.', ephemeral: true });
       }
     } catch (error) {
-      console.error(`[discord] Error handling /${interaction.commandName}:`, error);
+      console.error(`[discord] Error handling /${interaction.commandName}:`, error instanceof Error ? error.message : String(error));
       const replyFn = interaction.deferred || interaction.replied
         ? interaction.editReply.bind(interaction)
         : interaction.reply.bind(interaction);
@@ -812,7 +812,7 @@ export function createDiscordBot(config: DiscordBotConfig) {
   });
 
   client.on(Events.Error, (error: any) => {
-    console.error('[discord] Client error:', error);
+    console.error('[discord] Client error:', error instanceof Error ? error.message : String(error));
   });
 
   // ==========================================================================

@@ -183,7 +183,7 @@ export async function handleTextMessage(
   // Jailbreak detection
   const jailbreakMatch = detectJailbreak(message);
   if (jailbreakMatch) {
-    console.warn(`[whatsapp][jailbreak] User ${userId} attempted: ${jailbreakMatch}`);
+    console.warn(`[whatsapp][jailbreak] User ${userId} triggered jailbreak detection`);
     await sock.sendMessage(jid, {
       text: "Haha, nice try! I'm a KIN companion -- I stay in character because that's who I am. What can I actually help you with?",
     });
@@ -274,7 +274,7 @@ export async function handleTextMessage(
 
     await sock.sendMessage(jid, { text: response });
   } catch (error) {
-    console.error('[whatsapp] Error handling text message:', error);
+    console.error('[whatsapp] Error handling text message:', error instanceof Error ? error.message : String(error));
     const errorMsg = CIPHER_ERROR_MESSAGES[Math.floor(Math.random() * CIPHER_ERROR_MESSAGES.length)]!;
     await sock.sendMessage(jid, { text: errorMsg });
   } finally {
@@ -353,7 +353,7 @@ export async function handleAudioMessage(
       throw error;
     }
 
-    console.log(`[whatsapp] Transcribed voice from ${userId}: "${transcription.slice(0, 80)}..."`);
+    console.log(`[whatsapp] Transcribed voice from ${userId}: length=${transcription.length}`);
 
     // Get conversation history (with correct companion)
     const companionId = session.companionId;
@@ -388,7 +388,7 @@ export async function handleAudioMessage(
     // Send text reply (WhatsApp voice reply would need TTS + ogg encoding)
     await sock.sendMessage(jid, { text: response });
   } catch (error) {
-    console.error('[whatsapp] Voice processing error:', error);
+    console.error('[whatsapp] Voice processing error:', error instanceof Error ? error.message : String(error));
     await sock.sendMessage(jid, {
       text: "Hmm, I had trouble with that voice note. Mind sending it again or typing your message?",
     });
@@ -787,7 +787,7 @@ export async function createWhatsAppBot(config: WhatsAppBotConfig = { authDir: D
           await socket.sendMessage(jid, {
             text: `Hey! I don't recognize you yet. Your pairing code is: *${code}*\n\nAsk my owner to approve you with:\n/approve ${code}`,
           });
-          console.log(`[whatsapp][dm-security] Blocked unknown sender ${senderId}, issued pairing code ${code}`);
+          console.log(`[whatsapp][dm-security] Blocked unknown sender ${senderId}, issued pairing code`);
           continue;
         }
 
@@ -866,7 +866,7 @@ export async function createWhatsAppBot(config: WhatsAppBotConfig = { authDir: D
           // ── Unknown message type — acknowledge gracefully ───────
           console.log(`[whatsapp] Unhandled message type: ${msgType} from ${jid}`);
         } catch (error) {
-          console.error(`[whatsapp] Error handling message from ${jid}:`, error);
+          console.error(`[whatsapp] Error handling message from ${jid}:`, error instanceof Error ? error.message : String(error));
           try {
             const errorMsg = CIPHER_ERROR_MESSAGES[Math.floor(Math.random() * CIPHER_ERROR_MESSAGES.length)]!;
             await socket.sendMessage(jid, { text: errorMsg });
