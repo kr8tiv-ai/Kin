@@ -8,34 +8,8 @@
  * Returns 403 for non-admin callers.
  */
 
-import { FastifyPluginAsync, FastifyRequest, FastifyReply } from 'fastify';
-
-// ---------------------------------------------------------------------------
-// Admin guard helper
-// ---------------------------------------------------------------------------
-
-function getAdminUserIds(): Set<string> {
-  const raw = process.env.ADMIN_USER_IDS ?? '';
-  const ids = raw
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean);
-  return new Set(ids);
-}
-
-function isAdmin(request: FastifyRequest): boolean {
-  const user = request.user as { userId: string; tier?: string };
-  if (user.tier === 'hero') return true;
-  return getAdminUserIds().has(user.userId);
-}
-
-function requireAdmin(request: FastifyRequest, reply: FastifyReply): boolean {
-  if (!isAdmin(request)) {
-    reply.status(403).send({ error: 'Forbidden: admin access required' });
-    return false;
-  }
-  return true;
-}
+import { FastifyPluginAsync } from 'fastify';
+import { requireAdmin } from '../lib/admin.js';
 
 // ---------------------------------------------------------------------------
 // Types

@@ -299,47 +299,22 @@ function trimForSupervisor(
 }
 
 // ============================================================================
-// Supervisor Log
+// Supervisor Log (lightweight — uses console.debug for structured audit trail)
 // ============================================================================
 
-interface SupervisorLogEntry {
+function logSupervisorCall(entry: {
   timestamp: string;
   companionId: string;
   route: SupervisorRoute;
   messageLength: number;
   contextMessages: number;
   latencyMs: number;
-}
-
-// Circular buffer for supervisor log — avoids O(n) Array.shift()
-const supervisorLogBuffer: (SupervisorLogEntry | null)[] = new Array(500).fill(null);
-let supervisorLogWriteIdx = 0;
-let supervisorLogCount = 0;
-const MAX_LOG_ENTRIES = 500;
-
-function logSupervisorCall(entry: SupervisorLogEntry): void {
-  supervisorLogBuffer[supervisorLogWriteIdx] = entry;
-  supervisorLogWriteIdx = (supervisorLogWriteIdx + 1) % MAX_LOG_ENTRIES;
-  if (supervisorLogCount < MAX_LOG_ENTRIES) supervisorLogCount++;
+}): void {
   console.debug(
     `[supervisor] ${entry.route} | companion=${entry.companionId} | ` +
     `msg=${entry.messageLength}chars | context=${entry.contextMessages}msgs | ` +
     `${entry.latencyMs.toFixed(0)}ms`,
   );
-}
-
-/**
- * Get the supervisor call log for auditing.
- */
-export function getSupervisorLog(): SupervisorLogEntry[] {
-  if (supervisorLogCount < MAX_LOG_ENTRIES) {
-    return supervisorLogBuffer.slice(0, supervisorLogCount) as SupervisorLogEntry[];
-  }
-  // Buffer is full — read from writeIdx (oldest) wrapping around
-  return [
-    ...supervisorLogBuffer.slice(supervisorLogWriteIdx),
-    ...supervisorLogBuffer.slice(0, supervisorLogWriteIdx),
-  ] as SupervisorLogEntry[];
 }
 
 // ============================================================================

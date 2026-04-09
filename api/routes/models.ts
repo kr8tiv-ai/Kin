@@ -14,31 +14,9 @@
  * Ollama HTTP API on the user's machine.
  */
 
-import { FastifyPluginAsync, FastifyRequest, FastifyReply } from 'fastify';
+import { FastifyPluginAsync } from 'fastify';
 import { getOllamaClient } from '../../inference/local-llm.js';
-
-// ---------------------------------------------------------------------------
-// Admin guard (same pattern as admin.ts)
-// ---------------------------------------------------------------------------
-
-function getAdminUserIds(): Set<string> {
-  const raw = process.env.ADMIN_USER_IDS ?? '';
-  return new Set(raw.split(',').map((s) => s.trim()).filter(Boolean));
-}
-
-function isAdmin(request: FastifyRequest): boolean {
-  const user = request.user as { userId: string; tier?: string };
-  if (user.tier === 'hero') return true;
-  return getAdminUserIds().has(user.userId);
-}
-
-function requireAdmin(request: FastifyRequest, reply: FastifyReply): boolean {
-  if (!isAdmin(request)) {
-    reply.status(403).send({ error: 'Forbidden: admin access required' });
-    return false;
-  }
-  return true;
-}
+import { requireAdmin } from '../lib/admin.js';
 
 // ---------------------------------------------------------------------------
 // Types

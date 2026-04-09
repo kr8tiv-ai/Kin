@@ -1147,14 +1147,13 @@ describe('GET /export/archive endpoint', () => {
     expect(res.statusCode).toBe(401);
   });
 
-  it('legacy /export/data returns X-Deprecated header', async () => {
+  it('legacy /export/data returns 404 (removed)', async () => {
     const res = await server.inject({
       method: 'GET',
       url: '/export/data',
       headers: { authorization: `Bearer ${token}` },
     });
-    expect(res.statusCode).toBe(200);
-    expect(res.headers['x-deprecated']).toContain('GET /export/archive');
+    expect(res.statusCode).toBe(404);
   });
 });
 

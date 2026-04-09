@@ -1646,7 +1646,7 @@ describe('POST /import/archive endpoint', () => {
 
   // ---------- Legacy Endpoint ----------
 
-  it('POST /import/data still works with X-Deprecated header', async () => {
+  it('POST /import/data returns 404 (removed)', async () => {
     const res = await server.inject({
       method: 'POST',
       url: '/import/data',
@@ -1670,10 +1670,7 @@ describe('POST /import/archive endpoint', () => {
         },
       },
     });
-    expect(res.statusCode).toBe(200);
-    expect(res.headers['x-deprecated']).toMatch(/POST \/import\/archive/i);
-    const json = res.json();
-    expect(json.success).toBe(true);
+    expect(res.statusCode).toBe(404);
   });
 
   // ---------- Response Shape ----------

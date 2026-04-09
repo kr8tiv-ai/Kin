@@ -9,8 +9,132 @@
  * @module inference/companion-prompts
  */
 
-import type { PromptContext } from './cipher-prompts.js';
-import { buildContextSection } from './cipher-prompts.js';
+// ============================================================================
+// Types (migrated from cipher-prompts.ts)
+// ============================================================================
+
+export interface PromptContext {
+  /** User's name or identifier */
+  userName?: string;
+  /** Current conversation history summary */
+  conversationSummary?: string;
+  /** User preferences and taste profile */
+  userPreferences?: UserPreferences;
+  /** Current task or project context */
+  taskContext?: TaskContext;
+  /** Memory context from Supermemory */
+  memoryContext?: string;
+  /** Time context (e.g., "Tuesday afternoon") */
+  timeContext?: string;
+}
+
+export interface UserPreferences {
+  /** Design style preferences */
+  designStyle?: 'minimal' | 'bold' | 'playful' | 'professional' | 'artistic';
+  /** Communication style */
+  communicationStyle?: 'concise' | 'detailed' | 'friendly' | 'technical';
+  /** Tech stack preferences */
+  techStack?: string[];
+  /** Color preferences */
+  colorPreferences?: string[];
+  /** Typography preferences */
+  typographyPreferences?: string;
+}
+
+export interface TaskContext {
+  /** Type of task being performed */
+  type: 'website' | 'component' | 'debug' | 'teach' | 'chat' | 'code' | 'document' | 'vision' | 'voice';
+  /** Current project or file being worked on */
+  project?: string;
+  /** Specific goals for this task */
+  goals?: string[];
+  /** Constraints or requirements */
+  constraints?: string[];
+  /** Current progress or state */
+  state?: string;
+}
+
+// ============================================================================
+// Context Injection (migrated from cipher-prompts.ts)
+// ============================================================================
+
+/**
+ * Builds the context section of a prompt with injected information
+ */
+export function buildContextSection(context: PromptContext): string {
+  const parts: string[] = [];
+
+  if (context.userName) {
+    parts.push(`## User: ${context.userName}`);
+  }
+
+  if (context.timeContext) {
+    parts.push(`## Time: ${context.timeContext}`);
+  }
+
+  if (context.memoryContext) {
+    parts.push(`## Memory Context`);
+    parts.push(context.memoryContext);
+  }
+
+  if (context.conversationSummary) {
+    parts.push(`## Recent Conversation`);
+    parts.push(context.conversationSummary);
+  }
+
+  if (context.userPreferences) {
+    parts.push(buildPreferencesSection(context.userPreferences));
+  }
+
+  if (context.taskContext) {
+    parts.push(buildTaskSection(context.taskContext));
+  }
+
+  return parts.join('\n\n');
+}
+
+function buildPreferencesSection(prefs: UserPreferences): string {
+  const parts: string[] = ['## User Preferences'];
+
+  if (prefs.designStyle) {
+    parts.push(`Design Style: ${prefs.designStyle}`);
+  }
+  if (prefs.communicationStyle) {
+    parts.push(`Communication: ${prefs.communicationStyle}`);
+  }
+  if (prefs.techStack && prefs.techStack.length > 0) {
+    parts.push(`Tech Stack: ${prefs.techStack.join(', ')}`);
+  }
+  if (prefs.colorPreferences && prefs.colorPreferences.length > 0) {
+    parts.push(`Preferred Colors: ${prefs.colorPreferences.join(', ')}`);
+  }
+  if (prefs.typographyPreferences) {
+    parts.push(`Typography: ${prefs.typographyPreferences}`);
+  }
+
+  return parts.join('\n');
+}
+
+function buildTaskSection(task: TaskContext): string {
+  const parts: string[] = [`## Current Task: ${task.type}`];
+
+  if (task.project) {
+    parts.push(`Project: ${task.project}`);
+  }
+  if (task.goals && task.goals.length > 0) {
+    parts.push(`Goals:`);
+    task.goals.forEach(goal => parts.push(`- ${goal}`));
+  }
+  if (task.constraints && task.constraints.length > 0) {
+    parts.push(`Constraints:`);
+    task.constraints.forEach(c => parts.push(`- ${c}`));
+  }
+  if (task.state) {
+    parts.push(`Current State: ${task.state}`);
+  }
+
+  return parts.join('\n');
+}
 
 // ============================================================================
 // Shared preamble — injected into every companion prompt

@@ -1,23 +1,20 @@
 /**
- * Import Routes — Full-state archive import and legacy flat-JSON endpoint.
+ * Import Routes — Full-state archive import.
  *
  * POST /import/archive  — accepts multipart ZIP upload, parses manifest,
  *                          delegates to per-category importer, restores file
  *                          artifacts and Ollama models
- * POST /import/data     — (deprecated) flat JSON import
  *
  * All routes are JWT-protected (registered under the protectedFastify scope).
  *
  * @module api/routes/import
  */
 
-import { FastifyPluginAsync, FastifyReply } from 'fastify';
-import crypto from 'crypto';
+import { FastifyPluginAsync } from 'fastify';
 import AdmZip from 'adm-zip';
 import fs from 'fs';
 import path from 'path';
 
-import type { ExportData } from './export.js';
 import type {
   ManifestV1,
   ArchiveCategoryData,
@@ -254,135 +251,7 @@ const importRoutes: FastifyPluginAsync = async (fastify) => {
     return fullResult;
   });
 
-  // ==========================================================================
-  // DEPRECATED: POST /import/data — flat JSON import (backward compatible)
-  // ==========================================================================
-
-  fastify.post<{ Body: { importData: ExportData } }>(
-    '/import/data',
-    {
-      schema: {
-        body: {
-          type: 'object',
-          required: ['importData'],
-          properties: {
-            importData: { type: 'object' },
-          },
-        },
-      },
-    } as any,
-    async (request, reply: FastifyReply) => {
-      const userId = (request.user as { userId: string }).userId;
-      const importData = request.body.importData;
-
-      reply.header('X-Deprecated', 'Use POST /import/archive for full-state import');
-
-      if (!importData.version) {
-        return reply.status(400).send({ success: false, error: 'Invalid import file: missing version' });
-      }
-
-      const results = {
-        preferences: false,
-        memories: 0,
-        customizations: 0,
-      };
-
-      try {
-        if (importData.preferences) {
-          const prefs = importData.preferences;
-          const existingPrefs = fastify.context.db.prepare(
-            `SELECT id FROM user_preferences WHERE user_id = ?`,
-          ).get(userId);
-
-          if (existingPrefs) {
-            fastify.context.db.prepare(`
-              UPDATE user_preferences SET display_name = ?, experience_level = ?, goals = ?, language = ?, tone = ?, privacy_mode = ?, updated_at = ?
-              WHERE user_id = ?
-            `).run(
-              prefs.displayName ?? null,
-              prefs.experienceLevel ?? 'beginner',
-              JSON.stringify(prefs.goals ?? []),
-              prefs.language ?? 'en',
-              prefs.tone ?? 'friendly',
-              prefs.privacyMode ?? 'private',
-              Date.now(),
-              userId,
-            );
-          } else {
-            fastify.context.db.prepare(`
-              INSERT INTO user_preferences (id, user_id, display_name, experience_level, goals, language, tone, privacy_mode, onboarding_complete)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
-            `).run(
-              `pref-${crypto.randomUUID()}`,
-              userId,
-              prefs.displayName ?? null,
-              prefs.experienceLevel ?? 'beginner',
-              JSON.stringify(prefs.goals ?? []),
-              prefs.language ?? 'en',
-              prefs.tone ?? 'friendly',
-              prefs.privacyMode ?? 'private',
-            );
-          }
-          results.preferences = true;
-        }
-
-        if (importData.memories?.length > 0) {
-          const insertMemoryStmt = fastify.context.db.prepare(`
-            INSERT INTO memories (id, user_id, companion_id, memory_type, content, importance, created_at, last_accessed_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-          `);
-          for (const memory of importData.memories) {
-            try {
-              insertMemoryStmt.run(
-                memory.id ?? `mem-${crypto.randomUUID()}`,
-                userId,
-                memory.companionId,
-                memory.memoryType ?? 'context',
-                memory.content,
-                memory.importance ?? 0.5,
-                new Date(memory.createdAt).getTime() ?? Date.now(),
-                Date.now(),
-              );
-              results.memories++;
-            } catch {
-              // Skip duplicate memories
-            }
-          }
-        }
-
-        if (importData.customizations?.length > 0) {
-          const insertCustomStmt = fastify.context.db.prepare(`
-            INSERT OR REPLACE INTO companion_customizations (id, user_id, companion_id, custom_name, tone_override, personality_notes, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-          `);
-          for (const custom of importData.customizations) {
-            try {
-              insertCustomStmt.run(
-                `custom-${crypto.randomUUID()}`,
-                userId,
-                custom.companionId,
-                custom.customName ?? null,
-                custom.toneOverride ?? null,
-                custom.personalityNotes ?? null,
-                Date.now(),
-              );
-              results.customizations++;
-            } catch {
-              // Skip failed customizations
-            }
-          }
-        }
-
-        return {
-          success: true,
-          imported: results,
-        };
-      } catch (err) {
-        fastify.log.error({ err }, 'Import failed');
-        return reply.status(500).send({ success: false, error: 'Import failed' });
-      }
-    },
-  );
+  // Deprecated POST /import/data removed. Use POST /import/archive for full-state import.
 };
 
 // ============================================================================

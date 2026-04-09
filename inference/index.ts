@@ -58,29 +58,16 @@ export {
   type StreamCallback,
 } from './local-llm';
 
-// Cipher Prompts (legacy — kept for backward compatibility)
-export {
-  CIPHER_SYSTEM_PROMPT,
-  CIPHER_SYSTEM_PROMPT_SHORT,
-  CIPHER_CODE_PROMPT,
-  CIPHER_TEACH_PROMPT,
-  WEBSITE_BUILDING_EXAMPLES,
-  DEBUGGING_EXAMPLES,
-  TEACHING_EXAMPLES,
-  buildCipherPrompt,
-  buildContextSection,
-  type PromptContext,
-  type UserPreferences,
-  type TaskContext,
-  type FewShotExample,
-} from './cipher-prompts';
-
-// Companion Prompts (all 6 archetypes)
+// Companion Prompts (all 6 archetypes + shared types/utilities)
 export {
   COMPANION_SYSTEM_PROMPTS,
   COMPANION_SHORT_PROMPTS,
   buildCompanionPrompt,
   getAvailableCompanions,
+  buildContextSection,
+  type PromptContext,
+  type UserPreferences,
+  type TaskContext,
 } from './companion-prompts';
 
 // Fallback Handler
@@ -103,7 +90,6 @@ export {
   shouldEscalate,
   isSupervisorConfigured,
   getSupervisorInfo,
-  getSupervisorLog,
   type SupervisedResult,
   type SupervisorRoute,
   type SupervisorOptions,

@@ -15,10 +15,11 @@ describe('Inference Module', () => {
     expect(OllamaClient).toBeDefined();
   });
 
-  it('exports cipher prompts', async () => {
-    const { CIPHER_SYSTEM_PROMPT, buildCipherPrompt } = await import('../inference/index.js');
-    expect(CIPHER_SYSTEM_PROMPT).toBeDefined();
-    expect(buildCipherPrompt).toBeInstanceOf(Function);
+  it('exports companion prompts', async () => {
+    const { COMPANION_SYSTEM_PROMPTS, buildCompanionPrompt, buildContextSection } = await import('../inference/index.js');
+    expect(COMPANION_SYSTEM_PROMPTS).toBeDefined();
+    expect(buildCompanionPrompt).toBeInstanceOf(Function);
+    expect(buildContextSection).toBeInstanceOf(Function);
   });
 
   it('exports fallback handler', async () => {
