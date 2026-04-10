@@ -1,5 +1,3 @@
-version: "3.8"
-
 # GHCR contract defaults:
 # - GHCR_OWNER defaults to kr8tiv-ai
 # - KIN_IMAGE_TAG defaults to latest
@@ -45,6 +43,12 @@ services:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://api:3002}
     depends_on:
       - api
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3001/"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
   inference:
     image: ghcr.io/${GHCR_OWNER:-kr8tiv-ai}/kin-inference:${KIN_IMAGE_TAG:-latest}
@@ -53,6 +57,12 @@ services:
       - "${OLLAMA_PORT:-11434}:11434"
     volumes:
       - ollama-models:/root/.ollama
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:11434/"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
 volumes:
   kin-data:
