@@ -8,6 +8,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { CommandPalette, type CommandPaletteConversation } from './CommandPalette';
+import { kinApi } from '@/lib/api';
 
 export function CommandPaletteWrapper() {
   const [isOpen, setIsOpen] = useState(false);
@@ -35,14 +36,7 @@ export function CommandPaletteWrapper() {
 
     async function fetchConversations() {
       try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/conversations`,
-          { credentials: 'include' },
-        );
-
-        if (!res.ok) return;
-
-        const data = await res.json();
+        const data = await kinApi.get<{ conversations: Array<{ id: string; companionId: string; title: string; updatedAt: string; messagePreview?: string }> }>('/conversations');
 
         if (cancelled) return;
 

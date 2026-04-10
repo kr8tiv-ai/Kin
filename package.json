@@ -18,7 +18,7 @@
     "lint": "eslint . --ext .ts,.tsx",
     "typecheck": "tsc --noEmit",
     "db:migrate": "sqlite3 data/kin.db < db/schema.sql",
-    "db:reset": "rm -f data/kin.db && npm run db:migrate",
+    "db:reset": "node -e \"try{require('fs').unlinkSync('data/kin.db')}catch(e){}\" && npm run db:migrate",
     "smoke": "tsx scripts/smoke.ts",
     "health:check": "python scripts/health_monitor_daemon.py --once",
     "health:daemon": "python scripts/health_monitor_daemon.py",

@@ -667,7 +667,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
         expiresAt: Date.now() + 10 * 60 * 1000, // 10 minutes
       });
 
-      const callbackUrl = process.env.X_CALLBACK_URL || 'http://localhost:3001/auth/x/callback';
+      const callbackUrl = process.env.X_CALLBACK_URL || 'http://localhost:3001/api/auth/x/callback';
 
       const params = new URLSearchParams({
         response_type: 'code',
@@ -722,7 +722,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
       }
       xPkceStore.delete(state); // Single use
 
-      const callbackUrl = process.env.X_CALLBACK_URL || 'http://localhost:3001/auth/x/callback';
+      const callbackUrl = process.env.X_CALLBACK_URL || 'http://localhost:3001/api/auth/x/callback';
 
       // Exchange authorization code for access token
       const tokenRes = await fetchWithTimeout('https://api.x.com/2/oauth2/token', {

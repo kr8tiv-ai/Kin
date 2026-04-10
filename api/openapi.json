@@ -16,7 +16,7 @@
   },
   "servers": [
     {
-      "url": "http://localhost:3000",
+      "url": "http://localhost:3002",
       "description": "Development"
     },
     {
@@ -71,8 +71,8 @@
           "lastName": { "type": "string", "nullable": true, "example": "Smith" },
           "tier": {
             "type": "string",
-            "enum": ["free", "pro", "enterprise"],
-            "example": "pro"
+            "enum": ["free", "hatchling", "elder", "hero"],
+            "example": "hatchling"
           },
           "createdAt": {
             "type": "string",

@@ -178,7 +178,7 @@ class StripeClient:
                 "health_monitoring": False,
             },
         },
-        "starter": {
+        "hatchling": {
             "price": 900,  # $9/month
             "kin_limit": 3,
             "api_calls_limit": 10000,
@@ -193,7 +193,7 @@ class StripeClient:
                 "health_monitoring": True,
             },
         },
-        "pro": {
+        "elder": {
             "price": 2900,  # $29/month
             "kin_limit": 10,
             "api_calls_limit": 100000,
@@ -208,7 +208,7 @@ class StripeClient:
                 "health_monitoring": True,
             },
         },
-        "enterprise": {
+        "hero": {
             "price": 9900,  # $99/month
             "kin_limit": -1,  # unlimited
             "api_calls_limit": -1,
@@ -331,7 +331,7 @@ class StripeClient:
 
         Args:
             customer_id: Stripe customer ID
-            new_tier: Target tier (starter, pro, enterprise)
+            new_tier: Target tier (hatchling, elder, hero)
 
         Returns:
             True if successful
@@ -458,17 +458,17 @@ class StripeClient:
         """Extract tier from Stripe subscription."""
         # This would map Stripe price IDs to tiers
         # For now, return pro as default
-        return "pro"
+        return "elder"
 
     def _get_price_id(self, tier: str) -> str:
         """Get Stripe price ID for a tier."""
         # In production, this would map to actual Stripe price IDs
         price_map = {
-            "starter": "price_starter_monthly",
-            "pro": "price_pro_monthly",
-            "enterprise": "price_enterprise_monthly",
+            "hatchling": "price_hatchling_monthly",
+            "elder": "price_elder_monthly",
+            "hero": "price_hero_monthly",
         }
-        return price_map.get(tier, "price_pro_monthly")
+        return price_map.get(tier, "price_elder_monthly")
 
     def _create_subscription(self, customer_id: str, tier: str) -> Any:
         """Create a new subscription for a customer."""
@@ -543,14 +543,14 @@ class StripeClient:
     def _get_mock_subscription(self, customer_id: str) -> SubscriptionRecord:
         """Return mock subscription data for development."""
         now = datetime.now(timezone.utc)
-        tier = self.TIERS["pro"]
+        tier = self.TIERS["elder"]
 
         return SubscriptionRecord(
             record_id=f"sub-mock-{customer_id}",
             owner_id=customer_id.replace("cus_", "owner-"),
             stripe_customer_id=customer_id,
             stripe_subscription_id="sub_mock123456",
-            tier="pro",
+            tier="elder",
             status="active",
             usage=UsageMetrics(
                 kin_count=3,
@@ -583,7 +583,7 @@ class StripeClient:
 
     def _get_mock_usage(self) -> UsageMetrics:
         """Return mock usage data."""
-        tier = self.TIERS["pro"]
+        tier = self.TIERS["elder"]
         return UsageMetrics(
             kin_count=3,
             kin_limit=tier["kin_limit"],

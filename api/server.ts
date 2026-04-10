@@ -152,7 +152,7 @@ export async function createServer(config: ApiConfig = {}) {
   const environment = config.environment ?? process.env.NODE_ENV ?? 'development';
   
   const resolvedConfig: ResolvedConfig = {
-    port: config.port ?? parseInt(process.env.PORT ?? '3000', 10),
+    port: config.port ?? parseInt(process.env.PORT ?? '3002', 10),
     host: config.host ?? process.env.HOST ?? '127.0.0.1',
     jwtSecret: config.jwtSecret ?? process.env.JWT_SECRET ?? (() => {
       if (environment === 'production') throw new Error('JWT_SECRET must be set in production');

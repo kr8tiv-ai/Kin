@@ -28,8 +28,8 @@
       "highlighted": false
     },
     {
-      "id": "starter",
-      "name": "Starter",
+      "id": "hatchling",
+      "name": "Hatchling",
       "description": "For individuals exploring Kin platform",
       "price": 900,
       "price_yearly": 9000,
@@ -56,8 +56,8 @@
       "highlighted": false
     },
     {
-      "id": "pro",
-      "name": "Pro",
+      "id": "elder",
+      "name": "Elder",
       "description": "For power users and small teams",
       "price": 2900,
       "price_yearly": 29000,
@@ -86,8 +86,8 @@
       "highlighted": true
     },
     {
-      "id": "enterprise",
-      "name": "Enterprise",
+      "id": "hero",
+      "name": "Hero",
       "description": "For organizations with advanced needs",
       "price": 9900,
       "price_yearly": 99000,
@@ -125,72 +125,72 @@
       {
         "name": "Kin Companions",
         "free": "1",
-        "starter": "3",
-        "pro": "10",
-        "enterprise": "Unlimited"
+        "hatchling": "3",
+        "elder": "10",
+        "hero": "Unlimited"
       },
       {
         "name": "API Calls",
         "free": "1,000/month",
-        "starter": "10,000/month",
-        "pro": "100,000/month",
-        "enterprise": "Unlimited"
+        "hatchling": "10,000/month",
+        "elder": "100,000/month",
+        "hero": "Unlimited"
       },
       {
         "name": "Storage",
         "free": "100 MB",
-        "starter": "500 MB",
-        "pro": "5 GB",
-        "enterprise": "Unlimited"
+        "hatchling": "500 MB",
+        "elder": "5 GB",
+        "hero": "Unlimited"
       },
       {
         "name": "Voice Mode",
         "free": false,
-        "starter": true,
-        "pro": true,
-        "enterprise": true
+        "hatchling": true,
+        "elder": true,
+        "hero": true
       },
       {
         "name": "Custom Specializations",
         "free": false,
-        "starter": false,
-        "pro": true,
-        "enterprise": true
+        "hatchling": false,
+        "elder": true,
+        "hero": true
       },
       {
         "name": "Priority Support",
         "free": false,
-        "starter": false,
-        "pro": true,
-        "enterprise": true
+        "hatchling": false,
+        "elder": true,
+        "hero": true
       },
       {
         "name": "Health Monitoring",
         "free": false,
-        "starter": true,
-        "pro": true,
-        "enterprise": true
+        "hatchling": true,
+        "elder": true,
+        "hero": true
       },
       {
         "name": "Drift Alerts",
         "free": false,
-        "starter": true,
-        "pro": true,
-        "enterprise": true
+        "hatchling": true,
+        "elder": true,
+        "hero": true
       },
       {
         "name": "Dedicated Support",
         "free": false,
-        "starter": false,
-        "pro": false,
-        "enterprise": true
+        "hatchling": false,
+        "elder": false,
+        "hero": true
       },
       {
         "name": "SLA",
         "free": false,
-        "starter": false,
-        "pro": false,
-        "enterprise": true
+        "hatchling": false,
+        "elder": false,
+        "hero": true
       }
     ]
   }

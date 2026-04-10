@@ -5,6 +5,7 @@
 // ============================================================================
 
 import { useCallback, useEffect, useState } from 'react';
+import Cookies from 'js-cookie';
 import { kinApi } from '@/lib/api';
 import { track } from '@/lib/analytics';
 import type { SoulConfig, CompanionSoul } from '@/lib/types';
@@ -103,7 +104,7 @@ export function useSoul(companionId: string | null): UseSoulReturn {
     try {
       const res = await fetch(`/api/soul/export/${companionId}`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('kin_token')}`,
+          Authorization: `Bearer ${Cookies.get('kin_token') ?? ''}`,
         },
       });
       if (!res.ok) throw new Error('Export failed');

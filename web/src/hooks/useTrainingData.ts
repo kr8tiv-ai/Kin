@@ -5,6 +5,7 @@
 // ============================================================================
 
 import { useCallback, useState } from 'react';
+import Cookies from 'js-cookie';
 import { useApi } from '@/hooks/useApi';
 import { kinApi } from '@/lib/api';
 import type {
@@ -71,14 +72,10 @@ export function useExportTrainingData() {
   const exportData = useCallback(async (companionId: string, companionName: string) => {
     setLoading(true);
     try {
-      const baseUrl = typeof window !== 'undefined' ? '/api' : '';
-      const token = document.cookie
-        .split('; ')
-        .find((c) => c.startsWith('kin_token='))
-        ?.split('=')[1];
+      const token = Cookies.get('kin_token');
 
       const response = await fetch(
-        `${baseUrl}/training/companions/${companionId}/export`,
+        `/api/training/companions/${companionId}/export`,
         {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         },
