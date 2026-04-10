@@ -14,6 +14,18 @@ export interface Observation {
   confidence: number; // 0-1
 }
 
+// Module-scope topic map with Set<string> keywords for O(1) lookup
+const TOPIC_MAP: ReadonlyMap<string, ReadonlySet<string>> = new Map([
+  ['programming', new Set(['code', 'function', 'api', 'bug', 'debug', 'deploy', 'git', 'react', 'python', 'javascript'])],
+  ['writing', new Set(['story', 'novel', 'blog', 'article', 'essay', 'poem', 'writing', 'prose', 'narrative'])],
+  ['business', new Set(['startup', 'revenue', 'marketing', 'brand', 'customer', 'sales', 'growth', 'investor'])],
+  ['finance', new Set(['budget', 'invest', 'savings', 'stocks', 'crypto', 'portfolio', 'income', 'expense'])],
+  ['health', new Set(['workout', 'diet', 'exercise', 'sleep', 'meditation', 'mental health', 'fitness'])],
+  ['education', new Set(['learn', 'study', 'course', 'tutorial', 'homework', 'exam', 'degree'])],
+  ['design', new Set(['ui', 'ux', 'design', 'figma', 'layout', 'typography', 'color', 'mockup'])],
+  ['music', new Set(['song', 'music', 'guitar', 'piano', 'beat', 'melody', 'lyrics', 'album'])],
+]);
+
 /**
  * Extract observations from a user message + companion response pair.
  */
@@ -99,19 +111,17 @@ export function extractObservations(
   }
 
   // --- Topic interest detection ---
-  // Based on keywords in the user's message matching known domains
-  const topicMap: Record<string, string[]> = {
-    'programming': ['code', 'function', 'api', 'bug', 'debug', 'deploy', 'git', 'react', 'python', 'javascript'],
-    'writing': ['story', 'novel', 'blog', 'article', 'essay', 'poem', 'writing', 'prose', 'narrative'],
-    'business': ['startup', 'revenue', 'marketing', 'brand', 'customer', 'sales', 'growth', 'investor'],
-    'finance': ['budget', 'invest', 'savings', 'stocks', 'crypto', 'portfolio', 'income', 'expense'],
-    'health': ['workout', 'diet', 'exercise', 'sleep', 'meditation', 'mental health', 'fitness'],
-    'education': ['learn', 'study', 'course', 'tutorial', 'homework', 'exam', 'degree'],
-    'design': ['ui', 'ux', 'design', 'figma', 'layout', 'typography', 'color', 'mockup'],
-    'music': ['song', 'music', 'guitar', 'piano', 'beat', 'melody', 'lyrics', 'album'],
-  };
-  for (const [topic, keywords] of Object.entries(topicMap)) {
-    const matchCount = keywords.filter(kw => lower.includes(kw)).length;
+  // Uses module-scope TOPIC_MAP with Set keywords; split once, count via Set.has
+  const msgWords = lower.split(/\s+/);
+  for (const [topic, keywordSet] of TOPIC_MAP) {
+    let matchCount = 0;
+    for (const w of msgWords) {
+      if (keywordSet.has(w)) matchCount++;
+    }
+    // Also check multi-word keywords (e.g. "mental health") via includes
+    for (const kw of keywordSet) {
+      if (kw.includes(' ') && lower.includes(kw)) matchCount++;
+    }
     if (matchCount >= 2) {
       observations.push({ type: 'topic_interest', content: topic, confidence: Math.min(0.5 + matchCount * 0.1, 0.9) });
     }

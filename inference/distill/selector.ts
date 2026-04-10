@@ -45,8 +45,9 @@ export async function selectDistillCandidates(
     return [];
   }
 
-  // Pre-load the full benchmark suite for prompt lookups
+  // Pre-build Map for O(1) prompt lookup instead of repeated .find()
   const allPrompts = getBenchmarkSuite();
+  const promptById = new Map(allPrompts.map((p) => [p.id, p]));
 
   for (const result of evalResults) {
     // Gate 1: Only frontier responses are useful for distillation
@@ -57,12 +58,12 @@ export async function selectDistillCandidates(
 
     // Gate 3: Category filter (if specified)
     if (cfg.categories && cfg.categories.length > 0) {
-      const prompt = allPrompts.find((p) => p.id === result.promptId);
+      const prompt = promptById.get(result.promptId);
       if (prompt && !cfg.categories.includes(prompt.taskCategory)) continue;
     }
 
     // Resolve the benchmark prompt to get system/user context
-    const prompt = allPrompts.find((p) => p.id === result.promptId);
+    const prompt = promptById.get(result.promptId);
     if (!prompt) {
       console.warn(
         `[distill-selector] Prompt '${result.promptId}' not found in benchmark suite — skipping`,

@@ -34,6 +34,17 @@ COPY --from=build /app/web/public ./public
 COPY --from=build /app/web/.next/standalone ./
 COPY --from=build /app/web/.next/static ./.next/static
 
+# Create non-root user
+RUN addgroup -S app && adduser -S app -G app
+
+# Ensure .next cache directory has correct ownership
+RUN chown -R app:app .next
+
+USER app
+
 EXPOSE 3001
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3001/ || exit 1
 
 CMD ["node", "server.js"]

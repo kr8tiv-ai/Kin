@@ -1,4 +1,4 @@
-FROM ollama/ollama:latest
+FROM ollama/ollama:0.14.1
 
 ENV OLLAMA_HOST=0.0.0.0:11434
 
@@ -9,4 +9,9 @@ EXPOSE 11434
 
 VOLUME ["/root/.ollama"]
 
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:11434/ || exit 1
+
+# Note: Ollama runs as root because it requires access to GPU devices
+# and the /root/.ollama model storage directory.
 CMD ["ollama", "serve"]

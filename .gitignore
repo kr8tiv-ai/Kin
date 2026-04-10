@@ -50,5 +50,13 @@ $null
 
 # ── GSD baseline (auto-generated) ──
 .gsd-id
-nul  
-console.log(p  
+
+# Debug/temp files (often created during dev investigation)
+_*.js
+_*.mjs
+_*.cjs
+_*.mts
+query-*.cjs
+query-*.js
+test_temp.*
+test_perm.*
