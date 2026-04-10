@@ -273,6 +273,199 @@ Companions can initiate contact based on context:
 
 All 22 raw `fetch()` calls wrapped with retry logic, timeout enforcement, and structured error handling across 14 production files.
 
+### Zero-Knowledge Memory Encryption
+
+All companion memories are encrypted client-side before touching the API. The server never sees plaintext memory content.
+
+- **AES-256-GCM** symmetric encryption with per-memory initialization vectors
+- **PBKDF2** key derivation (100K iterations, SHA-512) from user passphrase
+- Encrypted payloads stored as opaque blobs -- decryption happens exclusively in the client
+- Key rotation support with re-encryption migration path
+- Zero-knowledge architecture: API compromise cannot leak memory contents
+
+### Dream Mode
+
+Companions autonomously initiate conversations during user idle periods, simulating ambient awareness and emotional continuity.
+
+- Activity detection via heartbeat tracking -- idle threshold triggers dream state
+- Ambient awareness pulls recent memories, calendar context, and time-of-day signals
+- Dream message generation uses personality-weighted prompts with reduced temperature
+- Quiet hours and per-companion toggle enforcement
+- Dream logs persisted for continuity across sessions
+
+### Predictive Companion Engine
+
+The companion learns behavioral patterns over time and pre-fetches data before the user asks.
+
+- Behavioral pattern extraction from conversation history and interaction timing
+- Prediction model generates ranked next-action candidates with confidence scores
+- Pre-fetch pipeline hydrates context (weather, calendar, portfolio, news) based on predictions above threshold
+- Confidence scoring with exponential decay for stale patterns
+- User feedback loop refines prediction accuracy per companion
+
+### Gmail & Calendar OAuth2 Integration
+
+Full OAuth2 lifecycle for Google services with encrypted token storage and proactive companion triggers.
+
+- OAuth2 authorization code flow with PKCE for Gmail and Calendar scopes
+- **AES-256-GCM** token encryption at rest -- refresh tokens never stored in plaintext
+- Gmail API wrappers: inbox search, thread reading, draft creation, label management
+- Calendar event fetching with time-range queries and recurrence expansion
+- Proactive triggers: upcoming meetings surface briefing context, email digests during idle windows
+- Token refresh handled transparently with circuit breaker on auth failures
+
+### Browser Automation
+
+Headless Puppeteer integration for structured web content extraction with security-first URL validation.
+
+- **SSRF-safe URL validation** -- private IP ranges, localhost, and internal hostnames blocked before navigation
+- Concurrent page pooling with configurable max-pages limit to bound resource usage
+- Structured content extraction: title, meta, headings, body text, Open Graph, JSON-LD
+- Screenshot capture for visual context injection into companion conversations
+- Request interception for ad/tracker blocking and bandwidth optimization
+- Timeout enforcement per page with graceful cleanup on failure
+
+### Scheduler & Pipeline System
+
+Persistent job scheduling and multi-step workflow orchestration with cron-based triggers.
+
+- **Croner-based scheduler** with persistent job definitions in SQLite
+- Full CRUD for scheduled jobs via API routes (`POST /scheduler`, `PATCH /scheduler/:id`, `DELETE /scheduler/:id`)
+- Boot-time hydration: all active jobs reloaded and re-registered on server restart
+- **Multi-step pipelines** with sequential stage execution and context threading between steps
+- Pipeline stages can invoke inference, skills, browser automation, or external APIs
+- Cron-triggered pipelines for recurring workflows (daily digest, weekly report, portfolio rebalance)
+- Execution history with per-run logs, duration tracking, and failure retry policies
+
+### Knowledge Distillation Pipeline
+
+Model compression framework for creating smaller, faster companion models from frontier teachers.
+
+- **Converter** -- exports teacher model outputs into distillation-ready training format
+- **Runner** -- orchestrates student model training with configurable hyperparameters
+- **Selector** -- picks optimal student checkpoint based on evaluation metrics
+- **Store** -- versioned model artifact storage with metadata and lineage tracking
+- Evaluation framework with automated benchmarks, scoring rubrics, and teacher-vs-student comparison
+- Integration with QLoRA fine-tuning pipeline for companion personality preservation
+
+### Media Generation
+
+AI-powered video and music generation via Replicate API with per-user rate limiting.
+
+- **Video generation** -- Wan 2.x model for text-to-video and image-to-video pipelines
+- **Music generation** -- Lyria 3 and MusicGen models for text-to-music with style control
+- Per-user rate limiting with sliding window counters (configurable daily/hourly caps)
+- Async generation with webhook callbacks and progress polling
+- Generated media stored with companion context for memory integration
+- Cost tracking per generation for billing attribution
+
+### Community Marketplace
+
+Shared companion ecosystem where users publish, discover, and rate companion configurations.
+
+- Companion template publishing with metadata, preview, and version history
+- Star ratings and written reviews with abuse detection
+- Activity feed showing trending companions, new uploads, and community highlights
+- Leaderboards ranked by downloads, ratings, and active usage
+- One-click companion import with soul config merge and conflict resolution
+
+### Approval Gates
+
+User confirmation gates for external skill mutations with fine-grained policy controls.
+
+- Mutations to external services (email send, calendar create, transaction sign) require explicit user approval
+- **Policy engine** with per-skill, per-channel, and per-severity rules
+- Auto-approve policies for trusted skill + context combinations below risk threshold
+- Approval timeout with configurable expiry and fallback behavior
+- Audit log of all approval decisions for governance review
+
+### Soul Drift Detection
+
+Continuous monitoring of companion personality evolution with warm/cold phrase markers.
+
+- Personality trait vector computed from recent conversations and compared against baseline soul config
+- **Warm markers** -- phrases and behaviors indicating positive trait alignment
+- **Cold markers** -- phrases indicating personality deviation or regression
+- Drift score quantified as cosine distance from baseline with configurable alert thresholds
+- Drift alerts surfaced in Mission Control with trait-level breakdown
+- Auto-correction suggestions generated when drift exceeds tolerance
+
+### Child Safety System
+
+Age-bracket safety prompt injection ensuring COPPA compliance and age-appropriate interactions.
+
+- **Three safety tiers**: `under_13` (COPPA-safe), `teen` (13-17), `adult` (18+)
+- System prompt injection layer applies age-bracket guardrails before every inference call
+- `under_13` mode: no data collection, no external API calls, content filtering enforced
+- `teen` mode: reduced content scope, parental notification hooks, limited skill access
+- Content classification gate rejects unsafe outputs before delivery
+- Family group integration ensures child accounts inherit parent-configured safety policies
+
+### Multi-Channel Delivery
+
+Unified delivery registry with channel-specific message routing and format adaptation.
+
+- **Delivery registry** supporting Telegram, WhatsApp, Discord, and raw API channels
+- Channel-specific message formatting: Markdown (Telegram), rich embeds (Discord), plain text (WhatsApp)
+- Per-user channel preference with fallback chain (primary > secondary > API inbox)
+- Delivery receipts and retry logic with exponential backoff per channel
+- Rate limiting applied per-channel to respect platform-specific API quotas
+- Broadcast support for system-wide announcements across all registered channels
+
+### DM Security
+
+Allowlist and pairing code management for secure direct message channels.
+
+- **Allowlist model** -- only pre-approved user IDs can interact with companions via DM
+- Pairing codes: time-limited, single-use codes for linking new channels to user accounts
+- Channel-specific approval: a user can be approved for Telegram but not Discord
+- Pairing flow: generate code in dashboard > enter code in DM > channel linked to account
+- Revocation support with immediate channel disconnection
+- Audit trail of all pairing and revocation events
+
+### Fleet Management
+
+Container lifecycle orchestration for multi-companion deployments with resource governance.
+
+- **Container lifecycle** -- spin up, pause, resume, and destroy companion containers on demand
+- Idle management: containers with no active conversations auto-pause after configurable timeout
+- **Tunnel management** -- Tailscale or Cloudflare tunnel provisioning per container for secure access
+- Credit and token system: per-user resource budgets with usage metering and overage alerts
+- **Traefik load balancing** -- dynamic route registration for companion containers with health-aware routing
+- Fleet dashboard in Mission Control showing container status, resource usage, and cost attribution
+
+### Referral System
+
+User referral tracking with reward distribution for organic growth.
+
+- Unique referral codes generated per user with deep-link support
+- Referral chain tracking: referrer > referee with conversion event logging
+- Reward distribution: credit grants, tier upgrades, or badge unlocks on successful referral
+- Anti-abuse: duplicate detection, self-referral blocking, minimum activity thresholds
+- Referral leaderboard and stats visible in user dashboard
+
+### Billing & Revenue
+
+Stripe-powered subscription management with webhook-driven lifecycle and revenue tracking.
+
+- **Stripe Checkout** integration for subscription creation with plan selection
+- Webhook ingestion for `invoice.paid`, `customer.subscription.updated`, `customer.subscription.deleted` events
+- Subscription tier enforcement at the API middleware layer -- feature gating based on active plan
+- Revenue tracking with per-user LTV, MRR, and churn metrics
+- Grace period handling for failed payments with automated dunning notifications
+- Usage-based billing support for metered features (media generation, inference tokens)
+
+### Dockerized Infrastructure
+
+Production-grade containerized deployment with Traefik reverse proxy and comprehensive health monitoring.
+
+- **Traefik reverse proxy** with automatic HTTPS via Let's Encrypt, rate limiting, and IP allowlisting
+- Docker Compose orchestration for API, bot, database, Traefik, and worker services
+- Healthchecks on all services with restart policies and dependency ordering
+- Secured compose files: secrets mounted via Docker secrets, no env vars for sensitive values
+- Multi-stage Dockerfile: build stage compiles TypeScript, production stage runs minimal Node.js image
+- Volume mounts for persistent data (SQLite, media, logs) with backup-friendly paths
+
 ---
 
 ## Tech Stack
@@ -294,9 +487,13 @@ All 22 raw `fetch()` calls wrapped with retry logic, timeout enforcement, and st
 | **i18n** | next-intl (11 locales) |
 | **Desktop** | Tauri v2 |
 | **PWA** | Serwist (service worker + precaching) |
-| **Containers** | Docker + Compose |
-| **Scheduling** | Croner |
-| **Browser** | Puppeteer |
+| **Containers** | Docker + Compose + Traefik reverse proxy |
+| **Scheduling** | Croner (persistent jobs, pipeline cron triggers) |
+| **Browser** | Puppeteer (SSRF-safe, pooled) |
+| **Encryption** | AES-256-GCM, PBKDF2 (zero-knowledge memory, token storage) |
+| **Payments** | Stripe (subscriptions, webhooks, usage metering) |
+| **Media AI** | Replicate API (Wan 2.x video, Lyria 3/MusicGen audio) |
+| **OAuth** | Google OAuth2 (Gmail, Calendar) with PKCE |
 | **Compression** | @fastify/compress |
 
 ---
@@ -441,6 +638,13 @@ Create a `.env` file at the project root. Required variables depend on which pro
 | `SLACK_WEBHOOK_URL` | Watchdog alerts |
 | `TAILSCALE_API_KEY` | Remote access |
 | `ELEVENLABS_API_KEY` | Voice synthesis |
+| `GOOGLE_CLIENT_ID` | Gmail/Calendar OAuth2 client |
+| `GOOGLE_CLIENT_SECRET` | Gmail/Calendar OAuth2 secret |
+| `REPLICATE_API_TOKEN` | Video/music generation via Replicate |
+| `STRIPE_SECRET_KEY` | Stripe billing integration |
+| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signature verification |
+| `MEMORY_ENCRYPTION_SALT` | PBKDF2 salt for zero-knowledge memory encryption |
+| `TRAEFIK_DASHBOARD_AUTH` | Traefik admin dashboard credentials |
 
 ---
 
