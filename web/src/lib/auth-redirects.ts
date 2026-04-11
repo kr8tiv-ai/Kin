@@ -24,29 +24,9 @@ export function getAuthRedirectPath(input: AuthRedirectInput): string | null {
     return '/dashboard';
   }
 
-  if (
-    input.onboardingComplete &&
-    !input.setupWizardComplete &&
-    !input.pathname.startsWith('/dashboard/setup')
-  ) {
-    return '/dashboard/setup';
-  }
-
-  if (
-    input.deploymentComplete === false &&
-    !input.pathname.startsWith('/dashboard/setup') &&
-    !input.pathname.startsWith('/dashboard/help')
-  ) {
-    return '/dashboard/setup';
-  }
-
-  if (
-    input.setupWizardComplete &&
-    input.deploymentComplete !== false &&
-    input.pathname.startsWith('/dashboard/setup')
-  ) {
-    return '/dashboard';
-  }
+  // Setup wizard and deployment gates removed — cloud users should never
+  // be forced through a self-hosting setup flow.  Admins can still visit
+  // /dashboard/setup manually if needed.
 
   return null;
 }
