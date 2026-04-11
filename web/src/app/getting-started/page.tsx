@@ -14,50 +14,27 @@ const steps = [
   },
   {
     number: '02',
-    title: 'Run the Installer',
+    title: 'Personalize Your KIN',
     description:
-      'Run deploy-easy.sh (Unix) or deploy-easy.bat (Windows). The adaptive installer handles Ollama, dependencies, and local setup automatically.',
-    href: '/dashboard/setup',
-    cta: 'Open Setup',
+      'Complete a quick onboarding flow to give your KIN its name, personality, and voice.',
+    href: '/onboard',
+    cta: 'Start Onboarding',
   },
   {
     number: '03',
-    title: 'Complete Setup Wizard',
+    title: 'Connect Your Channels',
     description:
-      'Validate your API keys and connect messaging channels (Telegram, Discord, WhatsApp) at the Setup Wizard.',
-    href: '/dashboard/setup',
-    cta: 'Open Wizard',
+      'Link Telegram, Discord, or WhatsApp so your KIN can reach you wherever you are.',
+    href: '/dashboard',
+    cta: 'Open Dashboard',
   },
   {
     number: '04',
-    title: 'Deploy to Cloud (Optional)',
+    title: 'Start Chatting!',
     description:
-      'Deploy to Railway, Render, Fly.io, or Coolify for 24/7 availability. Follow the cloud deploy guides in the docs.',
-    href: '/docs',
-    cta: 'View Deploy Guides',
-  },
-];
-
-const localSteps = [
-  {
-    title: 'Clone & Install',
-    command: 'git clone https://github.com/your-org/kin.git && cd kin && npm install',
-    description: 'Clone the repository and install dependencies.',
-  },
-  {
-    title: 'Run the Adaptive Installer (Unix)',
-    command: './deploy-easy.sh',
-    description: 'Detects your environment, installs Ollama, pulls models, and configures everything.',
-  },
-  {
-    title: 'Run the Adaptive Installer (Windows)',
-    command: 'deploy-easy.bat',
-    description: 'Same adaptive installer for Windows — handles Ollama, dependencies, and setup.',
-  },
-  {
-    title: 'Open the Dashboard',
-    command: '',
-    description: 'Go to http://localhost:3001 and say hello to your KIN!',
+      'Head to the chat page and say hello — your KIN is ready to meet you!',
+    href: '/dashboard/chat',
+    cta: 'Chat Now',
   },
 ];
 
@@ -107,38 +84,9 @@ export default function GettingStartedPage() {
           ))}
         </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.5 }}
-        >
-          <GlassCard className="p-6" hover={false}>
-            <h2 className="text-2xl font-display font-semibold text-white mb-6">
-              Local Setup Commands
-            </h2>
-            <div className="space-y-4">
-              {localSteps.map((step, index) => (
-                <div key={index} className="border border-white/10 rounded-lg p-4">
-                  <h4 className="text-white font-medium mb-2">{step.title}</h4>
-                  {step.command && (
-                    <code className="block text-sm text-cyan font-mono bg-black/40 rounded px-3 py-2 mb-2">
-                      {step.command}
-                    </code>
-                  )}
-                  <p className="text-sm text-white/40">{step.description}</p>
-                </div>
-              ))}
-            </div>
-          </GlassCard>
-        </motion.div>
-
         <div className="text-center mt-12 space-y-4">
-          <p className="text-white/40 mb-2">Want to try before you install?</p>
-          <Button variant="primary" href="/demo">
-            Try Demo
-          </Button>
-          <p className="text-white/40 mt-6 mb-2">Need help?</p>
-          <Button variant="ghost" href="/support">
+          <p className="text-white/40 mb-2">Need help?</p>
+          <Button variant="ghost" href="/dashboard/help">
             Contact Support
           </Button>
         </div>
