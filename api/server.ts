@@ -18,6 +18,7 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
 import { pathToFileURL } from 'url';
+import { Sentry } from './sentry.js';
 
 import type { Bot } from 'grammy';
 
