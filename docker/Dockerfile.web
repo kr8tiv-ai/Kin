@@ -4,6 +4,13 @@ WORKDIR /app/web
 
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# Build-time env vars baked into the Next.js client bundle
+ARG NEXT_PUBLIC_GOOGLE_CLIENT_ID
+ENV NEXT_PUBLIC_GOOGLE_CLIENT_ID=${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
+
+ARG NEXT_PUBLIC_SENTRY_DSN
+ENV NEXT_PUBLIC_SENTRY_DSN=${NEXT_PUBLIC_SENTRY_DSN}
+
 COPY web/package.json web/package-lock.json ./
 RUN npm ci
 
@@ -12,6 +19,9 @@ COPY web/tsconfig.json ./
 COPY web/next-env.d.ts ./
 COPY web/postcss.config.mjs ./
 COPY web/tailwind.config.ts ./
+COPY web/sentry.client.config.ts ./
+COPY web/sentry.server.config.ts ./
+COPY web/sentry.edge.config.ts ./
 COPY web/src/ ./src/
 COPY web/public/ ./public/
 COPY web/i18n/ ./i18n/
