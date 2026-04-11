@@ -56,8 +56,9 @@ Key facts about KIN:
 - 6 AI companions: Cipher (code), Mischief (social), Vortex (data), Forge (architecture), Aether (creative), Catalyst (habits)
 - Each powered by a different frontier AI model
 - Free tier: 1 companion, 50 msgs/day, powered by Groq Qwen 3 32B (zero cost)
-- Pro tier: 3 companions, unlimited messages, full web builder, priority support
-- Enterprise: All 6 companions, API access, dedicated support
+- Hatchling: 1 premium companion, unlimited messages, Supermemory Pro, Telegram + WhatsApp + Voice, automation
+- Elder: Up to 3 companions, priority support, advanced workflow automation, hands-on configuration help
+- Hero: All 6 companions, API access, dedicated support, deep customization, multi-agent integrations
 - NFTs on Solana — companions are mintable NFTs that carry skills when transferred
 - Skills marketplace: built-in + custom (from GitHub repos, $4.99 review fee)
 - Works on Telegram, Discord, WhatsApp, and web dashboard

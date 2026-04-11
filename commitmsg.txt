@@ -1,1 +1,1 @@
-fix: add i18n and messages dirs to Dockerfile.web for next-intl build 
+feat: subscription system, auth hardening, fleet credits, stabilization plan, completion status, referral updates, pricing section, test coverage

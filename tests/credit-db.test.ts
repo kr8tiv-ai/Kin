@@ -17,6 +17,8 @@ let canRun = false;
 try {
   Database = (await import('better-sqlite3')).default;
   ({ CreditDb } = await import('../fleet/credit-db.js'));
+  const probe = new Database(':memory:');
+  probe.close();
   canRun = true;
 } catch (err) {
   const msg = err instanceof Error ? err.message : String(err);
@@ -111,17 +113,17 @@ describe.skipIf(!canRun)('CreditDb', () => {
   });
 
   it('ensureBalance returns existing balance without overwriting', () => {
-    creditDb.ensureBalance('user-2', 'pro');
+    creditDb.ensureBalance('user-2', 'elder');
     creditDb.addCredits('user-2', 50.0);
 
     const bal = creditDb.ensureBalance('user-2', 'free');
-    expect(bal.tier).toBe('pro'); // tier NOT overwritten
+    expect(bal.tier).toBe('elder'); // tier NOT overwritten
     expect(bal.balanceUsd).toBe(50.0); // balance preserved
   });
 
   it('ensureBalance accepts custom tier', () => {
-    const bal = creditDb.ensureBalance('user-tier', 'enterprise');
-    expect(bal.tier).toBe('enterprise');
+    const bal = creditDb.ensureBalance('user-tier', 'hero');
+    expect(bal.tier).toBe('hero');
   });
 
   // -----------------------------------------------------------------------
@@ -192,11 +194,11 @@ describe.skipIf(!canRun)('CreditDb', () => {
   it('setTier updates tier field', () => {
     creditDb.ensureBalance('user-tier-up');
 
-    const result = creditDb.setTier('user-tier-up', 'pro');
-    expect(result.tier).toBe('pro');
+    const result = creditDb.setTier('user-tier-up', 'elder');
+    expect(result.tier).toBe('elder');
 
     const fetched = creditDb.getBalance('user-tier-up');
-    expect(fetched!.tier).toBe('pro');
+    expect(fetched!.tier).toBe('elder');
   });
 
   // -----------------------------------------------------------------------

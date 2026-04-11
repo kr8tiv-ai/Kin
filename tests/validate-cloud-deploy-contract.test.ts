@@ -123,7 +123,10 @@ describe('validate-cloud-deploy-contract', () => {
       const readmePath = path.join(root, 'README.md');
       const readmeContent = fs
         .readFileSync(readmePath, 'utf8')
-        .replace('- **Coolify** — `docker-compose.coolify.yml`', '- **Coolify** — deploy contract pending');
+        .replace(
+          '- **Coolify** — one-click via `docker-compose.coolify.yml`; guide: [`docs/deploy/coolify.md`](docs/deploy/coolify.md)',
+          '- **Coolify** — deploy contract pending',
+        );
 
       fs.writeFileSync(readmePath, readmeContent, 'utf8');
     });
@@ -141,7 +144,10 @@ describe('validate-cloud-deploy-contract', () => {
       const readmePath = path.join(root, 'README.md');
       const readmeContent = fs
         .readFileSync(readmePath, 'utf8')
-        .replace('docs/deploy/fly.md', 'docs/deploy/fly-guide.md');
+        .replace(
+          '[`docs/deploy/fly.md`](docs/deploy/fly.md)',
+          '[`docs/deploy/fly-guide.md`](docs/deploy/fly-guide.md)',
+        );
 
       fs.writeFileSync(readmePath, readmeContent, 'utf8');
     });

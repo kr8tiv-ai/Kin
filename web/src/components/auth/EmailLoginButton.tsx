@@ -1,5 +1,9 @@
 'use client';
 
+// ============================================================================
+// Email Login / Register Button — Expandable form with matching KIN style.
+// ============================================================================
+
 import { useState, useCallback } from 'react';
 import type { User } from '@/lib/types';
 import { kinApi } from '@/lib/api';
@@ -53,20 +57,21 @@ export function EmailLoginButton({ onAuth }: EmailLoginButtonProps) {
       <button
         type="button"
         onClick={() => setMode('login')}
-        className="flex w-full items-center justify-center gap-2.5 rounded-full border border-white/20 px-8 py-3 font-display text-sm font-medium uppercase tracking-wide text-white/60 transition-all duration-300 hover:bg-white/[0.06] hover:text-white/80 hover:border-white/30"
+        className="kin-login-btn group flex w-full items-center justify-center gap-3 rounded-full px-8 py-3.5 font-display text-sm font-semibold uppercase tracking-wide text-white/80 transition-all duration-500 ease-out hover:text-white"
+        style={{ '--btn-accent': '#00f0ff', '--btn-glow': 'rgba(0,240,255,0.35)' } as React.CSSProperties}
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 transition-transform duration-500 group-hover:scale-110">
           <rect x="2" y="4" width="20" height="16" rx="2" />
           <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
         </svg>
-        Continue with Email
+        <span>Continue with Email</span>
       </button>
     );
   }
 
   // Login / Register form
   return (
-    <form onSubmit={handleSubmit} className="w-full space-y-3">
+    <form onSubmit={handleSubmit} className="w-full space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
       {mode === 'register' && (
         <input
           type="text"
@@ -74,7 +79,7 @@ export function EmailLoginButton({ onAuth }: EmailLoginButtonProps) {
           value={firstName}
           onChange={(e) => setFirstName(e.target.value)}
           required
-          className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-white placeholder-white/25 outline-none transition-colors focus:border-white/25 focus:bg-white/[0.06]"
+          className="w-full rounded-2xl border border-white/[0.08] bg-white/[0.03] px-5 py-3 text-sm text-white placeholder-white/20 outline-none transition-all duration-300 focus:border-white/20 focus:bg-white/[0.05] focus:shadow-[0_0_20px_rgba(0,240,255,0.06)]"
         />
       )}
       <input
@@ -84,7 +89,7 @@ export function EmailLoginButton({ onAuth }: EmailLoginButtonProps) {
         onChange={(e) => setEmail(e.target.value)}
         required
         autoComplete="email"
-        className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-white placeholder-white/25 outline-none transition-colors focus:border-white/25 focus:bg-white/[0.06]"
+        className="w-full rounded-2xl border border-white/[0.08] bg-white/[0.03] px-5 py-3 text-sm text-white placeholder-white/20 outline-none transition-all duration-300 focus:border-white/20 focus:bg-white/[0.05] focus:shadow-[0_0_20px_rgba(0,240,255,0.06)]"
       />
       <input
         type="password"
@@ -94,12 +99,13 @@ export function EmailLoginButton({ onAuth }: EmailLoginButtonProps) {
         required
         minLength={8}
         autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
-        className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-white placeholder-white/25 outline-none transition-colors focus:border-white/25 focus:bg-white/[0.06]"
+        className="w-full rounded-2xl border border-white/[0.08] bg-white/[0.03] px-5 py-3 text-sm text-white placeholder-white/20 outline-none transition-all duration-300 focus:border-white/20 focus:bg-white/[0.05] focus:shadow-[0_0_20px_rgba(0,240,255,0.06)]"
       />
       <button
         type="submit"
         disabled={loading}
-        className="flex w-full items-center justify-center rounded-full border border-white/20 px-8 py-3 font-display text-sm font-medium uppercase tracking-wide text-white/80 transition-all duration-300 hover:bg-white/[0.08] hover:text-white hover:border-white/30 disabled:opacity-40"
+        className="kin-login-btn group flex w-full items-center justify-center rounded-full px-8 py-3.5 font-display text-sm font-semibold uppercase tracking-wide text-white/80 transition-all duration-500 ease-out hover:text-white disabled:opacity-40 disabled:cursor-not-allowed"
+        style={{ '--btn-accent': '#00f0ff', '--btn-glow': 'rgba(0,240,255,0.35)' } as React.CSSProperties}
       >
         {loading
           ? 'Please wait...'
@@ -110,28 +116,28 @@ export function EmailLoginButton({ onAuth }: EmailLoginButtonProps) {
       </button>
 
       {error && (
-        <p className="text-sm text-center text-magenta" role="alert">{error}</p>
+        <p className="text-xs text-center text-magenta animate-pulse" role="alert">{error}</p>
       )}
 
       <div className="flex items-center justify-center gap-1 text-[11px]">
         {mode === 'login' ? (
           <>
-            <span className="text-white/25">No account?</span>
+            <span className="text-white/20">No account?</span>
             <button
               type="button"
               onClick={() => { setMode('register'); setError(null); }}
-              className="text-white/50 hover:text-white/70 transition-colors underline underline-offset-2"
+              className="text-white/40 hover:text-[#00f0ff] transition-colors duration-300 underline underline-offset-2 decoration-white/10 hover:decoration-[#00f0ff]/40"
             >
               Create one
             </button>
           </>
         ) : (
           <>
-            <span className="text-white/25">Have an account?</span>
+            <span className="text-white/20">Have an account?</span>
             <button
               type="button"
               onClick={() => { setMode('login'); setError(null); }}
-              className="text-white/50 hover:text-white/70 transition-colors underline underline-offset-2"
+              className="text-white/40 hover:text-[#00f0ff] transition-colors duration-300 underline underline-offset-2 decoration-white/10 hover:decoration-[#00f0ff]/40"
             >
               Sign in
             </button>
@@ -141,7 +147,7 @@ export function EmailLoginButton({ onAuth }: EmailLoginButtonProps) {
         <button
           type="button"
           onClick={() => { setMode('idle'); setError(null); }}
-          className="text-white/30 hover:text-white/50 transition-colors"
+          className="text-white/20 hover:text-white/40 transition-colors duration-300"
         >
           Back
         </button>

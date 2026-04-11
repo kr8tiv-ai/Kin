@@ -204,7 +204,7 @@ export async function handleUpgrade(ctx: BotContext): Promise<void> {
  * Handles all `upgrade:*` callback_query data values.
  *
  * @param ctx  The bot context.
- * @param data The full callback data string (e.g. 'upgrade:pro').
+ * @param data The full callback data string (e.g. 'upgrade:elder').
  */
 export async function handleUpgradeCallback(
   ctx: BotContext,
@@ -215,7 +215,7 @@ export async function handleUpgradeCallback(
   const userId = ctx.from?.id.toString() ?? 'unknown';
 
   // ------------------------------------------------------------------
-  // upgrade:pro
+  // upgrade:hatchling | upgrade:elder | upgrade:hero
   // ------------------------------------------------------------------
   // Handle all tier upgrades
   const tierMatch = data.match(/^upgrade:(hatchling|elder|hero)$/);

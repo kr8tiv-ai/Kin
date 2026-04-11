@@ -41,6 +41,10 @@ function makeDistillSummary(overrides: Partial<DistillRunSummary> = {}): Distill
   };
 }
 
+function makeLoopConfig(prefix: string) {
+  return { historyBasePath: makeTmpDir(prefix) };
+}
+
 // ============================================================================
 // 1. checkRetrainReadiness
 // ============================================================================
@@ -195,90 +199,103 @@ describe('runRetrainLoop', () => {
   it('runs distillation first when runDistillFirst is true', async () => {
     const mockDistill = vi.fn().mockResolvedValue(makeDistillSummary());
     setupMocks({ runDistillation: mockDistill });
+    const config = makeLoopConfig('distill-first');
 
     const { runRetrainLoop } = await import('../training/retrain-loop.js');
-    const result = await runRetrainLoop('cipher', { runDistillFirst: true });
+    const result = await runRetrainLoop('cipher', { ...config, runDistillFirst: true });
 
     expect(mockDistill).toHaveBeenCalledOnce();
     expect(result.distillSummary).toBeTruthy();
     expect(result.distillSummary?.companionId).toBe('cipher');
+
+    fs.rmSync(config.historyBasePath, { recursive: true, force: true });
   });
 
   it('skips distillation when runDistillFirst is false/unset', async () => {
     const mockDistill = vi.fn().mockResolvedValue(makeDistillSummary());
     setupMocks({ runDistillation: mockDistill });
+    const config = makeLoopConfig('skip-distill');
 
     const { runRetrainLoop } = await import('../training/retrain-loop.js');
-    const result = await runRetrainLoop('cipher');
+    const result = await runRetrainLoop('cipher', config);
 
     expect(mockDistill).not.toHaveBeenCalled();
     expect(result.distillSummary).toBeUndefined();
+
+    fs.rmSync(config.historyBasePath, { recursive: true, force: true });
   });
 
   it('returns error result when readiness check fails (not enough data)', async () => {
     setupMocks({
       loadDistillDataset: vi.fn().mockResolvedValue(['l1', 'l2']), // only 2 < 5
     });
+    const config = makeLoopConfig('not-ready');
 
     const { runRetrainLoop } = await import('../training/retrain-loop.js');
-    const result = await runRetrainLoop('cipher');
+    const result = await runRetrainLoop('cipher', config);
 
     expect(result.success).toBe(false);
     expect(result.trainingError).toContain('need at least');
     expect(result.datasetSize).toBe(2);
+
+    fs.rmSync(config.historyBasePath, { recursive: true, force: true });
   });
 
   it('calls runPipeline with distill JSONL dataPath (not training.jsonl)', async () => {
     const mockPipeline = vi.fn().mockResolvedValue(undefined);
     setupMocks({ runPipeline: mockPipeline });
+    const config = makeLoopConfig('pipeline-args');
 
     const { runRetrainLoop } = await import('../training/retrain-loop.js');
-    await runRetrainLoop('cipher');
+    await runRetrainLoop('cipher', config);
 
     expect(mockPipeline).toHaveBeenCalledOnce();
     const args = mockPipeline.mock.calls[0][0];
     expect(args.dataPath).toContain(path.join('distill', 'cipher', 'distill.jsonl'));
     expect(args.dataPath).not.toContain('training.jsonl');
     expect(args.companionId).toBe('cipher');
+
+    fs.rmSync(config.historyBasePath, { recursive: true, force: true });
   });
 
   it('saves history entry on success', async () => {
-    const tmpDir = makeTmpDir('success-hist');
+    const config = makeLoopConfig('success-hist');
     setupMocks();
-
-    // We need to capture the history write. Mock fs.promises.mkdir and appendFile
-    // by using a real temp dir for the retrain history.
     const { runRetrainLoop, loadRetrainHistory } = await import('../training/retrain-loop.js');
-
-    // Run with default config — history is saved to data/retrain/{cid}/history.jsonl
-    // We can't easily redirect the history base path from runRetrainLoop since it uses
-    // the default path internally. Instead, verify the result shape and that the function
-    // succeeds without error.
-    const result = await runRetrainLoop('cipher');
+    const result = await runRetrainLoop('cipher', config);
 
     expect(result.success).toBe(true);
     expect(result.companionId).toBe('cipher');
     expect(result.modelName).toBe('kin-cipher');
     expect(result.startedAt).toBeTruthy();
     expect(result.completedAt).toBeTruthy();
+    const history = await loadRetrainHistory('cipher', config.historyBasePath);
+    expect(history).toHaveLength(1);
+    expect(history[0].success).toBe(true);
 
     // Clean up
-    fs.rmSync(tmpDir, { recursive: true, force: true });
+    fs.rmSync(config.historyBasePath, { recursive: true, force: true });
   });
 
   it('saves history entry on pipeline failure', async () => {
     setupMocks({
       runPipeline: vi.fn().mockRejectedValue(new Error('Python crash')),
     });
+    const config = makeLoopConfig('pipeline-failure');
 
-    const { runRetrainLoop } = await import('../training/retrain-loop.js');
-    const result = await runRetrainLoop('cipher');
+    const { runRetrainLoop, loadRetrainHistory } = await import('../training/retrain-loop.js');
+    const result = await runRetrainLoop('cipher', config);
 
     expect(result.success).toBe(false);
     expect(result.trainingError).toBe('Python crash');
     expect(result.companionId).toBe('cipher');
     expect(result.startedAt).toBeTruthy();
     expect(result.completedAt).toBeTruthy();
+    const history = await loadRetrainHistory('cipher', config.historyBasePath);
+    expect(history).toHaveLength(1);
+    expect(history[0].success).toBe(false);
+
+    fs.rmSync(config.historyBasePath, { recursive: true, force: true });
   });
 });
 
@@ -350,6 +367,40 @@ describe('history persistence', () => {
     expect(entries[0].id.length).toBe(64); // SHA-256 hex
 
     fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('saveRetrainHistory honors KIN_RETRAIN_HISTORY_DIR when no explicit basePath is provided', async () => {
+    setupBasicMocks();
+    const { saveRetrainHistory, loadRetrainHistory } = await import('../training/retrain-loop.js');
+    const tmpDir = makeTmpDir('env-history');
+    const previousHistoryDir = process.env.KIN_RETRAIN_HISTORY_DIR;
+
+    process.env.KIN_RETRAIN_HISTORY_DIR = tmpDir;
+
+    const result = {
+      success: true,
+      companionId: 'cipher',
+      datasetSize: 7,
+      startedAt: '2025-01-04T00:00:00Z',
+      completedAt: '2025-01-04T00:01:00Z',
+      modelName: 'kin-cipher',
+    };
+
+    try {
+      await saveRetrainHistory(result, 'cipher');
+      const entries = await loadRetrainHistory('cipher');
+
+      expect(entries).toHaveLength(1);
+      expect(entries[0].datasetSize).toBe(7);
+      expect(fs.existsSync(path.join(tmpDir, 'cipher', 'history.jsonl'))).toBe(true);
+    } finally {
+      if (previousHistoryDir === undefined) {
+        delete process.env.KIN_RETRAIN_HISTORY_DIR;
+      } else {
+        process.env.KIN_RETRAIN_HISTORY_DIR = previousHistoryDir;
+      }
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
   });
 
   it('multiple saves append correctly', async () => {
@@ -564,8 +615,33 @@ describe('retrain API routes', () => {
   let server: import('fastify').FastifyInstance | null = null;
   let authToken = '';
   let skipNative = '';
+  let retrainHistoryDir = '';
+  let previousHistoryDir: string | undefined;
+
+  async function waitForRetrainJobsToSettle(timeoutMs = 5000): Promise<void> {
+    const { getTrainingScheduler } = await import('../training/scheduler.js');
+    const deadline = Date.now() + timeoutMs;
+
+    while (Date.now() < deadline) {
+      const activeJobs = getTrainingScheduler()
+        .listJobs()
+        .filter((job) => job.status === 'pending' || job.status === 'running');
+
+      if (activeJobs.length === 0) {
+        return;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+
+    throw new Error('Timed out waiting for retrain jobs to settle');
+  }
 
   beforeAll(async () => {
+    retrainHistoryDir = makeTmpDir('api-history');
+    previousHistoryDir = process.env.KIN_RETRAIN_HISTORY_DIR;
+    process.env.KIN_RETRAIN_HISTORY_DIR = retrainHistoryDir;
+
     try {
       const { createServer } = await import('../api/server.js');
 
@@ -607,6 +683,15 @@ describe('retrain API routes', () => {
   afterAll(async () => {
     if (server) {
       await server.close();
+    }
+    await waitForRetrainJobsToSettle();
+    if (previousHistoryDir === undefined) {
+      delete process.env.KIN_RETRAIN_HISTORY_DIR;
+    } else {
+      process.env.KIN_RETRAIN_HISTORY_DIR = previousHistoryDir;
+    }
+    if (retrainHistoryDir) {
+      fs.rmSync(retrainHistoryDir, { recursive: true, force: true });
     }
   });
 
@@ -652,6 +737,8 @@ describe('retrain API routes', () => {
     expect(body.jobIds.length).toBeGreaterThan(0);
     expect(body.jobs).toBeTruthy();
     expect(body.jobs[0].companionId).toBe('cipher');
+
+    await waitForRetrainJobsToSettle();
   });
 
   it('GET /retrain/status/:companionId returns readiness and lastRun', async () => {

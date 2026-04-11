@@ -12,9 +12,10 @@ function PricingCard({ tier, index, isInView }: { tier: PricingTier; index: numb
 
   const ctaMap: Record<string, { label: string; href: string }> = {
     free: { label: 'Get Started', href: '/login' },
-    'hatchling-monthly': { label: 'Choose Hatchling', href: '/login' },
-    'elder-monthly': { label: 'Choose Elder', href: '/login' },
-    'hero-monthly': { label: 'Choose Hero', href: '/login' },
+    genesis: { label: 'Mint Your KIN', href: '/login' },
+    'hatchling-monthly': { label: 'Start Hatchling', href: '/login' },
+    'elder-monthly': { label: 'Go Elder', href: '/login' },
+    'hero-monthly': { label: 'Go Hero', href: '/login' },
   };
 
   const cta = ctaMap[tier.id] || ctaMap.free;

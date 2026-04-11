@@ -8,6 +8,7 @@ import { useCallback, useState } from 'react';
 import Cookies from 'js-cookie';
 import { useApi } from '@/hooks/useApi';
 import { kinApi } from '@/lib/api';
+import { getApiBase, withAuthHeaders } from '@/lib/auth';
 import type {
   TrainingCompanionStats,
   TrainingEntriesResponse,
@@ -72,12 +73,10 @@ export function useExportTrainingData() {
   const exportData = useCallback(async (companionId: string, companionName: string) => {
     setLoading(true);
     try {
-      const token = Cookies.get('kin_token');
-
       const response = await fetch(
-        `/api/training/companions/${companionId}/export`,
+        `${getApiBase()}/training/companions/${companionId}/export`,
         {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          headers: withAuthHeaders(),
         },
       );
 

@@ -153,7 +153,7 @@ describe('Auth Routes', () => {
     authToken = body.token;
     testUserId = body.user.id;
 
-    expect(body.user.telegramId).toBe(12345);
+    expect(body.user.telegramId).toBe('12345');
     expect(body.user.firstName).toBe('TestUser');
   });
 
@@ -172,6 +172,23 @@ describe('Auth Routes', () => {
     expect(response.statusCode).toBe(200);
     const body = response.json();
     expect(body.user.id).toBe(testUserId);
+  });
+
+  it('POST /auth/dev-login accepts a seeded userId path for local tooling', async () => {
+    if (skip()) return;
+
+    const response = await server!.inject({
+      method: 'POST',
+      url: '/auth/dev-login',
+      payload: {
+        userId: 'user-dev',
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    const body = response.json();
+    expect(body.user.id).toBe('user-dev');
+    expect(body.user.firstName).toBeDefined();
   });
 
   it('GET /auth/verify with valid token returns valid: true', async () => {

@@ -65,6 +65,8 @@ try {
   Database = (await import('better-sqlite3')).default;
   ({ FleetDb } = await import('../fleet/db.js'));
   ({ ContainerManager } = await import('../fleet/container-manager.js'));
+  const probe = new Database(':memory:');
+  probe.close();
   canRun = true;
 } catch (err) {
   const msg = err instanceof Error ? err.message : String(err);

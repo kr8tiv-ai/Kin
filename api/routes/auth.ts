@@ -882,26 +882,45 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
 
   // Development login (skip in production)
   if (fastify.context.config.environment === 'development') {
-    fastify.post<{ Body: { telegramId: number; firstName: string } }>(
+    fastify.post<{ Body: { telegramId?: number; userId?: string; firstName?: string } }>(
       '/auth/dev-login',
+      {
+        schema: {
+          body: {
+            type: 'object' as const,
+            properties: {
+              telegramId: { type: 'number' as const },
+              userId: { type: 'string' as const, minLength: 1, maxLength: 255 },
+              firstName: { type: 'string' as const, minLength: 1, maxLength: 128 },
+            },
+            anyOf: [{ required: ['telegramId'] }, { required: ['userId'] }],
+            additionalProperties: false,
+          },
+        },
+      } as any,
       async (request, reply: FastifyReply) => {
-        const { telegramId, firstName } = request.body;
+        const { telegramId, userId, firstName } = request.body;
+        const resolvedFirstName = firstName?.trim() || 'Dev';
 
         // Find or create user
-        let user = fastify.context.db.prepare(`
-          SELECT * FROM users WHERE telegram_id = ?
-        `).get(telegramId) as any;
+        let user = userId
+          ? fastify.context.db.prepare(`
+              SELECT * FROM users WHERE id = ?
+            `).get(userId) as any
+          : fastify.context.db.prepare(`
+              SELECT * FROM users WHERE telegram_id = ?
+            `).get(telegramId) as any;
 
         if (!user) {
-          const userId = `user-${crypto.randomUUID()}`;
+          const nextUserId = userId ?? `user-${crypto.randomUUID()}`;
           fastify.context.db.prepare(`
             INSERT INTO users (id, telegram_id, first_name)
             VALUES (?, ?, ?)
-          `).run(userId, telegramId, firstName);
+          `).run(nextUserId, telegramId ?? null, resolvedFirstName);
 
           user = fastify.context.db.prepare(`
             SELECT * FROM users WHERE id = ?
-          `).get(userId) as any;
+          `).get(nextUserId) as any;
         }
 
         // Auto-complete onboarding for dev login
@@ -917,7 +936,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
             `).run(
               `pref-${crypto.randomUUID()}`,
               user.id,
-              firstName,
+              resolvedFirstName,
               'advanced',
               '["ai","defi","building"]',
               'en',

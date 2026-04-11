@@ -4,23 +4,23 @@
   "owner_id": "owner-xyz789",
   "stripe_customer_id": "cus_QwErTy123456",
   "stripe_subscription_id": "sub_AsDfGh789012",
-  "tier": "pro",
+  "tier": "elder",
   "status": "active",
   "usage": {
-    "kin_count": 3,
-    "kin_limit": 10,
+    "kin_count": 2,
+    "kin_limit": 3,
     "api_calls_current": 45230,
-    "api_calls_limit": 100000,
-    "storage_used_mb": 128.5,
-    "storage_limit_mb": 5000,
+    "api_calls_limit": -1,
+    "storage_used_mb": 2048,
+    "storage_limit_mb": 10000,
     "voice_minutes_current": 45.2,
-    "voice_minutes_limit": 500
+    "voice_minutes_limit": -1
   },
   "billing_cycle": {
     "interval": "month",
     "current_period_start": "2026-03-01T00:00:00Z",
     "current_period_end": "2026-04-01T00:00:00Z",
-    "amount": 2900,
+    "amount": 19400,
     "currency": "usd"
   },
   "renewal_date": "2026-04-01T00:00:00Z",

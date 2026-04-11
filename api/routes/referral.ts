@@ -2,10 +2,9 @@
  * Referral Routes - User referral system
  *
  * Uses the `referrals` table from the schema.
- * One row per referral code — a user may only hold one active code.
- * Redeeming a code creates a new referrals row (with referred_user_id set)
- * for the referrer. Referral codes never expire by default; expiry may be
- * added later via a `expires_at` column extension.
+ * One row per referral code header - a user may only hold one active code.
+ * Each redemption is stored as its own row so multiple people can redeem the
+ * same code and rewards can be tracked atomically.
  */
 
 import { FastifyPluginAsync } from 'fastify';
@@ -39,15 +38,12 @@ interface RedeemBody {
 // ---------------------------------------------------------------------------
 
 const referralRoutes: FastifyPluginAsync = async (fastify) => {
-
   // -------------------------------------------------------------------------
-  // GET /referral — get user's referral code and stats
+  // GET /referral - get user's referral code and stats
   // -------------------------------------------------------------------------
   fastify.get('/referral', async (request) => {
     const userId = (request.user as { userId: string }).userId;
 
-    // Find this user's own referral entry (where they are the referrer and no
-    // referred_user_id, i.e. the "header" record that holds their code)
     const ownRecord = fastify.context.db.prepare(`
       SELECT referral_code, created_at
       FROM referrals
@@ -66,9 +62,6 @@ const referralRoutes: FastifyPluginAsync = async (fastify) => {
       };
     }
 
-    const code: string = ownRecord.referral_code;
-
-    // Count referrals that used this code (rows where referred_user_id is set)
     const stats = fastify.context.db.prepare(`
       SELECT
         COUNT(*) AS total,
@@ -79,7 +72,7 @@ const referralRoutes: FastifyPluginAsync = async (fastify) => {
     `).get(userId) as any;
 
     return {
-      referralCode: code,
+      referralCode: ownRecord.referral_code as string,
       totalReferrals: stats.total ?? 0,
       completedReferrals: stats.completed ?? 0,
       rewardsGranted: stats.rewards ?? 0,
@@ -88,12 +81,11 @@ const referralRoutes: FastifyPluginAsync = async (fastify) => {
   });
 
   // -------------------------------------------------------------------------
-  // POST /referral/generate — create code if user doesn't have one
+  // POST /referral/generate - create code if user doesn't have one
   // -------------------------------------------------------------------------
   fastify.post('/referral/generate', async (request, reply) => {
     const userId = (request.user as { userId: string }).userId;
 
-    // Idempotent: return existing code if already present
     const existing = fastify.context.db.prepare(`
       SELECT referral_code FROM referrals
       WHERE referrer_user_id = ? AND referred_user_id IS NULL
@@ -107,7 +99,6 @@ const referralRoutes: FastifyPluginAsync = async (fastify) => {
       };
     }
 
-    // Generate a unique code (retry if collision occurs)
     let code: string;
     let attempts = 0;
     do {
@@ -134,7 +125,7 @@ const referralRoutes: FastifyPluginAsync = async (fastify) => {
   });
 
   // -------------------------------------------------------------------------
-  // POST /referral/redeem — redeem a referral code
+  // POST /referral/redeem - redeem a referral code
   // -------------------------------------------------------------------------
   fastify.post<{ Body: RedeemBody }>('/referral/redeem', async (request, reply) => {
     const userId = (request.user as { userId: string }).userId;
@@ -146,8 +137,6 @@ const referralRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     const normalizedCode = code.trim().toUpperCase();
-
-    // Find the header record for this code
     const codeRecord = fastify.context.db.prepare(`
       SELECT id, referrer_user_id, status
       FROM referrals
@@ -160,13 +149,11 @@ const referralRoutes: FastifyPluginAsync = async (fastify) => {
       return { error: 'Referral code not found' };
     }
 
-    // Self-referral check
     if (codeRecord.referrer_user_id === userId) {
       reply.status(400);
       return { error: 'You cannot redeem your own referral code' };
     }
 
-    // Check if this user has already redeemed any code
     const alreadyRedeemed = fastify.context.db.prepare(`
       SELECT 1 FROM referrals
       WHERE referred_user_id = ?
@@ -178,51 +165,54 @@ const referralRoutes: FastifyPluginAsync = async (fastify) => {
       return { error: 'You have already redeemed a referral code' };
     }
 
-    // Check if the code's status allows redemption (not expired)
     if (codeRecord.status === 'expired') {
       reply.status(410);
       return { error: 'This referral code has expired' };
     }
 
-    // Create referral record
-    const id = `ref-${crypto.randomUUID()}`;
-    const now = Date.now();
-
-    fastify.context.db.prepare(`
-      INSERT INTO referrals
-        (id, referrer_user_id, referred_user_id, referral_code, status, completed_at, reward_granted)
-      VALUES (?, ?, ?, ?, 'completed', ?, 1)
-    `).run(id, codeRecord.referrer_user_id, userId, normalizedCode, now);
-
-    // ── Reward distribution ────────────────────────────────────────────
-    // Referrer: 7 free days added to their plan
-    // Referred user: 3 free trial days
     const REFERRER_BONUS_DAYS = 7;
     const REFERRED_BONUS_DAYS = 3;
 
     const grantFreeDays = (targetUserId: string, days: number) => {
-      // Check if user already has a free_until date
-      const existing = fastify.context.db.prepare(
-        `SELECT free_until FROM users WHERE id = ?`,
-      ).get(targetUserId) as { free_until: string | null } | undefined;
+      const existing = fastify.context.db.prepare(`
+        SELECT free_until FROM users WHERE id = ?
+      `).get(targetUserId) as { free_until: string | null } | undefined;
 
-      const baseDate = existing?.free_until && new Date(existing.free_until) > new Date()
-        ? new Date(existing.free_until)
-        : new Date();
+      const baseDate =
+        existing?.free_until && new Date(existing.free_until) > new Date()
+          ? new Date(existing.free_until)
+          : new Date();
 
       const newFreeUntil = new Date(baseDate.getTime() + days * 24 * 60 * 60 * 1000);
 
-      fastify.context.db.prepare(
-        `UPDATE users SET free_until = ? WHERE id = ?`,
-      ).run(newFreeUntil.toISOString(), targetUserId);
+      fastify.context.db.prepare(`
+        UPDATE users SET free_until = ? WHERE id = ?
+      `).run(newFreeUntil.toISOString(), targetUserId);
     };
 
-    try {
+    const redeemReferral = fastify.context.db.transaction(() => {
+      const id = `ref-${crypto.randomUUID()}`;
+      const now = Date.now();
+
+      fastify.context.db.prepare(`
+        INSERT INTO referrals
+          (id, referrer_user_id, referred_user_id, referral_code, status, completed_at, reward_granted)
+        VALUES (?, ?, ?, ?, 'completed', ?, 1)
+      `).run(id, codeRecord.referrer_user_id, userId, normalizedCode, now);
+
       grantFreeDays(codeRecord.referrer_user_id, REFERRER_BONUS_DAYS);
       grantFreeDays(userId, REFERRED_BONUS_DAYS);
-    } catch (rewardErr) {
-      // Log but don't fail the referral — rewards are best-effort
-      request.log.error(rewardErr, 'Failed to grant referral rewards');
+    });
+
+    try {
+      redeemReferral();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (message.includes('idx_referrals_referred_once') || message.includes('referred_user_id')) {
+        reply.status(409);
+        return { error: 'You have already redeemed a referral code' };
+      }
+      throw err;
     }
 
     return {
@@ -237,7 +227,7 @@ const referralRoutes: FastifyPluginAsync = async (fastify) => {
   });
 
   // -------------------------------------------------------------------------
-  // GET /referral/leaderboard — top 10 referrers (anonymized)
+  // GET /referral/leaderboard - top 10 referrers (anonymized)
   // -------------------------------------------------------------------------
   fastify.get('/referral/leaderboard', async () => {
     const rows = fastify.context.db.prepare(`
@@ -256,7 +246,6 @@ const referralRoutes: FastifyPluginAsync = async (fastify) => {
     `).all() as any[];
 
     const leaderboard = rows.map((row, index) => {
-      // Anonymize: show first name + last initial only
       const firstName: string = row.first_name ?? 'Anonymous';
       const lastInitial: string = row.last_name
         ? `${row.last_name.charAt(0).toUpperCase()}.`

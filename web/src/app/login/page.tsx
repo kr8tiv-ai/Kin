@@ -124,16 +124,14 @@ export default function LoginPage() {
           transition={{ duration: 0.6, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
           className="mt-10 w-full max-w-sm"
         >
-          <div className="rounded-3xl border border-white/[0.08] bg-white/[0.04] backdrop-blur-2xl px-7 py-8 sm:px-9 sm:py-10 space-y-4">
+          <div className="rounded-3xl border border-white/[0.06] bg-white/[0.03] backdrop-blur-2xl px-7 py-8 sm:px-9 sm:py-10 space-y-3">
             {/* Google Sign-In */}
-            <div className="flex justify-center">
-              <GoogleLoginButton
-                onAuth={(token, user) => {
-                  login(token, user);
-                  router.push('/onboard');
-                }}
-              />
-            </div>
+            <GoogleLoginButton
+              onAuth={(token, user) => {
+                login(token, user);
+                router.push('/onboard');
+              }}
+            />
 
             {/* X (Twitter) Sign-In */}
             <XLoginButton />
@@ -156,35 +154,35 @@ export default function LoginPage() {
 
             {/* Divider */}
             <div className="flex items-center gap-3 !my-5">
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
-              <span className="font-mono text-[0.55rem] uppercase tracking-[0.2em] text-white/20 select-none">
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+              <span className="font-mono text-[0.5rem] uppercase tracking-[0.25em] text-white/15 select-none">
                 or
               </span>
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
             </div>
 
-            {/* Telegram Login Widget */}
-            <div className="flex justify-center">
+            {/* Telegram — unified button style */}
+            <div className="flex flex-col items-center gap-3 w-full">
               <TelegramLoginButton
                 onAuth={(token, user) => {
                   login(token, user);
                   router.push('/onboard');
                 }}
               />
-            </div>
 
-            {/* Open in Telegram — outline style, consistent with Solana button */}
-            <a
-              href="https://t.me/KinCompanionBot"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="login-btn login-btn--telegram flex w-full items-center justify-center gap-2.5 rounded-full border border-[#ff00aa]/40 px-8 py-3 font-display text-sm font-medium uppercase tracking-wide text-[#ff00aa] transition-all duration-300 hover:bg-[#ff00aa] hover:text-white hover:border-[#ff00aa] hover:shadow-[0_0_30px_rgba(255,0,170,0.3)]"
-            >
-              <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
-                <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
-              </svg>
-              Open in Telegram
-            </a>
+              <a
+                href="https://t.me/KinCompanionBot"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="kin-login-btn group flex w-full items-center justify-center gap-3 rounded-full px-8 py-3.5 font-display text-sm font-semibold uppercase tracking-wide text-white/80 transition-all duration-500 ease-out hover:text-white"
+                style={{ '--btn-accent': '#ff00aa', '--btn-glow': 'rgba(255,0,170,0.35)' } as React.CSSProperties}
+              >
+                <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 flex-shrink-0 transition-transform duration-500 group-hover:scale-110">
+                  <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
+                </svg>
+                <span>Open in Telegram</span>
+              </a>
+            </div>
           </div>
 
           {/* Links below card */}

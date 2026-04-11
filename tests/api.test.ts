@@ -15,6 +15,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import Database from 'better-sqlite3';
 import { createServer } from '../api/server.js';
 
 // ---------------------------------------------------------------------------
@@ -23,6 +24,25 @@ import { createServer } from '../api/server.js';
 
 let app: Awaited<ReturnType<typeof createServer>>;
 let authToken: string;
+let canRunSqlite = true;
+
+try {
+  const probe = new Database(':memory:');
+  probe.close();
+} catch (err) {
+  const msg = err instanceof Error ? err.message : String(err);
+  if (msg.includes('ERR_DLOPEN_FAILED') || msg.includes('better-sqlite3') || msg.includes('NODE_MODULE_VERSION')) {
+    console.warn(
+      `⚠ Skipping api integration tests — better-sqlite3 failed to load: ${msg}\n` +
+        '  Remediation: use Linux/WSL Node v20 or run npm rebuild better-sqlite3',
+    );
+    canRunSqlite = false;
+  } else {
+    throw err;
+  }
+}
+
+const describeSqlite = canRunSqlite ? describe : describe.skip;
 
 // ---------------------------------------------------------------------------
 // Setup / Teardown
@@ -48,14 +68,14 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await app.close();
+  await app?.close();
 });
 
 // ---------------------------------------------------------------------------
 // 1. Server creation
 // ---------------------------------------------------------------------------
 
-describe('Server creation', () => {
+describeSqlite('Server creation', () => {
   it('createServer() returns a Fastify instance with a ready state', async () => {
     // The server was created in beforeAll — verify it has the Fastify shape.
     expect(app).toBeDefined();
@@ -71,7 +91,7 @@ describe('Server creation', () => {
 // 2. Health endpoint
 // ---------------------------------------------------------------------------
 
-describe('Health endpoint', () => {
+describeSqlite('Health endpoint', () => {
   it('GET /health returns 200 with a status field', async () => {
     const res = await app.inject({
       method: 'GET',
@@ -89,7 +109,7 @@ describe('Health endpoint', () => {
 // 3. Auth flow — dev-login creates user and returns JWT
 // ---------------------------------------------------------------------------
 
-describe('Auth flow', () => {
+describeSqlite('Auth flow', () => {
   it('POST /auth/dev-login creates a user and returns a JWT token', async () => {
     const res = await app.inject({
       method: 'POST',
@@ -146,7 +166,7 @@ describe('Auth flow', () => {
 // 6. Chat validation — empty message
 // ---------------------------------------------------------------------------
 
-describe('Chat validation', () => {
+describeSqlite('Chat validation', () => {
   it('POST /chat rejects an empty message with 400', async () => {
     const res = await app.inject({
       method: 'POST',
@@ -187,7 +207,7 @@ describe('Chat validation', () => {
 // 8. Skills list
 // ---------------------------------------------------------------------------
 
-describe('Skills', () => {
+describeSqlite('Skills', () => {
   it('GET /skills returns an array of approved skills', async () => {
     const res = await app.inject({
       method: 'GET',
@@ -227,7 +247,7 @@ describe('Skills', () => {
 // 10. Heartbeat — UPSERT works
 // ---------------------------------------------------------------------------
 
-describe('Heartbeat', () => {
+describeSqlite('Heartbeat', () => {
   it('POST /heartbeat with valid payload returns ack and serverTime', async () => {
     const res = await app.inject({
       method: 'POST',
@@ -291,7 +311,7 @@ describe('Heartbeat', () => {
 // 11. Support chat — POST /support/chat requires message
 // ---------------------------------------------------------------------------
 
-describe('Support chat', () => {
+describeSqlite('Support chat', () => {
   it('POST /support/chat returns 400 when message is missing', async () => {
     const res = await app.inject({
       method: 'POST',
@@ -322,7 +342,7 @@ describe('Support chat', () => {
 // 12. FAQ endpoint
 // ---------------------------------------------------------------------------
 
-describe('FAQ endpoint', () => {
+describeSqlite('FAQ endpoint', () => {
   it('GET /support/faq returns an array of FAQ entries', async () => {
     const res = await app.inject({
       method: 'GET',
@@ -361,7 +381,7 @@ describe('FAQ endpoint', () => {
 // 13. Chat status — GET /chat/status returns provider info
 // ---------------------------------------------------------------------------
 
-describe('Chat status', () => {
+describeSqlite('Chat status', () => {
   it('GET /chat/status returns provider configuration info', async () => {
     const res = await app.inject({
       method: 'GET',
@@ -384,7 +404,7 @@ describe('Chat status', () => {
 // 14. Rate limiting — global limit returns 429 after threshold
 // ---------------------------------------------------------------------------
 
-describe('Rate limiting', () => {
+describeSqlite('Rate limiting', () => {
   it('returns 429 after exceeding the configured rate limit', async () => {
     // Spin up a dedicated server with a very low rate limit in production mode
     // so the limit activates. The primary test server uses development mode
@@ -417,7 +437,7 @@ describe('Rate limiting', () => {
 // 15. GDPR export — GET /chat/export returns user data structure
 // ---------------------------------------------------------------------------
 
-describe('GDPR data export', () => {
+describeSqlite('GDPR data export', () => {
   it('GET /chat/export returns the correct data export structure', async () => {
     const res = await app.inject({
       method: 'GET',

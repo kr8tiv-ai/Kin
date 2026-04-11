@@ -2,7 +2,6 @@
 
 // ============================================================================
 // Solana Wallet Sign-In — Supports Phantom, Solflare, and MetaMask (Snaps).
-// Detects installed wallets and lets users pick one to sign in.
 // ============================================================================
 
 import { useState, useCallback } from 'react';
@@ -28,7 +27,6 @@ const WALLETS: WalletProvider[] = [
     installUrl: 'https://phantom.app/',
     icon: (
       <svg width="20" height="20" viewBox="0 0 128 128" fill="currentColor">
-        <rect width="128" height="128" rx="26" fill="currentColor" fillOpacity="0"/>
         <path d="M110.584 64.914h-4.986c0-27.742-22.788-50.254-50.86-50.254C27.084 14.66 4.605 36.672 4.849 64.157c.24 26.935 22.507 48.843 49.441 48.843h6.065a12.36 12.36 0 006.198-1.666 12.36 12.36 0 006.198 1.666h37.833c6.826 0 12.36-5.534 12.36-12.36V77.275c0-6.826-5.534-12.36-12.36-12.36zM44.04 81.884a6.75 6.75 0 110-13.5 6.75 6.75 0 010 13.5zm27 0a6.75 6.75 0 110-13.5 6.75 6.75 0 010 13.5z"/>
       </svg>
     ),
@@ -63,7 +61,6 @@ const WALLETS: WalletProvider[] = [
     ),
     getProvider: () => {
       if (typeof window === 'undefined') return null;
-      // MetaMask Snaps can provide Solana support
       const eth = (window as any)?.ethereum;
       if (eth?.isMetaMask && eth?.request) return eth;
       return null;
@@ -76,12 +73,10 @@ async function connectAndSign(provider: any, walletName: string) {
     throw new Error('MetaMask Solana Snap support coming soon. Use Phantom or Solflare.');
   }
 
-  // Standard Solana wallet adapter pattern (Phantom / Solflare)
   let resp: any;
   try {
     resp = await provider.connect();
   } catch (e: any) {
-    // Another extension may inject a fake provider object that fails on connect
     const msg = e?.message ?? '';
     if (msg.includes('User rejected') || msg.includes('cancelled')) throw e;
     throw new Error(`Could not connect to ${walletName}. Make sure it is installed and unlocked.`);
@@ -120,17 +115,14 @@ export function SolanaLoginButton({ onAuth }: SolanaLoginButtonProps) {
 
       const { walletAddress, sign } = await connectAndSign(provider, wallet.name);
 
-      // Request nonce from server
       const { nonce, message } = await kinApi.post<{ nonce: string; message: string }>(
         '/auth/solana/nonce',
         { walletAddress },
       );
 
-      // Sign the message
       const encodedMessage = new TextEncoder().encode(message);
       const signature = await sign(encodedMessage);
 
-      // Send signature to server
       const signatureBase64 = btoa(String.fromCharCode(...signature));
       const result = await kinApi.post<{ token: string; user: User }>(
         '/auth/solana',
@@ -150,14 +142,12 @@ export function SolanaLoginButton({ onAuth }: SolanaLoginButtonProps) {
   }, [onAuth]);
 
   const handleClick = useCallback(() => {
-    // Check which wallets are available
     const available = WALLETS.filter(w => w.getProvider() !== null);
     if (available.length === 1) {
       handleWalletLogin(available[0]!);
     } else if (available.length > 1) {
       setShowPicker(true);
     } else {
-      // No wallet found — try Phantom first (most popular)
       handleWalletLogin(WALLETS[0]!);
     }
   }, [handleWalletLogin]);
@@ -168,18 +158,18 @@ export function SolanaLoginButton({ onAuth }: SolanaLoginButtonProps) {
         type="button"
         onClick={handleClick}
         disabled={loading}
-        className="group flex w-full items-center justify-center gap-2.5 rounded-full border border-[#AB6DFE]/40 px-8 py-3 font-display text-sm font-medium uppercase tracking-wide text-[#AB6DFE] transition-all duration-300 hover:bg-[#AB6DFE] hover:text-white hover:border-[#AB6DFE] hover:shadow-[0_0_30px_rgba(171,109,254,0.3)] disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[#AB6DFE]"
+        className="kin-login-btn group flex w-full items-center justify-center gap-3 rounded-full px-8 py-3.5 font-display text-sm font-semibold uppercase tracking-wide text-white/80 transition-all duration-500 ease-out hover:text-white disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
+        style={{ '--btn-accent': '#AB6DFE', '--btn-glow': 'rgba(171,109,254,0.4)' } as React.CSSProperties}
       >
-        {/* Phantom ghost logo */}
-        <svg width="20" height="20" viewBox="0 0 128 128" fill="currentColor">
+        <svg width="18" height="18" viewBox="0 0 128 128" fill="currentColor" className="flex-shrink-0 transition-transform duration-500 group-hover:scale-110">
           <path d="M110.584 64.914h-4.986c0-27.742-22.788-50.254-50.86-50.254C27.084 14.66 4.605 36.672 4.849 64.157c.24 26.935 22.507 48.843 49.441 48.843h6.065a12.36 12.36 0 006.198-1.666 12.36 12.36 0 006.198 1.666h37.833c6.826 0 12.36-5.534 12.36-12.36V77.275c0-6.826-5.534-12.36-12.36-12.36zM44.04 81.884a6.75 6.75 0 110-13.5 6.75 6.75 0 010 13.5zm27 0a6.75 6.75 0 110-13.5 6.75 6.75 0 010 13.5z"/>
         </svg>
-        {loading ? 'Connecting...' : 'Continue with Solana'}
+        <span>{loading ? 'Connecting...' : 'Continue with Solana'}</span>
       </button>
 
       {/* Wallet picker dropdown */}
       {showPicker && (
-        <div className="absolute top-full mt-2 w-full rounded-2xl border border-white/[0.08] bg-black/95 backdrop-blur-2xl p-1.5 z-50 shadow-2xl shadow-black/50">
+        <div className="absolute top-full mt-2 w-full rounded-2xl border border-white/[0.08] bg-black/95 backdrop-blur-2xl p-1.5 z-50 shadow-2xl shadow-black/50 animate-in fade-in slide-in-from-top-2 duration-200">
           <p className="text-[9px] text-white/25 uppercase tracking-[0.15em] px-3 pt-2 pb-1 select-none">Choose wallet</p>
           {WALLETS.map((wallet) => {
             const available = wallet.getProvider() !== null;
@@ -210,7 +200,7 @@ export function SolanaLoginButton({ onAuth }: SolanaLoginButtonProps) {
       )}
 
       {error && (
-        <p className="text-sm text-magenta text-center" role="alert">{error}</p>
+        <p className="text-xs text-magenta text-center animate-pulse" role="alert">{error}</p>
       )}
     </div>
   );

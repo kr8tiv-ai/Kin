@@ -16,6 +16,7 @@ import { useChat, type ChatMessage } from '@/hooks/useChat';
 import { useTTS } from '@/hooks/useTTS';
 import { useVoiceSession, type VoiceSessionState } from '@/hooks/useVoiceSession';
 import { COMPANIONS, type CompanionData } from '@/lib/companions';
+import { getApiBase, withAuthHeaders } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 
 // ============================================================================

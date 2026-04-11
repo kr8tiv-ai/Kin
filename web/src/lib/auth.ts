@@ -34,6 +34,25 @@ export function getAuthToken(): string | undefined {
 }
 
 /**
+ * Browser-safe API base. In the browser we always go through Next rewrites.
+ */
+export function getApiBase(): string {
+  return typeof window !== 'undefined'
+    ? '/api'
+    : (process.env.NEXT_PUBLIC_API_URL ?? '/api');
+}
+
+/**
+ * Attach the bearer token when it exists without clobbering custom headers.
+ */
+export function withAuthHeaders(headers: Record<string, string> = {}): Record<string, string> {
+  const token = getAuthToken();
+  return token
+    ? { ...headers, Authorization: `Bearer ${token}` }
+    : headers;
+}
+
+/**
  * Remove the JWT token cookie.
  */
 export function clearAuthToken(): void {

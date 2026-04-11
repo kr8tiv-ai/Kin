@@ -23,6 +23,13 @@ function readManifest(provider: ProviderId): string {
   return fs.readFileSync(providerManifestPaths[provider], 'utf8');
 }
 
+function stripHashCommentLines(content: string): string {
+  return content
+    .split('\n')
+    .filter((line) => !/^\s*#/.test(line))
+    .join('\n');
+}
+
 function assertGhcrServiceCoverage(content: string, provider: ProviderId): void {
   for (const imageName of ['kin-api', 'kin-web', 'kin-inference']) {
     if (!content.includes(imageName)) {
@@ -32,11 +39,13 @@ function assertGhcrServiceCoverage(content: string, provider: ProviderId): void 
 }
 
 function assertCanonicalHealth(content: string, provider: ProviderId): void {
-  if (content.includes(LEGACY_CLOUD_HEALTH_PATH)) {
+  const normalized = stripHashCommentLines(content);
+
+  if (normalized.includes(LEGACY_CLOUD_HEALTH_PATH)) {
     throw new Error(`[${provider}] still references legacy health path ${LEGACY_CLOUD_HEALTH_PATH}.`);
   }
 
-  if (!content.includes(CANONICAL_CLOUD_HEALTH_PATH)) {
+  if (!normalized.includes(CANONICAL_CLOUD_HEALTH_PATH)) {
     throw new Error(`[${provider}] does not include canonical health path ${CANONICAL_CLOUD_HEALTH_PATH}.`);
   }
 }
@@ -47,7 +56,7 @@ function assertRequiredSecretPlaceholders(content: string, provider: ProviderId)
   }
 
   if (provider === 'render') {
-    if (!content.includes('- key: JWT_SECRET') || !content.includes('sync: false')) {
+    if (!/- key:\s*JWT_SECRET\s*\r?\n\s+sync:\s*false/.test(content)) {
       throw new Error('[render] missing required secret prompt placeholder for JWT_SECRET.');
     }
   }

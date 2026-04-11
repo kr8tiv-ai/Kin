@@ -13,6 +13,8 @@ let Database: any = null;
 let skipReason = '';
 try {
   Database = (await import('better-sqlite3')).default;
+  const probe = new Database(':memory:');
+  probe.close();
 } catch (e: unknown) {
   const msg = e instanceof Error ? e.message : String(e);
   if (msg.includes('ERR_DLOPEN_FAILED') || msg.includes('better-sqlite3')) {

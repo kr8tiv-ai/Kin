@@ -45,7 +45,7 @@
     },
     "tier": {
       "type": "string",
-      "enum": ["free", "starter", "pro", "enterprise"],
+      "enum": ["free", "hatchling", "elder", "hero"],
       "description": "Current subscription tier"
     },
     "status": {
@@ -76,7 +76,7 @@
         },
         "api_calls_limit": {
           "type": "integer",
-          "minimum": 0,
+          "minimum": -1,
           "description": "API call limit per billing period (-1 for unlimited)"
         },
         "storage_used_mb": {
@@ -86,7 +86,7 @@
         },
         "storage_limit_mb": {
           "type": "number",
-          "minimum": 0,
+          "minimum": -1,
           "description": "Storage limit in megabytes (-1 for unlimited)"
         },
         "voice_minutes_current": {
@@ -96,7 +96,7 @@
         },
         "voice_minutes_limit": {
           "type": "number",
-          "minimum": 0,
+          "minimum": -1,
           "description": "Voice minutes limit per period (-1 for unlimited)"
         }
       }

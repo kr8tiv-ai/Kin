@@ -352,7 +352,7 @@ CREATE TABLE IF NOT EXISTS referrals (
   id TEXT PRIMARY KEY,
   referrer_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   referred_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
-  referral_code TEXT NOT NULL UNIQUE,
+  referral_code TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'completed', 'expired')),
   reward_granted BOOLEAN NOT NULL DEFAULT FALSE,
   created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000),
@@ -361,6 +361,13 @@ CREATE TABLE IF NOT EXISTS referrals (
 
 CREATE INDEX IF NOT EXISTS idx_referrals_referrer ON referrals(referrer_user_id);
 CREATE INDEX IF NOT EXISTS idx_referrals_code ON referrals(referral_code);
+CREATE INDEX IF NOT EXISTS idx_referrals_referred ON referrals(referred_user_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_referrals_header_code ON referrals(referral_code)
+WHERE referred_user_id IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_referrals_header_per_referrer ON referrals(referrer_user_id)
+WHERE referred_user_id IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_referrals_referred_once ON referrals(referred_user_id)
+WHERE referred_user_id IS NOT NULL;
 
 -- ============================================================================
 -- Companion Customizations
@@ -537,10 +544,10 @@ CREATE TABLE IF NOT EXISTS support_faq (
 -- Seed FAQ entries
 INSERT OR IGNORE INTO support_faq (id, question, answer, category) VALUES
   ('faq-1', 'What is KIN?', 'KIN is an AI companion platform. Each KIN is a unique AI personality powered by frontier models that learns and grows with you. Your KIN lives on the Solana blockchain as an NFT, making it truly yours.', 'general'),
-  ('faq-2', 'How do I get started?', 'Sign up, complete onboarding, and claim your first companion. Free tier includes 1 companion with 50 messages per day. Upgrade to Pro for unlimited messages and up to 3 companions.', 'getting-started'),
+  ('faq-2', 'How do I get started?', 'Sign up, complete onboarding, and claim your first companion. Free tier includes 1 companion with 50 messages per day. Upgrade to Hatchling for unlimited messages, or Elder if you want up to 3 companions.', 'getting-started'),
   ('faq-3', 'What companions are available?', 'There are 6 companions: Cipher (code), Mischief (social media), Vortex (data analysis), Forge (architecture), Aether (creative writing), and Catalyst (habit coaching). Each is powered by a different frontier AI model.', 'companions'),
   ('faq-4', 'How does the NFT work?', 'Each companion is minted as a Solana NFT. Your companion''s skills, personality, and experience are linked to the NFT. When you sell the NFT, the skills transfer with it but your private memories stay with you.', 'nft'),
-  ('faq-5', 'What is the free tier?', 'Free tier includes 1 companion, 50 messages per day, basic web builder, and community support. All powered by Groq Qwen 3 32B at zero cost.', 'pricing'),
+  ('faq-5', 'What is the free tier?', 'Free tier includes 1 companion, 50 messages per day, try-before-you-mint access, and community support. All powered by Groq Qwen 3 32B at zero cost.', 'pricing'),
   ('faq-6', 'How do skills work?', 'Skills are add-on capabilities for your companions. Built-in skills include calculator, weather, reminders, and web search. You can also request custom skills from GitHub repos for a $4.99 review fee.', 'skills'),
   ('faq-7', 'Can I use KIN on Telegram?', 'Yes! KIN works on Telegram, Discord, WhatsApp, and the web dashboard. Your conversations and memories sync across all platforms.', 'platforms'),
   ('faq-8', 'What happens if my local KIN goes offline?', 'The system automatically detects offline status via heartbeat monitoring. Your KIN falls back to cloud providers (Groq free tier → paid frontier models). All your data is preserved and will sync when you come back online.', 'reliability'),

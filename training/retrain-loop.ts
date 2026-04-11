@@ -37,6 +37,14 @@ const DEFAULT_DISTILL_BASE = path.join('data', 'distill');
 const DEFAULT_HISTORY_BASE = path.join('data', 'retrain');
 const DEFAULT_BASE_MODEL = 'unsloth/Llama-3.2-1B-Instruct-bnb-4bit';
 
+function resolveDistillBasePath(basePath?: string): string {
+  return basePath ?? (process.env.KIN_DISTILL_DATA_DIR?.trim() || DEFAULT_DISTILL_BASE);
+}
+
+function resolveHistoryBasePath(basePath?: string): string {
+  return basePath ?? (process.env.KIN_RETRAIN_HISTORY_DIR?.trim() || DEFAULT_HISTORY_BASE);
+}
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -55,6 +63,10 @@ export interface RetrainConfig {
   baseModel?: string;
   /** Quality threshold for distillation candidate selection (default: 0.7) */
   qualityThreshold?: number;
+  /** Override distill dataset base path for tests or alternate storage roots */
+  distillBasePath?: string;
+  /** Override retrain history base path for tests or alternate storage roots */
+  historyBasePath?: string;
 }
 
 /**
@@ -118,10 +130,10 @@ export async function checkRetrainReadiness(
   companionId: string,
   basePath?: string,
 ): Promise<RetrainReadiness> {
-  const base = basePath ?? DEFAULT_DISTILL_BASE;
+  const base = resolveDistillBasePath(basePath);
   const dataPath = path.join(base, companionId, 'distill.jsonl');
 
-  const lines = await loadDistillDataset(companionId, basePath);
+  const lines = await loadDistillDataset(companionId, base);
   const datasetSize = lines.length;
 
   if (datasetSize < MIN_VALID_ENTRIES) {
@@ -179,7 +191,7 @@ export async function runRetrainLoop(
       startedAt,
       completedAt: new Date().toISOString(),
     };
-    await saveRetrainHistory(result, companionId);
+    await saveRetrainHistory(result, companionId, config?.historyBasePath);
     return result;
   }
 
@@ -203,13 +215,13 @@ export async function runRetrainLoop(
         startedAt,
         completedAt: new Date().toISOString(),
       };
-      await saveRetrainHistory(result, companionId);
+      await saveRetrainHistory(result, companionId, config?.historyBasePath);
       return result;
     }
   }
 
   // Step 3: Check readiness
-  const readiness = await checkRetrainReadiness(companionId);
+  const readiness = await checkRetrainReadiness(companionId, config?.distillBasePath);
   if (!readiness.ready) {
     log(`Not ready to retrain '${companionId}': ${readiness.reason}`);
     const result: RetrainResult = {
@@ -221,14 +233,14 @@ export async function runRetrainLoop(
       startedAt,
       completedAt: new Date().toISOString(),
     };
-    await saveRetrainHistory(result, companionId);
+    await saveRetrainHistory(result, companionId, config?.historyBasePath);
     return result;
   }
 
   log(`Readiness check passed: ${readiness.datasetSize} entries available`);
 
   // Step 4: Build training args — use distill JSONL path, NOT training.jsonl
-  const dataPath = path.join('data', 'distill', companionId, 'distill.jsonl');
+  const dataPath = path.join(resolveDistillBasePath(config?.distillBasePath), companionId, 'distill.jsonl');
   const outputDir = path.join('training', 'output', companionId);
   const modelName = getModelName(companionId);
 
@@ -259,7 +271,7 @@ export async function runRetrainLoop(
     };
 
     // Step 6: Persist history (success)
-    await saveRetrainHistory(result, companionId);
+    await saveRetrainHistory(result, companionId, config?.historyBasePath);
     log(`History entry saved for '${companionId}' (success)`);
 
     return result;
@@ -279,7 +291,7 @@ export async function runRetrainLoop(
     };
 
     // Step 6: Persist history (failure)
-    await saveRetrainHistory(result, companionId);
+    await saveRetrainHistory(result, companionId, config?.historyBasePath);
     log(`History entry saved for '${companionId}' (failure)`);
 
     return result;
@@ -309,7 +321,7 @@ export async function loadRetrainHistory(
   companionId: string,
   basePath?: string,
 ): Promise<RetrainHistoryEntry[]> {
-  const base = basePath ?? DEFAULT_HISTORY_BASE;
+  const base = resolveHistoryBasePath(basePath);
   const filePath = path.join(base, companionId, 'history.jsonl');
 
   try {
@@ -348,7 +360,7 @@ export async function saveRetrainHistory(
   companionId: string,
   basePath?: string,
 ): Promise<void> {
-  const base = basePath ?? DEFAULT_HISTORY_BASE;
+  const base = resolveHistoryBasePath(basePath);
   const dir = path.join(base, companionId);
   const filePath = path.join(dir, 'history.jsonl');
 

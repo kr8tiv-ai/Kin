@@ -1,22 +1,22 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "stripe": {
-    "api_key_env": "STRIPE_API_KEY",
+    "api_key_env": "STRIPE_SECRET_KEY",
     "webhook_secret_env": "STRIPE_WEBHOOK_SECRET",
     "api_version": "2023-10-16"
   },
   "price_ids": {
-    "starter": {
-      "monthly": "price_starter_monthly",
-      "yearly": "price_starter_yearly"
+    "hatchling": {
+      "monthly": "price_hatchling_monthly",
+      "yearly": "price_hatchling_yearly"
     },
-    "pro": {
-      "monthly": "price_pro_monthly",
-      "yearly": "price_pro_yearly"
+    "elder": {
+      "monthly": "price_elder_monthly",
+      "yearly": "price_elder_yearly"
     },
-    "enterprise": {
-      "monthly": "price_enterprise_monthly",
-      "yearly": "price_enterprise_yearly"
+    "hero": {
+      "monthly": "price_hero_monthly",
+      "yearly": "price_hero_yearly"
     }
   },
   "trial_period_days": 14,

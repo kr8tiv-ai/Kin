@@ -3,12 +3,32 @@ import type { FastifyInstance } from 'fastify';
 import { mkdtempSync, rmSync } from 'fs';
 import os from 'os';
 import path from 'path';
+import Database from 'better-sqlite3';
 
 let server: FastifyInstance;
 let token = '';
 let tempStateDir = '';
+let canRunSqlite = true;
 
-describe('installer routes', () => {
+try {
+  const probe = new Database(':memory:');
+  probe.close();
+} catch (err) {
+  const msg = err instanceof Error ? err.message : String(err);
+  if (msg.includes('ERR_DLOPEN_FAILED') || msg.includes('better-sqlite3') || msg.includes('NODE_MODULE_VERSION')) {
+    console.warn(
+      `⚠ Skipping installer-routes tests — better-sqlite3 failed to load: ${msg}\n` +
+        '  Remediation: use Linux/WSL Node v20 or run npm rebuild better-sqlite3',
+    );
+    canRunSqlite = false;
+  } else {
+    throw err;
+  }
+}
+
+const describeSqlite = canRunSqlite ? describe : describe.skip;
+
+describeSqlite('installer routes', () => {
   beforeAll(async () => {
     tempStateDir = mkdtempSync(path.join(os.tmpdir(), 'installer-route-test-'));
     process.env.INSTALLER_STATE_DIR = tempStateDir;
@@ -35,7 +55,7 @@ describe('installer routes', () => {
   afterAll(async () => {
     delete process.env.INSTALLER_STATE_DIR;
     rmSync(tempStateDir, { recursive: true, force: true });
-    await server.close();
+    await server?.close();
   });
 
   beforeEach(async () => {

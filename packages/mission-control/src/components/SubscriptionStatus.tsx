@@ -205,21 +205,27 @@ const tierBadgeStyles: Record<string, React.CSSProperties> = {
     color: 'var(--text-muted)',
     border: '1px solid var(--border)',
   },
-  starter: {
+  hatchling: {
     background: 'rgba(0, 240, 255, 0.1)',
     color: 'var(--cyan)',
     border: '1px solid rgba(0, 240, 255, 0.2)',
   },
-  pro: {
+  elder: {
     background: 'rgba(255, 0, 170, 0.1)',
     color: 'var(--magenta)',
     border: '1px solid rgba(255, 0, 170, 0.2)',
   },
-  enterprise: {
+  hero: {
     background: 'rgba(255, 215, 0, 0.1)',
     color: 'var(--gold)',
     border: '1px solid rgba(255, 215, 0, 0.2)',
   },
+};
+
+const NEXT_TIER: Record<'free' | 'hatchling' | 'elder', { id: 'hatchling' | 'elder' | 'hero'; label: string }> = {
+  free: { id: 'hatchling', label: 'Upgrade to Hatchling' },
+  hatchling: { id: 'elder', label: 'Go Elder' },
+  elder: { id: 'hero', label: 'Go Hero' },
 };
 
 /** Status indicator color map */
@@ -259,6 +265,7 @@ export function SubscriptionStatus({
 
   const [showBillingHistory, setShowBillingHistory] = React.useState(showHistory);
   const [billingHover, setBillingHover] = React.useState(false);
+  const nextTier = subscription && subscription.tier !== 'hero' ? NEXT_TIER[subscription.tier] : null;
 
   // Get tier badge
   const getTierBadge = (tier: string) => {
@@ -367,16 +374,16 @@ export function SubscriptionStatus({
       {/* Tier Badge */}
       <div style={tierRowStyle}>
         {getTierBadge(subscription.tier)}
-        {subscription.tier !== 'enterprise' && (
+        {nextTier && (
           <button
-            onClick={() => upgrade('pro')}
+            onClick={() => upgrade(nextTier.id)}
             disabled={isUpgrading}
             style={{
               ...upgradeBtnStyle,
               opacity: isUpgrading ? 0.5 : 1,
             }}
           >
-            {isUpgrading ? 'Upgrading...' : 'Upgrade'}
+            {isUpgrading ? 'Upgrading...' : nextTier.label}
           </button>
         )}
       </div>

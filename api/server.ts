@@ -17,6 +17,7 @@ import sensible from '@fastify/sensible';
 import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
+import { pathToFileURL } from 'url';
 
 import type { Bot } from 'grammy';
 
@@ -231,6 +232,67 @@ export async function createServer(config: ApiConfig = {}) {
     try { db.exec(migration); } catch { /* column already exists — safe to ignore */ }
   }
 
+  try {
+    const referralTable = db.prepare(`
+      SELECT sql
+      FROM sqlite_master
+      WHERE type = 'table' AND name = 'referrals'
+    `).get() as { sql?: string } | undefined;
+
+    if (referralTable?.sql?.includes('referral_code TEXT NOT NULL UNIQUE')) {
+      db.exec(`
+        BEGIN TRANSACTION;
+        ALTER TABLE referrals RENAME TO referrals_legacy;
+        CREATE TABLE referrals (
+          id TEXT PRIMARY KEY,
+          referrer_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          referred_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+          referral_code TEXT NOT NULL,
+          status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'completed', 'expired')),
+          reward_granted BOOLEAN NOT NULL DEFAULT FALSE,
+          created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000),
+          completed_at INTEGER
+        );
+        INSERT INTO referrals (
+          id,
+          referrer_user_id,
+          referred_user_id,
+          referral_code,
+          status,
+          reward_granted,
+          created_at,
+          completed_at
+        )
+        SELECT
+          id,
+          referrer_user_id,
+          referred_user_id,
+          referral_code,
+          status,
+          reward_granted,
+          created_at,
+          completed_at
+        FROM referrals_legacy;
+        DROP TABLE referrals_legacy;
+        COMMIT;
+      `);
+    }
+
+    db.exec(`
+      CREATE INDEX IF NOT EXISTS idx_referrals_referrer ON referrals(referrer_user_id);
+      CREATE INDEX IF NOT EXISTS idx_referrals_code ON referrals(referral_code);
+      CREATE INDEX IF NOT EXISTS idx_referrals_referred ON referrals(referred_user_id);
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_referrals_header_code ON referrals(referral_code)
+      WHERE referred_user_id IS NULL;
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_referrals_header_per_referrer ON referrals(referrer_user_id)
+      WHERE referred_user_id IS NULL;
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_referrals_referred_once ON referrals(referred_user_id)
+      WHERE referred_user_id IS NOT NULL;
+    `);
+  } catch (err) {
+    fastify.log.warn({ err }, 'Referral schema migration skipped');
+  }
+
   // Seed dev user in development mode
   if (resolvedConfig.environment === 'development') {
     try {
@@ -250,17 +312,14 @@ export async function createServer(config: ApiConfig = {}) {
   // --------------------------------------------------------------------------
 
   const usesEphemeralFleetDb = resolvedConfig.databasePath === ':memory:';
-  const fleetDbPath = usesEphemeralFleetDb
-    ? path.join(process.cwd(), 'data', `fleet.test.${process.pid}.db`)
-    : path.join(
-      path.dirname(resolvedConfig.databasePath),
-      'fleet.db',
-    );
-  const fleetDb = new FleetDb(fleetDbPath);
+  const fleetDbPath = path.join(path.dirname(resolvedConfig.databasePath), 'fleet.db');
+  const sharedFleetStorage = usesEphemeralFleetDb ? new Database(':memory:') : null;
+  const fleetStorage = sharedFleetStorage ?? fleetDbPath;
+  const fleetDb = new FleetDb(fleetStorage);
   fleetDb.init();
 
   // Credit metering — shares the fleet.db file for co-located tables
-  const creditDb = new CreditDb(fleetDbPath);
+  const creditDb = new CreditDb(fleetStorage);
   creditDb.init();
 
   // KIN Credits — encrypted provider credential store (PinkBrain subscriptions)
@@ -686,9 +745,11 @@ export async function createServer(config: ApiConfig = {}) {
   }
 
   fastify.get('/admin', async (_request, reply) => {
-    if (cachedDashboardHtml !== null) {
-      reply.type('text/html').send(cachedDashboardHtml);
-    } else {
+    const dashboardPath = path.join(process.cwd(), 'admin', 'dashboard.html');
+    try {
+      const html = await fs.promises.readFile(dashboardPath, 'utf-8');
+      reply.type('text/html').send(html);
+    } catch {
       reply.status(404).send({ error: 'Admin dashboard not found' });
     }
   });
@@ -782,27 +843,20 @@ export async function createServer(config: ApiConfig = {}) {
   // Graceful Shutdown
   // ==========================================================================
 
-  const closeHandlers: (() => Promise<void>)[] = [];
-
-  if (usesEphemeralFleetDb) {
-    closeHandlers.push(async () => {
-      // fs.promises.rm with force:true already ignores ENOENT
-      await fs.promises.rm(fleetDbPath, { force: true });
-    });
-  }
-
   fastify.addHook('onClose', async () => {
     schedulerManager.shutdown();
     pipelineManager.shutdown();
     if (proactiveCron) proactiveCron.stop();
     getMissionControlClient().disconnect();
     await frontierProxy.stop();
-    creditDb.close();
-    fleetDb.close();
-    db.close();
-    for (const handler of closeHandlers) {
-      await handler();
+    if (sharedFleetStorage) {
+      sharedFleetStorage.close();
+    } else {
+      creditDb.close();
+      fleetDb.close();
     }
+    db.close();
+    await Sentry.close(2000);
   });
 
   return fastify;
@@ -836,8 +890,18 @@ export async function startServer(config: ApiConfig = {}) {
   }
 }
 
+export function isDirectExecution(moduleUrl: string, argv1 = process.argv[1]): boolean {
+  if (!argv1) return false;
+
+  try {
+    return moduleUrl === pathToFileURL(path.resolve(argv1)).href;
+  } catch {
+    return false;
+  }
+}
+
 // Start if run directly
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isDirectExecution(import.meta.url)) {
   startServer();
 }
 

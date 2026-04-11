@@ -33,7 +33,7 @@ class TestStripeClientMock:
         result = client.get_subscription("cus_test123")
 
         assert isinstance(result, SubscriptionRecord)
-        assert result.tier == "pro"
+        assert result.tier == "hatchling"
         assert result.status == "active"
         assert result.owner_id == "owner-test123"
 
@@ -42,9 +42,9 @@ class TestStripeClientMock:
         result = client.get_subscription("cus_test123")
 
         assert isinstance(result.usage, UsageMetrics)
-        assert result.usage.kin_count == 3
-        assert result.usage.kin_limit == 10  # Pro tier
-        assert result.usage.api_calls_limit == 100000
+        assert result.usage.kin_count == 1
+        assert result.usage.kin_limit == 1  # Hatchling tier
+        assert result.usage.api_calls_limit == -1
 
     def test_get_subscription_has_payment_method(self, client):
         """Subscription should include payment method summary."""
@@ -59,12 +59,12 @@ class TestStripeClientMock:
         result = client.get_usage("sub_test123")
 
         assert isinstance(result, UsageMetrics)
-        assert result.kin_count == 3
-        assert result.kin_limit == 10
+        assert result.kin_count == 1
+        assert result.kin_limit == 1
 
     def test_upgrade_tier_succeeds_in_mock(self, client):
         """Should succeed in mock mode."""
-        result = client.upgrade_tier("cus_test123", "enterprise")
+        result = client.upgrade_tier("cus_test123", "hero")
 
         assert result is True
 
@@ -86,7 +86,7 @@ class TestStripeClientMock:
         assert len(result) == 3
         assert all(isinstance(inv, Invoice) for inv in result)
         assert result[0].status == "paid"
-        assert result[0].amount == 2900
+        assert result[0].amount == 11400
 
 
 class TestTierDefinitions:
@@ -99,9 +99,9 @@ class TestTierDefinitions:
     def test_tiers_exist(self, client):
         """All expected tiers should be defined."""
         assert "free" in client.TIERS
-        assert "starter" in client.TIERS
-        assert "pro" in client.TIERS
-        assert "enterprise" in client.TIERS
+        assert "hatchling" in client.TIERS
+        assert "elder" in client.TIERS
+        assert "hero" in client.TIERS
 
     def test_free_tier_limits(self, client):
         """Free tier should have basic limits."""
@@ -110,28 +110,28 @@ class TestTierDefinitions:
         assert free["kin_limit"] == 1
         assert free["api_calls_limit"] == 1000
 
-    def test_pro_tier_limits(self, client):
-        """Pro tier should have higher limits."""
-        pro = client.TIERS["pro"]
-        assert pro["price"] == 2900  # $29
-        assert pro["kin_limit"] == 10
-        assert pro["api_calls_limit"] == 100000
+    def test_elder_tier_limits(self, client):
+        """Elder tier should have higher limits."""
+        elder = client.TIERS["elder"]
+        assert elder["price"] == 19400  # $194
+        assert elder["kin_limit"] == 3
+        assert elder["api_calls_limit"] == -1
 
-    def test_enterprise_tier_unlimited(self, client):
-        """Enterprise tier should have unlimited (-1) limits."""
-        ent = client.TIERS["enterprise"]
-        assert ent["kin_limit"] == -1
-        assert ent["api_calls_limit"] == -1
-        assert ent["storage_limit_mb"] == -1
+    def test_hero_tier_limits(self, client):
+        """Hero tier should unlock all companions and unlimited core resources."""
+        hero = client.TIERS["hero"]
+        assert hero["kin_limit"] == 6
+        assert hero["api_calls_limit"] == -1
+        assert hero["storage_limit_mb"] == -1
 
     def test_tier_features_progress(self, client):
         """Features should progress with tier."""
         free_features = client.TIERS["free"]["features"]
-        pro_features = client.TIERS["pro"]["features"]
+        elder_features = client.TIERS["elder"]["features"]
 
-        # Pro should have more features enabled
+        # Elder should have more features enabled
         assert free_features["voice_mode"] is False
-        assert pro_features["voice_mode"] is True
+        assert elder_features["voice_mode"] is True
 
 
 class TestDataclasses:
@@ -160,15 +160,15 @@ class TestDataclasses:
         record = SubscriptionRecord(
             record_id="sub-test",
             owner_id="owner-test",
-            tier="pro",
+            tier="elder",
             status="active",
             usage=UsageMetrics(
                 kin_count=1,
-                kin_limit=10,
+                kin_limit=3,
                 api_calls_current=0,
-                api_calls_limit=100000,
+                api_calls_limit=-1,
                 storage_used_mb=0,
-                storage_limit_mb=5000,
+                storage_limit_mb=10000,
             ),
             billing_cycle=BillingCycle(
                 interval="month",
@@ -184,7 +184,7 @@ class TestDataclasses:
 
         assert result["record_id"] == "sub-test"
         assert result["schema_family"] == "subscription_record"
-        assert result["tier"] == "pro"
+        assert result["tier"] == "elder"
         assert "usage" in result
         assert "billing_cycle" in result
 
@@ -194,7 +194,7 @@ class TestDataclasses:
         invoice = Invoice(
             invoice_id="in_test",
             number="INV-001",
-            amount=2900,
+            amount=11400,
             currency="usd",
             status="paid",
             created_at=now,
@@ -203,7 +203,7 @@ class TestDataclasses:
         result = invoice.to_dict()
 
         assert result["invoice_id"] == "in_test"
-        assert result["amount"] == 2900
+        assert result["amount"] == 11400
         assert result["status"] == "paid"
 
 

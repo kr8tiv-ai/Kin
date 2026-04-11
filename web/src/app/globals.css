@@ -374,6 +374,90 @@ html {
   scroll-behavior: smooth;
 }
 
+/* ==========================================================================
+   KIN Login Buttons — Unified premium style system
+   Each button sets --btn-accent and --btn-glow via inline style.
+   ========================================================================== */
+
+.kin-login-btn {
+  position: relative;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.02);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* Animated gradient border glow on hover */
+.kin-login-btn::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    transparent 25%,
+    var(--btn-accent, #fff) 50%,
+    transparent 75%
+  );
+  background-size: 300% 300%;
+  background-position: 100% 100%;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.5s ease, background-position 0.8s ease;
+  z-index: -1;
+}
+
+.kin-login-btn:hover::before {
+  opacity: 1;
+  background-position: 0% 0%;
+}
+
+/* Inner glow on hover */
+.kin-login-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    ellipse at center,
+    var(--btn-glow, rgba(255,255,255,0.1)) 0%,
+    transparent 70%
+  );
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  z-index: -1;
+}
+
+.kin-login-btn:hover::after {
+  opacity: 1;
+}
+
+/* Subtle lift + glow shadow on hover */
+.kin-login-btn:hover {
+  border-color: color-mix(in srgb, var(--btn-accent, #fff) 30%, transparent);
+  transform: translateY(-1px);
+  box-shadow:
+    0 4px 20px color-mix(in srgb, var(--btn-accent, #fff) 12%, transparent),
+    0 0 40px color-mix(in srgb, var(--btn-accent, #fff) 6%, transparent);
+}
+
+/* Pressed state */
+.kin-login-btn:active {
+  transform: translateY(0px) scale(0.98);
+  transition-duration: 0.1s;
+}
+
+/* Disabled override */
+.kin-login-btn:disabled {
+  pointer-events: none;
+}
+
 /* Accessibility: respect user motion preferences */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

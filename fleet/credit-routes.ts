@@ -29,7 +29,7 @@ export interface CreditRouteOptions {
 // Validation
 // ---------------------------------------------------------------------------
 
-const VALID_TIERS = ['free', 'starter', 'pro', 'enterprise'] as const;
+const VALID_TIERS = ['free', 'hatchling', 'elder', 'hero'] as const;
 
 function isValidTier(value: unknown): value is string {
   return typeof value === 'string' && (VALID_TIERS as readonly string[]).includes(value);

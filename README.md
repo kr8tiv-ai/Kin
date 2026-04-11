@@ -679,6 +679,27 @@ Create a `.env` file at the project root. Required variables depend on which pro
 | `npm run db:reset` | Drop and recreate database |
 | `npm run deploy:easy` | Guided deployment script |
 
+## Container Images
+
+The publish workflow pushes three runtime images to GHCR on every `main` push:
+
+| Service | Image |
+|---------|-------|
+| **API** | `ghcr.io/kr8tiv-ai/kin-api:latest` |
+| **Web** | `ghcr.io/kr8tiv-ai/kin-web:latest` |
+| **Inference** | `ghcr.io/kr8tiv-ai/kin-inference:latest` |
+
+All images support commit-pinned tags: `sha-<7 hex chars>`
+
+### One-Click Cloud Deploy Paths
+
+- **Railway** — one-click via `railway.toml`; guide: [`docs/deploy/railway.md`](docs/deploy/railway.md)
+- **Render** — one-click via `render.yaml`; guide: [`docs/deploy/render.md`](docs/deploy/render.md)
+- **Fly.io** — one-click via `fly.toml`; guide: [`docs/deploy/fly.md`](docs/deploy/fly.md)
+- **Coolify** — one-click via `docker-compose.coolify.yml`; guide: [`docs/deploy/coolify.md`](docs/deploy/coolify.md)
+
+All providers consume GHCR runtime refs and must prove readiness via `GET /health`.
+
 ---
 
 ## The kr8tiv-ai Ecosystem

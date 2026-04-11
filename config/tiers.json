@@ -4,7 +4,7 @@
     {
       "id": "free",
       "name": "Free",
-      "description": "Try Kin with a single companion",
+      "description": "Try Kin with a single companion before you mint",
       "price": 0,
       "price_yearly": 0,
       "currency": "usd",
@@ -30,17 +30,17 @@
     {
       "id": "hatchling",
       "name": "Hatchling",
-      "description": "For individuals exploring Kin platform",
-      "price": 900,
-      "price_yearly": 9000,
+      "description": "For one always-on KIN with frontier reasoning and automation",
+      "price": 11400,
+      "price_yearly": 114000,
       "currency": "usd",
-      "price_display": "$9/month",
-      "price_yearly_display": "$90/year (save 17%)",
+      "price_display": "$114/month",
+      "price_yearly_display": "$1,140/year",
       "limits": {
-        "kin_count": 3,
-        "api_calls_per_month": 10000,
-        "storage_mb": 500,
-        "voice_minutes_per_month": 50
+        "kin_count": 1,
+        "api_calls_per_month": -1,
+        "storage_mb": 5000,
+        "voice_minutes_per_month": -1
       },
       "features": {
         "voice_mode": true,
@@ -52,23 +52,23 @@
         "tailscale_access": true
       },
       "display_order": 2,
-      "badge_text": null,
-      "highlighted": false
+      "badge_text": "Most Popular",
+      "highlighted": true
     },
     {
       "id": "elder",
       "name": "Elder",
-      "description": "For power users and small teams",
-      "price": 2900,
-      "price_yearly": 29000,
+      "description": "For power users managing multiple companions and deeper workflows",
+      "price": 19400,
+      "price_yearly": 194000,
       "currency": "usd",
-      "price_display": "$29/month",
-      "price_yearly_display": "$290/year (save 17%)",
+      "price_display": "$194/month",
+      "price_yearly_display": "$1,940/year",
       "limits": {
-        "kin_count": 10,
-        "api_calls_per_month": 100000,
-        "storage_mb": 5000,
-        "voice_minutes_per_month": 500
+        "kin_count": 3,
+        "api_calls_per_month": -1,
+        "storage_mb": 10000,
+        "voice_minutes_per_month": -1
       },
       "features": {
         "voice_mode": true,
@@ -82,20 +82,20 @@
         "custom_integrations": false
       },
       "display_order": 3,
-      "badge_text": "Most Popular",
-      "highlighted": true
+      "badge_text": null,
+      "highlighted": false
     },
     {
       "id": "hero",
       "name": "Hero",
-      "description": "For organizations with advanced needs",
-      "price": 9900,
-      "price_yearly": 99000,
+      "description": "For teams and operators who want every companion and white-glove support",
+      "price": 32400,
+      "price_yearly": 324000,
       "currency": "usd",
-      "price_display": "$99/month",
-      "price_yearly_display": "$990/year (save 17%)",
+      "price_display": "$324/month",
+      "price_yearly_display": "$3,240/year",
       "limits": {
-        "kin_count": -1,
+        "kin_count": 6,
         "api_calls_per_month": -1,
         "storage_mb": -1,
         "voice_minutes_per_month": -1
@@ -125,22 +125,22 @@
       {
         "name": "Kin Companions",
         "free": "1",
-        "hatchling": "3",
-        "elder": "10",
-        "hero": "Unlimited"
+        "hatchling": "1",
+        "elder": "3",
+        "hero": "6"
       },
       {
         "name": "API Calls",
         "free": "1,000/month",
-        "hatchling": "10,000/month",
-        "elder": "100,000/month",
+        "hatchling": "Unlimited",
+        "elder": "Unlimited",
         "hero": "Unlimited"
       },
       {
         "name": "Storage",
         "free": "100 MB",
-        "hatchling": "500 MB",
-        "elder": "5 GB",
+        "hatchling": "5 GB",
+        "elder": "10 GB",
         "hero": "Unlimited"
       },
       {

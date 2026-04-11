@@ -68,6 +68,8 @@ try {
   ({ FleetDb } = await import('../fleet/db.js'));
   ({ ContainerManager } = await import('../fleet/container-manager.js'));
   fleetRoutesPlugin = (await import('../fleet/routes.js')).default;
+  const probe = new Database(':memory:');
+  probe.close();
   canRun = true;
 } catch (err) {
   const msg = err instanceof Error ? err.message : String(err);

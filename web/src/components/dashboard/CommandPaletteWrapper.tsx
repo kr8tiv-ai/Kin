@@ -36,14 +36,16 @@ export function CommandPaletteWrapper() {
 
     async function fetchConversations() {
       try {
-        const data = await kinApi.get<{ conversations: Array<{ id: string; companionId: string; title: string; updatedAt: string; messagePreview?: string }> }>('/conversations');
+        const data = await kinApi.get<{ conversations?: CommandPaletteConversation[] } | CommandPaletteConversation[]>(
+          '/conversations',
+        );
 
         if (cancelled) return;
 
+        const conversationList = Array.isArray(data) ? data : data.conversations ?? [];
+
         // Map API response to the shape CommandPalette expects
-        const mapped: CommandPaletteConversation[] = (
-          data.conversations ?? data ?? []
-        ).map(
+        const mapped: CommandPaletteConversation[] = conversationList.map(
           (c: {
             id: string;
             companionId: string;

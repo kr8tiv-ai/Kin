@@ -22,6 +22,8 @@ try {
   Database = (await import('better-sqlite3')).default;
   ({ CreditDb } = await import('../fleet/credit-db.js'));
   creditRoutesPlugin = (await import('../fleet/credit-routes.js')).default;
+  const probe = new Database(':memory:');
+  probe.close();
   canRun = true;
 } catch (err) {
   const msg = err instanceof Error ? err.message : String(err);
@@ -208,13 +210,13 @@ describe.skipIf(!canRun)('Credit Routes', () => {
       method: 'POST',
       url: `/fleet/credits/${testUserId}/set-tier`,
       headers: { authorization: `Bearer ${token}` },
-      payload: { tier: 'pro' },
+      payload: { tier: 'elder' },
     });
 
     expect(res.statusCode).toBe(200);
     const body = res.json();
     expect(body.userId).toBe(testUserId);
-    expect(body.tier).toBe('pro');
+    expect(body.tier).toBe('elder');
   });
 
   // -------------------------------------------------------------------------

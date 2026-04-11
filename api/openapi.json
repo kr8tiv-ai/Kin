@@ -65,7 +65,7 @@
         "type": "object",
         "properties": {
           "id": { "type": "string", "example": "user-abc123" },
-          "telegramId": { "type": "integer", "example": 123456789 },
+          "telegramId": { "type": "string", "example": "123456789" },
           "username": { "type": "string", "nullable": true, "example": "alice" },
           "firstName": { "type": "string", "example": "Alice" },
           "lastName": { "type": "string", "nullable": true, "example": "Smith" },
@@ -133,8 +133,8 @@
           "category": { "type": "string", "example": "development" },
           "sourceType": {
             "type": "string",
-            "enum": ["built_in", "community", "custom"],
-            "example": "built_in"
+            "enum": ["builtin", "companion", "custom"],
+            "example": "builtin"
           },
           "author": { "type": "string", "nullable": true, "example": "KIN Team" },
           "installCount": { "type": "integer", "example": 1024 },
@@ -2091,8 +2091,8 @@
                   "properties": {
                     "plan": {
                       "type": "string",
-                      "enum": ["free", "pro", "enterprise"],
-                      "example": "pro"
+                      "enum": ["free", "hatchling", "elder", "hero"],
+                      "example": "hatchling"
                     },
                     "status": {
                       "type": "string",

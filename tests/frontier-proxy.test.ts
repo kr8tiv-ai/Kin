@@ -22,6 +22,8 @@ try {
   Database = (await import('better-sqlite3')).default;
   ({ CreditDb } = await import('../fleet/credit-db.js'));
   ({ FleetDb } = await import('../fleet/db.js'));
+  const probe = new Database(':memory:');
+  probe.close();
   canRun = true;
 } catch (err) {
   const msg = err instanceof Error ? err.message : String(err);
@@ -125,8 +127,10 @@ function proxyRequest(
         port,
         method,
         path,
+        agent: false,
         headers: {
           'Content-Type': 'application/json',
+          Connection: 'close',
           ...headers,
           ...(payload ? { 'Content-Length': Buffer.byteLength(payload) } : {}),
         },
@@ -161,10 +165,12 @@ describe.runIf(canRun)('FrontierProxy', () => {
   let fleetDb: InstanceType<typeof FleetDb>;
   let proxy: FrontierProxy;
   let proxyToken: string;
+  let proxyPort = TEST_PORT;
   const userId = 'test-user-001';
   const instanceId = 'inst-001';
 
   beforeEach(async () => {
+    proxyPort += 1;
     // Reset all mocks
     vi.clearAllMocks();
 
@@ -188,7 +194,7 @@ describe.runIf(canRun)('FrontierProxy', () => {
     proxy = new FrontierProxy({
       creditDb,
       fleetDb,
-      port: TEST_PORT,
+      port: proxyPort,
       logger: {
         info: () => {},
         warn: () => {},
@@ -209,7 +215,7 @@ describe.runIf(canRun)('FrontierProxy', () => {
 
   it('returns 200 with response, cost, and remaining balance for valid request', async () => {
     const res = await proxyRequest(
-      TEST_PORT,
+      proxyPort,
       'POST',
       '/v1/chat/completions',
       {
@@ -239,7 +245,7 @@ describe.runIf(canRun)('FrontierProxy', () => {
 
   it('returns 401 when Authorization header is missing', async () => {
     const res = await proxyRequest(
-      TEST_PORT,
+      proxyPort,
       'POST',
       '/v1/chat/completions',
       { companionId: 'cipher', messages: [{ role: 'user', content: 'Hi' }] },
@@ -251,7 +257,7 @@ describe.runIf(canRun)('FrontierProxy', () => {
 
   it('returns 401 for invalid proxy token', async () => {
     const res = await proxyRequest(
-      TEST_PORT,
+      proxyPort,
       'POST',
       '/v1/chat/completions',
       { companionId: 'cipher', messages: [{ role: 'user', content: 'Hi' }] },
@@ -271,7 +277,7 @@ describe.runIf(canRun)('FrontierProxy', () => {
     creditDb.deductCredits(userId, 5.0);
 
     const res = await proxyRequest(
-      TEST_PORT,
+      proxyPort,
       'POST',
       '/v1/chat/completions',
       { companionId: 'cipher', messages: [{ role: 'user', content: 'Hi' }] },
@@ -289,7 +295,7 @@ describe.runIf(canRun)('FrontierProxy', () => {
 
   it('returns 400 for unknown companionId', async () => {
     const res = await proxyRequest(
-      TEST_PORT,
+      proxyPort,
       'POST',
       '/v1/chat/completions',
       { companionId: 'nonexistent', messages: [{ role: 'user', content: 'Hi' }] },
@@ -307,12 +313,14 @@ describe.runIf(canRun)('FrontierProxy', () => {
       const req = http.request(
         {
           hostname: '127.0.0.1',
-          port: TEST_PORT,
+          port: proxyPort,
           method: 'POST',
           path: '/v1/chat/completions',
+          agent: false,
           headers: {
             'Content-Type': 'application/json',
             'Content-Length': Buffer.byteLength(payload),
+            Connection: 'close',
             Authorization: `Bearer ${proxyToken}`,
           },
         },
@@ -336,7 +344,7 @@ describe.runIf(canRun)('FrontierProxy', () => {
 
   it('returns 400 for empty messages array', async () => {
     const res = await proxyRequest(
-      TEST_PORT,
+      proxyPort,
       'POST',
       '/v1/chat/completions',
       { companionId: 'cipher', messages: [] },
@@ -349,7 +357,7 @@ describe.runIf(canRun)('FrontierProxy', () => {
 
   it('returns 400 for missing companionId', async () => {
     const res = await proxyRequest(
-      TEST_PORT,
+      proxyPort,
       'POST',
       '/v1/chat/completions',
       { messages: [{ role: 'user', content: 'Hi' }] },
@@ -372,7 +380,7 @@ describe.runIf(canRun)('FrontierProxy', () => {
     vi.mocked(getProvider).mockReturnValue(fakeProvider);
 
     const res = await proxyRequest(
-      TEST_PORT,
+      proxyPort,
       'POST',
       '/v1/chat/completions',
       { companionId: 'cipher', messages: [{ role: 'user', content: 'Hi' }] },
@@ -389,7 +397,7 @@ describe.runIf(canRun)('FrontierProxy', () => {
     vi.mocked(isProviderHealthy).mockReturnValue(false);
 
     const res = await proxyRequest(
-      TEST_PORT,
+      proxyPort,
       'POST',
       '/v1/chat/completions',
       { companionId: 'cipher', messages: [{ role: 'user', content: 'Hi' }] },
@@ -407,7 +415,7 @@ describe.runIf(canRun)('FrontierProxy', () => {
 
   it('calculates cost correctly from token counts and pricing', async () => {
     const res = await proxyRequest(
-      TEST_PORT,
+      proxyPort,
       'POST',
       '/v1/chat/completions',
       { companionId: 'cipher', messages: [{ role: 'user', content: 'Hi' }] },
@@ -428,7 +436,7 @@ describe.runIf(canRun)('FrontierProxy', () => {
 
   it('creates a usage log entry after successful request', async () => {
     await proxyRequest(
-      TEST_PORT,
+      proxyPort,
       'POST',
       '/v1/chat/completions',
       { companionId: 'cipher', messages: [{ role: 'user', content: 'Hi' }] },
@@ -451,7 +459,7 @@ describe.runIf(canRun)('FrontierProxy', () => {
 
   it('calls recordSuccess on the provider after a successful request', async () => {
     await proxyRequest(
-      TEST_PORT,
+      proxyPort,
       'POST',
       '/v1/chat/completions',
       { companionId: 'cipher', messages: [{ role: 'user', content: 'Hi' }] },
@@ -466,7 +474,7 @@ describe.runIf(canRun)('FrontierProxy', () => {
   // -----------------------------------------------------------------------
 
   it('GET /health returns 200 ok', async () => {
-    const res = await proxyRequest(TEST_PORT, 'GET', '/health');
+    const res = await proxyRequest(proxyPort, 'GET', '/health');
 
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('ok');
@@ -477,7 +485,7 @@ describe.runIf(canRun)('FrontierProxy', () => {
   // -----------------------------------------------------------------------
 
   it('returns 404 for unknown routes', async () => {
-    const res = await proxyRequest(TEST_PORT, 'GET', '/nonexistent');
+    const res = await proxyRequest(proxyPort, 'GET', '/nonexistent');
 
     expect(res.status).toBe(404);
     expect(res.body.error).toBe('Not found');
@@ -491,7 +499,7 @@ describe.runIf(canRun)('FrontierProxy', () => {
     creditDb.revokeProxyTokens(instanceId);
 
     const res = await proxyRequest(
-      TEST_PORT,
+      proxyPort,
       'POST',
       '/v1/chat/completions',
       { companionId: 'cipher', messages: [{ role: 'user', content: 'Hi' }] },
@@ -508,7 +516,7 @@ describe.runIf(canRun)('FrontierProxy', () => {
     creditDb.deductCredits(userId, 4.9975);
 
     const res = await proxyRequest(
-      TEST_PORT,
+      proxyPort,
       'POST',
       '/v1/chat/completions',
       { companionId: 'cipher', messages: [{ role: 'user', content: 'Hi' }] },

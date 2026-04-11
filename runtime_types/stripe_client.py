@@ -157,7 +157,7 @@ class StripeClient:
     """
     Client for interacting with Stripe API.
 
-    In development mode (STRIPE_API_KEY not set), returns mock data.
+    In development mode (STRIPE_SECRET_KEY not set), returns mock data.
     In production, makes real API calls to Stripe.
     """
 
@@ -179,11 +179,11 @@ class StripeClient:
             },
         },
         "hatchling": {
-            "price": 900,  # $9/month
-            "kin_limit": 3,
-            "api_calls_limit": 10000,
-            "storage_limit_mb": 500,
-            "voice_minutes_limit": 50,
+            "price": 11400,  # $114/month
+            "kin_limit": 1,
+            "api_calls_limit": -1,
+            "storage_limit_mb": 5000,
+            "voice_minutes_limit": -1,
             "features": {
                 "voice_mode": True,
                 "custom_specializations": False,
@@ -194,11 +194,11 @@ class StripeClient:
             },
         },
         "elder": {
-            "price": 2900,  # $29/month
-            "kin_limit": 10,
-            "api_calls_limit": 100000,
-            "storage_limit_mb": 5000,
-            "voice_minutes_limit": 500,
+            "price": 19400,  # $194/month
+            "kin_limit": 3,
+            "api_calls_limit": -1,
+            "storage_limit_mb": 10000,
+            "voice_minutes_limit": -1,
             "features": {
                 "voice_mode": True,
                 "custom_specializations": True,
@@ -209,8 +209,8 @@ class StripeClient:
             },
         },
         "hero": {
-            "price": 9900,  # $99/month
-            "kin_limit": -1,  # unlimited
+            "price": 32400,  # $324/month
+            "kin_limit": 6,
             "api_calls_limit": -1,
             "storage_limit_mb": -1,
             "voice_minutes_limit": -1,
@@ -232,10 +232,10 @@ class StripeClient:
         Initialize Stripe client.
 
         Args:
-            api_key: Stripe API key. If not provided, uses STRIPE_API_KEY env var
+            api_key: Stripe API key. If not provided, uses STRIPE_SECRET_KEY env var
                      or falls back to mock mode.
         """
-        self.api_key = api_key or os.environ.get("STRIPE_API_KEY")
+        self.api_key = api_key or os.environ.get("STRIPE_SECRET_KEY")
         self._mock_mode = not self.api_key
 
         if self._mock_mode:
@@ -311,13 +311,13 @@ class StripeClient:
             # In production, usage would come from a usage tracking system
             # For now, return mock usage with correct limits
             return UsageMetrics(
-                kin_count=3,
+                kin_count=self._default_kin_count(tier),
                 kin_limit=self.TIERS[tier]["kin_limit"],
-                api_calls_current=45000,
+                api_calls_current=45230 if tier != "free" else 120,
                 api_calls_limit=self.TIERS[tier]["api_calls_limit"],
-                storage_used_mb=250.0,
+                storage_used_mb=self._default_storage_used_mb(tier),
                 storage_limit_mb=self.TIERS[tier]["storage_limit_mb"],
-                voice_minutes_current=120.0,
+                voice_minutes_current=45.2 if tier != "free" else 0.0,
                 voice_minutes_limit=self.TIERS[tier]["voice_minutes_limit"],
             )
 
@@ -457,8 +457,8 @@ class StripeClient:
     def _get_tier_from_subscription(self, sub: Any) -> str:
         """Extract tier from Stripe subscription."""
         # This would map Stripe price IDs to tiers
-        # For now, return pro as default
-        return "elder"
+        # For now, return hatchling as the default paid plan
+        return "hatchling"
 
     def _get_price_id(self, tier: str) -> str:
         """Get Stripe price ID for a tier."""
@@ -468,7 +468,7 @@ class StripeClient:
             "elder": "price_elder_monthly",
             "hero": "price_hero_monthly",
         }
-        return price_map.get(tier, "price_elder_monthly")
+        return price_map.get(tier, "price_hatchling_monthly")
 
     def _create_subscription(self, customer_id: str, tier: str) -> Any:
         """Create a new subscription for a customer."""
@@ -543,23 +543,23 @@ class StripeClient:
     def _get_mock_subscription(self, customer_id: str) -> SubscriptionRecord:
         """Return mock subscription data for development."""
         now = datetime.now(timezone.utc)
-        tier = self.TIERS["elder"]
+        tier = self.TIERS["hatchling"]
 
         return SubscriptionRecord(
             record_id=f"sub-mock-{customer_id}",
             owner_id=customer_id.replace("cus_", "owner-"),
             stripe_customer_id=customer_id,
             stripe_subscription_id="sub_mock123456",
-            tier="elder",
+            tier="hatchling",
             status="active",
             usage=UsageMetrics(
-                kin_count=3,
+                kin_count=1,
                 kin_limit=tier["kin_limit"],
-                api_calls_current=45230,
+                api_calls_current=12480,
                 api_calls_limit=tier["api_calls_limit"],
-                storage_used_mb=128.5,
+                storage_used_mb=512.0,
                 storage_limit_mb=tier["storage_limit_mb"],
-                voice_minutes_current=45.2,
+                voice_minutes_current=32.5,
                 voice_minutes_limit=tier["voice_minutes_limit"],
             ),
             billing_cycle=BillingCycle(
@@ -583,15 +583,15 @@ class StripeClient:
 
     def _get_mock_usage(self) -> UsageMetrics:
         """Return mock usage data."""
-        tier = self.TIERS["elder"]
+        tier = self.TIERS["hatchling"]
         return UsageMetrics(
-            kin_count=3,
+            kin_count=1,
             kin_limit=tier["kin_limit"],
-            api_calls_current=45230,
+            api_calls_current=12480,
             api_calls_limit=tier["api_calls_limit"],
-            storage_used_mb=128.5,
+            storage_used_mb=512.0,
             storage_limit_mb=tier["storage_limit_mb"],
-            voice_minutes_current=45.2,
+            voice_minutes_current=32.5,
             voice_minutes_limit=tier["voice_minutes_limit"],
         )
 
@@ -602,7 +602,7 @@ class StripeClient:
             Invoice(
                 invoice_id="in_mock001",
                 number="INV-2026-003",
-                amount=2900,
+                amount=11400,
                 currency="usd",
                 status="paid",
                 created_at=datetime(2026, 3, 1, tzinfo=timezone.utc),
@@ -613,7 +613,7 @@ class StripeClient:
             Invoice(
                 invoice_id="in_mock002",
                 number="INV-2026-002",
-                amount=2900,
+                amount=11400,
                 currency="usd",
                 status="paid",
                 created_at=datetime(2026, 2, 1, tzinfo=timezone.utc),
@@ -624,7 +624,7 @@ class StripeClient:
             Invoice(
                 invoice_id="in_mock003",
                 number="INV-2026-001",
-                amount=2900,
+                amount=11400,
                 currency="usd",
                 status="paid",
                 created_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
@@ -633,3 +633,19 @@ class StripeClient:
                 invoice_pdf="https://invoice.stripe.com/mock003.pdf",
             ),
         ]
+
+    def _default_kin_count(self, tier: str) -> int:
+        """Return a realistic mock companion count for a tier."""
+        if tier == "hero":
+            return 6
+        if tier == "elder":
+            return 3
+        return 1
+
+    def _default_storage_used_mb(self, tier: str) -> float:
+        """Return a realistic mock storage footprint for a tier."""
+        if tier == "hero":
+            return 2048.0
+        if tier == "elder":
+            return 768.0
+        return 512.0

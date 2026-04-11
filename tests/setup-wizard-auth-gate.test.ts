@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
+import Database from 'better-sqlite3';
 
 import {
   getAuthRedirectPath,
@@ -14,8 +15,27 @@ import {
 let server: FastifyInstance;
 let token = '';
 let userId = '';
+let canRunSqlite = true;
 
-describe('setup wizard auth gate', () => {
+try {
+  const probe = new Database(':memory:');
+  probe.close();
+} catch (err) {
+  const msg = err instanceof Error ? err.message : String(err);
+  if (msg.includes('ERR_DLOPEN_FAILED') || msg.includes('better-sqlite3') || msg.includes('NODE_MODULE_VERSION')) {
+    console.warn(
+      `⚠ Skipping setup-wizard-auth-gate backend tests — better-sqlite3 failed to load: ${msg}\n` +
+        '  Remediation: use Linux/WSL Node v20 or run npm rebuild better-sqlite3',
+    );
+    canRunSqlite = false;
+  } else {
+    throw err;
+  }
+}
+
+const describeSqlite = canRunSqlite ? describe : describe.skip;
+
+describeSqlite('setup wizard auth gate', () => {
   beforeAll(async () => {
     const { createServer } = await import('../api/server.js');
     server = await createServer({
@@ -39,7 +59,7 @@ describe('setup wizard auth gate', () => {
   });
 
   afterAll(async () => {
-    await server.close();
+    await server?.close();
   });
 
   // --- /auth/verify contract ---
