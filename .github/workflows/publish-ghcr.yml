@@ -77,6 +77,8 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            NEXT_PUBLIC_GOOGLE_CLIENT_ID=127084939552-9998j1tvlvfda3cpmcrs2rshlhg1i354.apps.googleusercontent.com
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
