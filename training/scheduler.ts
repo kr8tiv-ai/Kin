@@ -22,6 +22,9 @@ export interface TrainingConfig {
   outputModel: string;
   epochs: number;
   learningRate: number;
+  maxSeqLength: number;
+  minAssistantChars: number;
+  maxDuplicateRatio: number;
   batchSize: number;
   qloraRank: number;
   targetModules: string[];
@@ -66,6 +69,9 @@ const DEFAULT_CONFIG: TrainingConfig = {
   outputModel: 'kin-qwen3:32b-v1',
   epochs: 3,
   learningRate: 2e-4,
+  maxSeqLength: 1024,
+  minAssistantChars: 0,
+  maxDuplicateRatio: 1.0,
   batchSize: 4,
   qloraRank: 16,
   targetModules: ['q_proj', 'k_proj', 'v_proj', 'o_proj'],
@@ -141,6 +147,11 @@ class TrainingScheduler {
 
     const retrainConfig: RetrainConfig = {
       baseModel: job.config.baseModel,
+      epochs: job.config.epochs,
+      learningRate: job.config.learningRate,
+      maxSeqLength: job.config.maxSeqLength,
+      minAssistantChars: job.config.minAssistantChars,
+      maxDuplicateRatio: job.config.maxDuplicateRatio,
     };
 
     try {

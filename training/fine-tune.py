@@ -18,7 +18,7 @@ Usage:
         --epochs 2
 
 Environment:
-    HF_TOKEN — HuggingFace token for gated model access (Llama 3.2 requires
+    HF_TOKEN - HuggingFace token for gated model access (Llama 3.2 requires
                Meta license acceptance at https://huggingface.co/meta-llama)
 
 Observability:
@@ -29,6 +29,7 @@ Observability:
 
 import argparse
 import json
+import re
 import os
 import subprocess
 import sys
@@ -111,9 +112,26 @@ def parse_args() -> argparse.Namespace:
         help="Learning rate (default: %(default)s)",
     )
     parser.add_argument(
+        "--min-assistant-chars",
+        type=int,
+        default=0,
+        help="Minimum average assistant completion length required (default: %(default)s)",
+    )
+    parser.add_argument(
+        "--max-duplicate-ratio",
+        type=float,
+        default=1.0,
+        help="Maximum allowed normalized duplicate structure ratio [0..1] (default: %(default)s)",
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Validate data and print stats without loading ML libraries or GPU",
+    )
+    parser.add_argument(
+        "--skip-gguf-export",
+        action="store_true",
+        help="Write merged 16-bit model files only and skip GGUF export",
     )
     return parser.parse_args()
 
@@ -197,7 +215,7 @@ def load_jsonl(data_path: str) -> list[dict]:
                 skipped += 1
                 continue
 
-            # Strip metadata — keep only messages for training
+            # Strip metadata - keep only messages for training
             entries.append({"messages": messages})
 
     if skipped > 0:
@@ -241,6 +259,111 @@ def print_data_stats(entries: list[dict]) -> None:
     log(f"  Max chars/entry:     {max_chars}")
     log(f"  Total chars:         {total_chars}")
 
+
+
+def _assistant_text(entry: dict) -> str:
+    for msg in entry.get("messages", []):
+        if msg.get("role") == "assistant":
+            return str(msg.get("content", ""))
+    return ""
+
+
+def _normalize_structure(text: str) -> str:
+    normalized = text.lower()
+    normalized = re.sub(r"https?://\S+", "<url>", normalized)
+    normalized = re.sub(r"#[0-9a-f]{3,8}\b", "<hex>", normalized)
+    normalized = re.sub(r"\b\d+(?:\.\d+)?\b", "<num>", normalized)
+    normalized = re.sub(r"picsum\.photos/[^\s'\"<>)]+", "picsum.photos/<img>", normalized)
+    normalized = re.sub(r"\s+", " ", normalized).strip()
+    return normalized
+
+
+def _html_like_ratio(texts: list[str]) -> tuple[int, float]:
+    hits = 0
+    for text in texts:
+        lower = text.lower()
+        if (
+            "<!doctype html" in lower
+            or "<html" in lower
+            or ("<body" in lower and "<style" in lower)
+        ):
+            hits += 1
+    total = max(len(texts), 1)
+    return hits, hits / total
+
+
+def validate_dataset_quality(
+    entries: list[dict],
+    companion_id: str,
+    min_assistant_chars: int,
+    max_duplicate_ratio: float,
+) -> None:
+    assistant_texts = [_assistant_text(entry) for entry in entries]
+    assistant_texts = [t for t in assistant_texts if t]
+
+    if not assistant_texts:
+        fatal("No assistant messages found after parsing training entries")
+
+    lengths = [len(t) for t in assistant_texts]
+    avg_len = int(sum(lengths) / len(lengths))
+    min_len = min(lengths)
+    max_len = max(lengths)
+
+    log("Assistant completion stats:")
+    log(f"  Entries:             {len(assistant_texts)}")
+    log(f"  Avg chars:           {avg_len}")
+    log(f"  Min/Max chars:       {min_len}/{max_len}")
+
+    if min_assistant_chars > 0 and avg_len < min_assistant_chars:
+        fatal(
+            f"Average assistant completion is too short ({avg_len} chars). "
+            f"Required minimum is {min_assistant_chars}."
+        )
+
+    normalized = [_normalize_structure(t) for t in assistant_texts]
+    unique_structures = len(set(normalized))
+    duplicate_ratio = 1.0 - (unique_structures / len(normalized))
+    log(f"  Duplicate ratio:     {duplicate_ratio:.3f}")
+
+    if max_duplicate_ratio < 1.0 and duplicate_ratio > max_duplicate_ratio:
+        fatal(
+            f"Dataset appears template-collapsed (duplicate ratio {duplicate_ratio:.3f} > {max_duplicate_ratio:.3f}). "
+            "Curate more structurally diverse completions before training."
+        )
+
+    html_hits, html_ratio = _html_like_ratio(assistant_texts)
+    log(f"  HTML-like entries:    {html_hits}/{len(assistant_texts)}")
+
+    if html_ratio < 0.50:
+        log(
+            f"  HTML guardrails:      skipped for {companion_id} "
+            "(dataset looks like conversational SFT, not site generation)"
+        )
+        return
+
+    lower = [t.lower() for t in assistant_texts]
+    tailwind_hits = sum(("tailwindcss" in t or "cdn.tailwindcss" in t) for t in lower)
+    lenis_stop_hits = sum("lenis.stop(" in t for t in lower)
+    doctype_hits = sum("<!doctype html" in t for t in lower)
+    head_signatures = {re.sub(r"\s+", " ", t[:220].strip()) for t in lower}
+    head_diversity = len(head_signatures) / max(len(lower), 1)
+
+    log(f"  HTML doctype ratio:   {doctype_hits}/{len(lower)}")
+    log(f"  HTML head diversity:  {head_diversity:.3f}")
+
+    if tailwind_hits > 0:
+        fatal(f"HTML dataset contains Tailwind patterns in {tailwind_hits} entries (must be zero).")
+    if lenis_stop_hits > 0:
+        fatal(f"HTML dataset contains lenis.stop() in {lenis_stop_hits} entries (must be zero).")
+    if head_diversity < 0.40:
+        message = (
+            f"HTML dataset has low structural diversity ({head_diversity:.3f} < 0.400). "
+            "This will likely memorize one template."
+        )
+        if max_duplicate_ratio < 1.0:
+            fatal(message)
+        warn(message)
+
 # ============================================================================
 # VRAM Check
 # ============================================================================
@@ -265,7 +388,7 @@ def check_vram(base_model: str) -> int:
             "Install NVIDIA drivers and CUDA toolkit, or use --dry-run to validate data without GPU."
         )
     except subprocess.TimeoutExpired:
-        fatal("nvidia-smi timed out — GPU may be in a bad state.")
+        fatal("nvidia-smi timed out - GPU may be in a bad state.")
 
     if result.returncode != 0:
         fatal(f"nvidia-smi failed (exit {result.returncode}): {result.stderr.strip()}")
@@ -302,7 +425,7 @@ def check_vram(base_model: str) -> int:
 def check_hf_auth() -> None:
     """
     Check if HuggingFace authentication is available.
-    Prints a warning if not — Llama 3.2 requires Meta license acceptance.
+    Prints a warning if not available - Llama 3.2 requires Meta license acceptance.
     """
     # Check env var first
     if os.environ.get("HF_TOKEN"):
@@ -342,6 +465,7 @@ def run_training(
     epochs: int,
     max_seq_length: int,
     learning_rate: float,
+    skip_gguf_export: bool,
 ) -> None:
     """
     Run QLoRA fine-tuning via Unsloth and export merged GGUF.
@@ -349,7 +473,7 @@ def run_training(
     This function imports ML libraries only when called (not at module level)
     so that --dry-run works without GPU or ML dependencies.
     """
-    # Lazy imports — only load heavy ML libraries when actually training
+    # Lazy imports - only load heavy ML libraries when actually training
     try:
         from unsloth import FastLanguageModel
         from unsloth.chat_templates import get_chat_template
@@ -385,7 +509,7 @@ def run_training(
     # Create output directory
     os.makedirs(output_dir, exist_ok=True)
 
-    # ── Load model ──────────────────────────────────────────────────────
+    # Load model
     log(f"Loading base model: {base_model}")
     model, tokenizer = FastLanguageModel.from_pretrained(
         model_name=base_model,
@@ -393,7 +517,7 @@ def run_training(
         load_in_4bit=True,
     )
 
-    # ── Configure LoRA ──────────────────────────────────────────────────
+    # Configure LoRA
     log("Configuring LoRA adapters...")
     model = FastLanguageModel.get_peft_model(
         model,
@@ -409,13 +533,13 @@ def run_training(
         random_state=3407,
     )
 
-    # ── Apply chat template ─────────────────────────────────────────────
+    # Apply chat template
     tokenizer = get_chat_template(
         tokenizer,
         chat_template="llama-3.1",
     )
 
-    # ── Prepare dataset ─────────────────────────────────────────────────
+    # Prepare dataset
     log("Preparing dataset...")
 
     def format_conversation(example: dict) -> dict:
@@ -430,7 +554,7 @@ def run_training(
     dataset = Dataset.from_list(entries)
     dataset = dataset.map(format_conversation)
 
-    # ── Configure training ──────────────────────────────────────────────
+    # Configure training
     log("Training...")
     training_args = SFTConfig(
         output_dir=output_dir,
@@ -457,11 +581,22 @@ def run_training(
         args=training_args,
     )
 
-    # ── Train ───────────────────────────────────────────────────────────
+    # Train
     trainer.train()
     log("Training complete")
 
-    # ── Export GGUF ──────────────────────────────────────────────────────
+    log("Merging model weights to 16-bit format...")
+    model.save_pretrained_merged(
+        output_dir,
+        tokenizer,
+        save_method="merged_16bit",
+    )
+    log(f"Merged model saved to {output_dir}")
+
+    if skip_gguf_export:
+        log("Skipping GGUF export (--skip-gguf-export)")
+        return
+
     log(f"Exporting GGUF to {output_dir}")
     model.save_pretrained_gguf(
         output_dir,
@@ -480,22 +615,30 @@ def main() -> None:
     # Resolve output directory
     output_dir = args.output_dir or os.path.join("training", "output", args.companion_id)
 
-    # ── Load and validate data ──────────────────────────────────────────
+    # Load and validate data
     entries = load_jsonl(args.data_path)
 
-    # ── Dry-run: print stats and exit ───────────────────────────────────
+    # Dataset quality guardrails (prevents template collapse)
+    validate_dataset_quality(
+        entries=entries,
+        companion_id=args.companion_id,
+        min_assistant_chars=args.min_assistant_chars,
+        max_duplicate_ratio=args.max_duplicate_ratio,
+    )
+
+    # Dry-run: print stats and exit
     if args.dry_run:
         print_data_stats(entries)
-        log("Dry run complete — data is valid")
+        log("Dry run complete - data is valid")
         sys.exit(0)
 
-    # ── VRAM check ──────────────────────────────────────────────────────
+    # VRAM check
     check_vram(args.base_model)
 
-    # ── HuggingFace auth check ──────────────────────────────────────────
+    # HuggingFace auth check
     check_hf_auth()
 
-    # ── Run training ────────────────────────────────────────────────────
+    # Run training
     run_training(
         entries=entries,
         base_model=args.base_model,
@@ -503,6 +646,7 @@ def main() -> None:
         epochs=args.epochs,
         max_seq_length=args.max_seq_length,
         learning_rate=args.learning_rate,
+        skip_gguf_export=args.skip_gguf_export,
     )
 
     log("Done.")
@@ -510,3 +654,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

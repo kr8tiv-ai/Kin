@@ -1,10 +1,10 @@
 /**
- * Retrain Loop — Orchestrates the distill-to-fine-tune pipeline.
+ * Retrain Loop - Orchestrates the distill-to-fine-tune pipeline.
  *
  * Bridges S02 distillation output into the existing training pipeline:
- *   distill JSONL → fine-tune.py → Modelfile → Ollama registration
+ *   distill JSONL -> fine-tune.py -> Modelfile -> Ollama registration
  *
- * Provides readiness gating (≥5 entries), on-demand execution,
+ * Provides readiness gating (>= 5 entries), on-demand execution,
  * and durable run history via append-only JSONL.
  *
  * Usage:
@@ -35,6 +35,7 @@ export const MIN_VALID_ENTRIES = 5;
 
 const DEFAULT_DISTILL_BASE = path.join('data', 'distill');
 const DEFAULT_HISTORY_BASE = path.join('data', 'retrain');
+const DEFAULT_TRAINING_BASE = path.join('data', 'training');
 const DEFAULT_BASE_MODEL = 'unsloth/Llama-3.2-1B-Instruct-bnb-4bit';
 
 function resolveDistillBasePath(basePath?: string): string {
@@ -43,6 +44,10 @@ function resolveDistillBasePath(basePath?: string): string {
 
 function resolveHistoryBasePath(basePath?: string): string {
   return basePath ?? (process.env.KIN_RETRAIN_HISTORY_DIR?.trim() || DEFAULT_HISTORY_BASE);
+}
+
+function resolveTrainingBasePath(basePath?: string): string {
+  return basePath ?? (process.env.KIN_TRAINING_DATA_DIR?.trim() || DEFAULT_TRAINING_BASE);
 }
 
 // ============================================================================
@@ -55,27 +60,40 @@ function resolveHistoryBasePath(basePath?: string): string {
 export interface RetrainConfig {
   /** Run distillation before training (default: false) */
   runDistillFirst?: boolean;
-  /** Skip the Python training step — useful for testing pipeline wiring */
+  /** Skip the Python training step - useful for testing pipeline wiring */
   skipTraining?: boolean;
-  /** Dry run — validate everything but don't mutate (passed to runPipeline) */
+  /** Dry run - validate everything but do not mutate state (passed to runPipeline) */
   dryRun?: boolean;
   /** Base model for fine-tuning (default: unsloth/Llama-3.2-1B-Instruct-bnb-4bit) */
   baseModel?: string;
+  /** Training epochs override */
+  epochs?: number;
+  /** Training max sequence length override */
+  maxSeqLength?: number;
+  /** Training learning rate override */
+  learningRate?: number;
+  /** Dataset guardrail: minimum average assistant completion chars */
+  minAssistantChars?: number;
+  /** Dataset guardrail: maximum normalized duplicate ratio */
+  maxDuplicateRatio?: number;
   /** Quality threshold for distillation candidate selection (default: 0.7) */
   qualityThreshold?: number;
   /** Override distill dataset base path for tests or alternate storage roots */
   distillBasePath?: string;
+  /** Override curated training dataset base path for tests or alternate storage roots */
+  trainingBasePath?: string;
   /** Override retrain history base path for tests or alternate storage roots */
   historyBasePath?: string;
 }
 
 /**
- * Readiness check result — tells the caller whether there's enough data to retrain.
+ * Readiness check result - tells the caller whether there's enough data to retrain.
  */
 export interface RetrainReadiness {
   ready: boolean;
   datasetSize: number;
   dataPath: string;
+  dataSource?: 'distill' | 'training';
   reason?: string;
 }
 
@@ -94,7 +112,7 @@ export interface RetrainResult {
 }
 
 /**
- * A persisted history entry — extends RetrainResult with a content-hash ID (K011).
+ * A persisted history entry - extends RetrainResult with a content-hash ID (K011).
  */
 export interface RetrainHistoryEntry extends RetrainResult {
   /** Deterministic SHA-256 content hash of the serialized result */
@@ -120,7 +138,7 @@ function warn(msg: string): void {
 /**
  * Check whether a companion has enough distillation data to retrain.
  *
- * Loads the distill dataset via store.ts and checks length ≥ MIN_VALID_ENTRIES.
+ * Loads the distill dataset via store.ts and checks length >= MIN_VALID_ENTRIES.
  *
  * @param companionId - Companion to check
  * @param basePath - Override base path for distill data (default: data/distill)
@@ -129,23 +147,64 @@ function warn(msg: string): void {
 export async function checkRetrainReadiness(
   companionId: string,
   basePath?: string,
+  trainingBasePath?: string,
 ): Promise<RetrainReadiness> {
-  const base = resolveDistillBasePath(basePath);
-  const dataPath = path.join(base, companionId, 'distill.jsonl');
+  const distillBase = resolveDistillBasePath(basePath);
+  const distillPath = path.join(distillBase, companionId, 'distill.jsonl');
+  const distillLines = await loadDistillDataset(companionId, distillBase);
+  const distillSize = distillLines.length;
 
-  const lines = await loadDistillDataset(companionId, base);
-  const datasetSize = lines.length;
-
-  if (datasetSize < MIN_VALID_ENTRIES) {
+  if (distillSize >= MIN_VALID_ENTRIES) {
     return {
-      ready: false,
-      datasetSize,
-      dataPath,
-      reason: `Dataset has ${datasetSize} entries — need at least ${MIN_VALID_ENTRIES} for fine-tuning`,
+      ready: true,
+      datasetSize: distillSize,
+      dataPath: distillPath,
+      dataSource: 'distill',
     };
   }
 
-  return { ready: true, datasetSize, dataPath };
+  const trainingBase = resolveTrainingBasePath(trainingBasePath);
+  const trainingPath = path.join(trainingBase, companionId, 'training.jsonl');
+  const trainingSize = await countJsonlEntries(trainingPath);
+
+  if (trainingSize >= MIN_VALID_ENTRIES) {
+    if (distillSize > 0) {
+      warn(
+        `Distill dataset for '${companionId}' has only ${distillSize} entries; ` +
+          `falling back to curated training dataset at ${trainingPath}`,
+      );
+    }
+    return {
+      ready: true,
+      datasetSize: trainingSize,
+      dataPath: trainingPath,
+      dataSource: 'training',
+    };
+  }
+
+  return {
+    ready: false,
+    datasetSize: Math.max(distillSize, trainingSize),
+    dataPath: distillPath,
+    reason:
+      `Distill dataset has ${distillSize} entries and curated training dataset has ${trainingSize} entries - ` +
+      `need at least ${MIN_VALID_ENTRIES} in either source for fine-tuning`,
+  };
+}
+
+async function countJsonlEntries(filePath: string): Promise<number> {
+  try {
+    const content = await fs.promises.readFile(filePath, 'utf-8');
+    return content
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean).length;
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+      return 0;
+    }
+    throw err;
+  }
 }
 
 // ============================================================================
@@ -158,8 +217,8 @@ export async function checkRetrainReadiness(
  * Orchestration sequence:
  * 1. Validate companion ID
  * 2. Optionally run distillation first
- * 3. Check readiness — abort if insufficient data
- * 4. Build TrainCompanionArgs with distill JSONL path
+ * 3. Check readiness - abort if insufficient data
+ * 4. Build TrainCompanionArgs with the best available dataset path
  * 5. Call runPipeline (delegates to Python fine-tune + Ollama registration)
  * 6. Persist history entry (on both success and failure)
  * 7. Return result
@@ -221,7 +280,11 @@ export async function runRetrainLoop(
   }
 
   // Step 3: Check readiness
-  const readiness = await checkRetrainReadiness(companionId, config?.distillBasePath);
+  const readiness = await checkRetrainReadiness(
+    companionId,
+    config?.distillBasePath,
+    config?.trainingBasePath,
+  );
   if (!readiness.ready) {
     log(`Not ready to retrain '${companionId}': ${readiness.reason}`);
     const result: RetrainResult = {
@@ -239,8 +302,8 @@ export async function runRetrainLoop(
 
   log(`Readiness check passed: ${readiness.datasetSize} entries available`);
 
-  // Step 4: Build training args — use distill JSONL path, NOT training.jsonl
-  const dataPath = path.join(resolveDistillBasePath(config?.distillBasePath), companionId, 'distill.jsonl');
+  // Step 4: Build training args from the readiness-selected dataset path.
+  const dataPath = readiness.dataPath;
   const outputDir = path.join('training', 'output', companionId);
   const modelName = getModelName(companionId);
 
@@ -249,6 +312,11 @@ export async function runRetrainLoop(
     dataPath,
     baseModel: config?.baseModel ?? DEFAULT_BASE_MODEL,
     outputDir,
+    epochs: config?.epochs,
+    maxSeqLength: config?.maxSeqLength,
+    learningRate: config?.learningRate,
+    minAssistantChars: config?.minAssistantChars,
+    maxDuplicateRatio: config?.maxDuplicateRatio,
     dryRun: config?.dryRun ?? false,
     skipTraining: config?.skipTraining ?? false,
   };
@@ -340,7 +408,7 @@ export async function loadRetrainHistory(
     return entries;
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
-      return []; // No history yet — not an error
+      return []; // No history yet - not an error
     }
     warn(`Failed to read history from ${filePath}: ${err instanceof Error ? err.message : String(err)}`);
     return [];
@@ -402,8 +470,26 @@ function parseCliArgs(argv: string[]): { companionId: string; config: RetrainCon
       case '--base-model':
         config.baseModel = argv[++i];
         break;
+      case '--epochs':
+        config.epochs = parseInt(argv[++i] ?? '2', 10);
+        break;
+      case '--max-seq-length':
+        config.maxSeqLength = parseInt(argv[++i] ?? '1024', 10);
+        break;
+      case '--learning-rate':
+        config.learningRate = parseFloat(argv[++i] ?? '2e-4');
+        break;
+      case '--min-assistant-chars':
+        config.minAssistantChars = parseInt(argv[++i] ?? '0', 10);
+        break;
+      case '--max-duplicate-ratio':
+        config.maxDuplicateRatio = parseFloat(argv[++i] ?? '1.0');
+        break;
       case '--quality-threshold':
         config.qualityThreshold = parseFloat(argv[++i] ?? '0.7');
+        break;
+      case '--training-base-path':
+        config.trainingBasePath = argv[++i] ?? '';
         break;
     }
   }
@@ -424,14 +510,14 @@ async function main(): Promise<void> {
   const result = await runRetrainLoop(companionId, config);
 
   if (result.success) {
-    log(`✓ Retrain complete for '${companionId}' — model: ${result.modelName}`);
+    log(`[ok] Retrain complete for '${companionId}' - model: ${result.modelName}`);
   } else {
-    log(`✗ Retrain failed for '${companionId}': ${result.trainingError}`);
+    log(`[fail] Retrain failed for '${companionId}': ${result.trainingError}`);
     process.exit(1);
   }
 }
 
-// CLI guard per K010 — only run when executed directly
+// CLI guard per K010 - only run when executed directly
 const isDirectExecution =
   import.meta.url === `file:///${process.argv[1]?.replace(/\\/g, '/')}` ||
   process.argv[1]?.endsWith('retrain-loop.ts') === true;

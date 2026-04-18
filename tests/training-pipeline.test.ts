@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as path from 'path';
 
-// ── Mock child_process before imports ─────────────────────────────────────
+// Mock child_process before imports.
 vi.mock('child_process', () => ({
   execSync: vi.fn(),
   spawn: vi.fn(),
 }));
 
-// ── Mock fs selectively ──────────────────────────────────────────────────
+// Mock fs selectively.
 vi.mock('fs', async () => {
   const actual = await vi.importActual<typeof import('fs')>('fs');
   return {
@@ -19,7 +19,7 @@ vi.mock('fs', async () => {
   };
 });
 
-// ── Mock OllamaClient ────────────────────────────────────────────────────
+// Mock OllamaClient.
 vi.mock('../inference/local-llm.js', () => {
   const mockClient = {
     checkHealth: vi.fn(),
@@ -88,6 +88,11 @@ describe('parseArgs', () => {
     expect(result.dataPath).toBe(path.join('data', 'training', 'forge', 'training.jsonl'));
     expect(result.baseModel).toBe('unsloth/Llama-3.2-1B-Instruct-bnb-4bit');
     expect(result.outputDir).toBe(path.join('training', 'output', 'forge'));
+    expect(result.epochs).toBe(2);
+    expect(result.maxSeqLength).toBe(1024);
+    expect(result.learningRate).toBe(2e-4);
+    expect(result.minAssistantChars).toBe(0);
+    expect(result.maxDuplicateRatio).toBe(1.0);
     expect(result.dryRun).toBe(false);
     expect(result.skipTraining).toBe(false);
   });
@@ -309,7 +314,27 @@ describe('buildPythonArgs', () => {
 
     const result = buildPythonArgs('python3', baseArgs);
     expect(result.command).toBe('wsl');
-    expect(result.spawnArgs[0]).toBe('python3');
+    expect(result.spawnArgs[0]).toBe('bash');
+    expect(result.spawnArgs[1]).toContain('/mnt/');
+    expect(result.spawnArgs[1]).toContain('training/run-python-wsl.sh');
+    expect(result.spawnArgs[2]).toContain('/mnt/');
+    expect(result.spawnArgs[2]).toContain('training/fine-tune.py');
+    expect(result.spawnArgs).toContain('--skip-gguf-export');
+
+    if (origPlatform) {
+      Object.defineProperty(process, 'platform', origPlatform);
+    }
+  });
+
+  it('normalizes Windows python fallback to python3 inside WSL', () => {
+    const origPlatform = Object.getOwnPropertyDescriptor(process, 'platform');
+    Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
+
+    const result = buildPythonArgs('python', baseArgs);
+    expect(result.command).toBe('wsl');
+    expect(result.spawnArgs[0]).toBe('bash');
+    expect(result.spawnArgs[1]).toContain('training/run-python-wsl.sh');
+    expect(result.spawnArgs[2]).toContain('training/fine-tune.py');
 
     if (origPlatform) {
       Object.defineProperty(process, 'platform', origPlatform);
@@ -323,11 +348,21 @@ describe('buildPythonArgs', () => {
 
 describe('generateAndWriteModelfile', () => {
   it('calls generateModelfile with correct ggufPath', () => {
-    // generateModelfile is NOT mocked — it calls through to the real
+    // generateModelfile is not mocked - it calls through to the real
     // implementation which writes via the mocked fs.writeFileSync.
     const result = generateAndWriteModelfile('cipher', 'training/output/cipher');
     expect(result.modelName).toBe('kin-cipher');
     expect(result.modelfilePath).toBe(path.join('training', 'output', 'cipher', 'Modelfile'));
+  });
+
+  it('writes an absolute GGUF path into the Modelfile FROM line', () => {
+    generateAndWriteModelfile('cipher', 'training/output/cipher');
+
+    expect(fs.writeFileSync).toHaveBeenCalledWith(
+      path.join('training', 'output', 'cipher', 'Modelfile'),
+      expect.stringContaining(`FROM ${path.resolve('training/output/cipher', 'unsloth.Q4_K_M.gguf')}`),
+      'utf-8',
+    );
   });
 });
 
@@ -346,8 +381,8 @@ describe('registerWithOllama', () => {
     registerWithOllama('kin-cipher', 'training/output/cipher/Modelfile');
 
     expect(execSync).toHaveBeenCalledWith(
-      'ollama create kin-cipher -f training/output/cipher/Modelfile',
-      expect.anything(),
+      'ollama create kin-cipher -f "training/output/cipher/Modelfile"',
+      expect.objectContaining({ maxBuffer: 32 * 1024 * 1024 }),
     );
   });
 
@@ -399,7 +434,7 @@ describe('verifyModel', () => {
 });
 
 // ============================================================================
-// runPipeline — integration scenarios
+// runPipeline - integration scenarios
 // ============================================================================
 
 describe('runPipeline', () => {
@@ -429,6 +464,7 @@ describe('runPipeline', () => {
   it('--skip-training skips Python invocation but still generates Modelfile and registers model', async () => {
     // Don't need data file or python for skip-training
     vi.mocked(execSync).mockReturnValue('success' as never);
+    vi.mocked(fs.existsSync).mockReturnValue(true);
 
     const args: TrainCompanionArgs = {
       companionId: 'cipher',

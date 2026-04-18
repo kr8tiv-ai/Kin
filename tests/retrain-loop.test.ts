@@ -1,8 +1,8 @@
 /**
- * Retrain Loop — Comprehensive Tests
+ * Retrain Loop - Comprehensive Tests
  *
- * Tests the full retrain pipeline from readiness gating → orchestration →
- * history persistence → scheduler delegation → API routes.
+ * Tests the full retrain pipeline from readiness gating -> orchestration ->
+ * history persistence -> scheduler delegation -> API routes.
  *
  * Structure:
  * 1. checkRetrainReadiness (4 tests)
@@ -45,6 +45,21 @@ function makeLoopConfig(prefix: string) {
   return { historyBasePath: makeTmpDir(prefix) };
 }
 
+let isolatedTrainingBasePath = '';
+
+beforeEach(() => {
+  isolatedTrainingBasePath = makeTmpDir('isolated-training-root');
+  process.env.KIN_TRAINING_DATA_DIR = isolatedTrainingBasePath;
+});
+
+afterEach(() => {
+  delete process.env.KIN_TRAINING_DATA_DIR;
+  if (isolatedTrainingBasePath) {
+    fs.rmSync(isolatedTrainingBasePath, { recursive: true, force: true });
+    isolatedTrainingBasePath = '';
+  }
+});
+
 // ============================================================================
 // 1. checkRetrainReadiness
 // ============================================================================
@@ -58,7 +73,7 @@ describe('checkRetrainReadiness', () => {
     vi.resetModules();
   });
 
-  it('returns ready:true when dataset has ≥5 entries', async () => {
+  it('returns ready:true when dataset has >=5 entries', async () => {
     vi.doMock('../inference/distill/store.js', () => ({
       loadDistillDataset: vi.fn().mockResolvedValue(['l1', 'l2', 'l3', 'l4', 'l5']),
       saveDistillDataset: vi.fn(),
@@ -258,6 +273,44 @@ describe('runRetrainLoop', () => {
     fs.rmSync(config.historyBasePath, { recursive: true, force: true });
   });
 
+  it('falls back to training.jsonl when distill data is unavailable but curated training data exists', async () => {
+    const trainingBasePath = makeTmpDir('training-fallback');
+    const historyBasePath = makeTmpDir('training-fallback-history');
+    const companionDir = path.join(trainingBasePath, 'cipher');
+    fs.mkdirSync(companionDir, { recursive: true });
+
+    const trainingLines = Array.from({ length: 6 }, (_, index) =>
+      JSON.stringify({
+        messages: [
+          { role: 'system', content: 'You are Cipher.' },
+          { role: 'user', content: `Prompt ${index}` },
+          { role: 'assistant', content: `Answer ${index}` },
+        ],
+      }),
+    ).join('\n');
+    fs.writeFileSync(path.join(companionDir, 'training.jsonl'), `${trainingLines}\n`, 'utf-8');
+
+    const mockPipeline = vi.fn().mockResolvedValue(undefined);
+    setupMocks({
+      loadDistillDataset: vi.fn().mockResolvedValue([]),
+      runPipeline: mockPipeline,
+    });
+
+    const { runRetrainLoop } = await import('../training/retrain-loop.js');
+    const result = await runRetrainLoop('cipher', {
+      historyBasePath,
+      trainingBasePath,
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.datasetSize).toBe(6);
+    expect(mockPipeline).toHaveBeenCalledOnce();
+    const args = mockPipeline.mock.calls[0][0];
+    expect(args.dataPath).toBe(path.join(trainingBasePath, 'cipher', 'training.jsonl'));
+
+    fs.rmSync(trainingBasePath, { recursive: true, force: true });
+    fs.rmSync(historyBasePath, { recursive: true, force: true });
+  });
   it('saves history entry on success', async () => {
     const config = makeLoopConfig('success-hist');
     setupMocks();

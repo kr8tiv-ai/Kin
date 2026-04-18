@@ -29,7 +29,19 @@ __pycache__/
 .venv/
 venv/
 training/output/
+unsloth_compiled_cache/
 *.gguf
+# Local training datasets (large — kept out of repo)
+data/training/
+data/distill/
+# Secrets — NEVER commit
+*.token
+*token*.txt
+.git-credentials
+.hf_token
+secrets/
+**/ghp_*
+**/hf_*
 target/
 vendor/
 .cache/
